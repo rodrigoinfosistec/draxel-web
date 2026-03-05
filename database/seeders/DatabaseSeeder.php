@@ -19,15 +19,5 @@ class DatabaseSeeder extends Seeder
             CompanySeeder::class,
             UserSeeder::class,
         ]);
-
-
-        /**
-         * Seeds apenas para ambiente local (desenvolvimento).
-         */
-        if (app()->environment('local')) {
-            $this->call([
-                //
-            ]);
-        }
     }
 }
