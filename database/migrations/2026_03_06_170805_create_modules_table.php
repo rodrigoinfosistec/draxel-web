@@ -17,6 +17,7 @@ return new class extends Migration
 
             $table->text('description')->nullable();
 
+            $table->boolean('is_core')->default(false);
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();

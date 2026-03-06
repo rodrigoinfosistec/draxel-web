@@ -36,4 +36,13 @@ class Tenant extends Model
     {
         return $query->where('is_active', false);
     }
+
+    public function modules()
+    {
+        return $this->belongsToMany(
+            Module::class,
+            'tenant_modules'
+        )->withPivot('is_active')
+        ->withTimestamps();
+    }
 }

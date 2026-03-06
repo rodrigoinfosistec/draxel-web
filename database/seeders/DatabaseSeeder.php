@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Artisan;
 
 class DatabaseSeeder extends Seeder
 {
@@ -12,12 +11,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        /**
-         * Seeds apenas para ambiente local
-         */
-        Artisan::call('permissions:sync');
-        Artisan::call('modules:sync');
-
         /**
          * Seeds apenas para ambiente local
          */
@@ -36,6 +29,7 @@ class DatabaseSeeder extends Seeder
             CompanySeeder::class,
             UserSeeder::class,
             RoleSeeder::class,
+            ModuleSeeder::class,
             RolePermissionSeeder::class,
         ]);
     }
