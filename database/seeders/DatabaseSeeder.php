@@ -13,17 +13,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         /**
-         * Seeds essenciais (rodarão em qualquer ambiente)
-         */
-        $this->call([
-            TenantSeeder::class,
-            CompanySeeder::class,
-            UserSeeder::class,
-            RoleSeeder::class,
-            RolePermissionSeeder::class,
-        ]);
-
-        /**
          * Seeds apenas para ambiente local
          */
         if (app()->environment('local')) {
@@ -36,7 +25,17 @@ class DatabaseSeeder extends Seeder
             $this->call([
                 //
             ]);
-
         }
+
+        /**
+         * Seeds essenciais depois dos syncs
+         */
+        $this->call([
+            TenantSeeder::class,
+            CompanySeeder::class,
+            UserSeeder::class,
+            RoleSeeder::class,
+            RolePermissionSeeder::class,
+        ]);
     }
 }
