@@ -15,12 +15,13 @@ class DatabaseSeeder extends Seeder
         /**
          * Seeds apenas para ambiente local
          */
+        Artisan::call('permissions:sync');
+        Artisan::call('modules:sync');
+
+        /**
+         * Seeds apenas para ambiente local
+         */
         if (app()->environment('local')) {
-
-            // Syncs
-            Artisan::call('permissions:sync');
-            Artisan::call('modules:sync');
-
             // Seeds
             $this->call([
                 //
