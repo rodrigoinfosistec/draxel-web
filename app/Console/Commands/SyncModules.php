@@ -4,22 +4,22 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Module;
+use App\Models\Permission;
+use Illuminate\Support\Facades\DB;
 
 class SyncModules extends Command
 {
     protected $signature = 'modules:sync';
 
-    protected $description = 'Sincroniza os módulos definidos em config/modules.php';
+    protected $description = 'Sincroniza módulos e permissões definidas em config/modules.php';
 
     public function handle(): int
     {
         $modules = config('modules');
 
-        $count = 0;
-
         foreach ($modules as $slug => $data) {
 
-            Module::updateOrCreate(
+            $module = Module::updateOrCreate(
                 ['slug' => $slug],
                 [
                     'name' => $data['name'],
@@ -28,12 +28,33 @@ class SyncModules extends Command
                 ]
             );
 
-            $this->line("Synced: {$slug}");
+            foreach ($data['permissions'] as $action => $perm) {
 
-            $count++;
+                $permissionSlug = "{$slug}.{$action}";
+
+                $permission = Permission::updateOrCreate(
+                    ['slug' => $permissionSlug],
+                    [
+                        'name' => $perm['name'],
+                        'description' => $perm['description'] ?? null,
+                        'is_active' => true,
+                    ]
+                );
+
+                DB::table('module_permissions')->updateOrInsert(
+                    [
+                        'module_id' => $module->id,
+                        'permission_id' => $permission->id,
+                    ],
+                    [
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
+            }
         }
 
-        $this->info("Total de módulos sincronizados: {$count}");
+        $this->info('Modules e permissions sincronizados.');
 
         return Command::SUCCESS;
     }
