@@ -16,22 +16,25 @@ class DatabaseSeeder extends Seeder
          * Seeds essenciais (rodarão em qualquer ambiente)
          */
         $this->call([
-            //
+            TenantSeeder::class,
+            CompanySeeder::class,
+            UserSeeder::class,
+            RoleSeeder::class,
+            RolePermissionSeeder::class,
         ]);
 
         /**
          * Seeds apenas para ambiente local
          */
         if (app()->environment('local')) {
+
+            // Syncs
             Artisan::call('permissions:sync');
             Artisan::call('modules:sync');
 
+            // Seeds
             $this->call([
-                TenantSeeder::class,
-                CompanySeeder::class,
-                UserSeeder::class,
-                RoleSeeder::class,
-                RolePermissionSeeder::class,
+                //
             ]);
 
         }

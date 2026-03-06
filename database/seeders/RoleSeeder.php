@@ -16,16 +16,6 @@ class RoleSeeder extends Seeder
                 'name' => 'Administrador',
                 'description' => 'Acesso completo ao sistema'
             ],
-            [
-                'slug' => 'manager',
-                'name' => 'Gerente',
-                'description' => 'Gestão operacional'
-            ],
-            [
-                'slug' => 'operator',
-                'name' => 'Operador',
-                'description' => 'Usuário operacional'
-            ],
         ];
 
         $tenants = Tenant::all();
