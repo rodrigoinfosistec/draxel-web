@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
          */
         if (app()->environment('local')) {
             Artisan::call('permissions:sync');
+            Artisan::call('modules:sync');
 
             $this->call([
                 TenantSeeder::class,
