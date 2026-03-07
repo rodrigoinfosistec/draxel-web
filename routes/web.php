@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\UserController;
 use App\Jobs\TestIntegrationJob;
 use Illuminate\Support\Facades\Route;
 
@@ -25,5 +26,9 @@ Route::get('/test/integration', function () {
 
     return 'Job enviado para fila.';
 })->middleware(['auth', 'requireTenant']);
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::resource('users', UserController::class)->except(['show']);
+});
 
 require __DIR__.'/settings.php';

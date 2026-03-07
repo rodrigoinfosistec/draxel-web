@@ -16,7 +16,7 @@ import {
 import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
 import { Link } from '@inertiajs/vue3'
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-vue-next'
+import { LayoutGrid, ShieldCheck, Users } from 'lucide-vue-next'
 
 const mainNavItems: NavItem[] = [
     {
@@ -28,14 +28,14 @@ const mainNavItems: NavItem[] = [
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: FolderGit2,
+        title: 'Usuários',
+        href: '/users',
+        icon: Users,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
+        title: 'Funções de usuário',
+        href: '/roles',
+        icon: ShieldCheck,
     },
 ]
 </script>
@@ -53,7 +53,6 @@ const footerNavItems: NavItem[] = [
                 </SidebarMenuItem>
             </SidebarMenu>
 
-            <!-- Company Switcher -->
             <div class="p-2 mt-2">
                 <CompanySwitcher />
             </div>

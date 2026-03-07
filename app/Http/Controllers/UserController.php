@@ -1,0 +1,243 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
+use App\Models\Company;
+use App\Models\Module;
+use App\Models\Role;
+use App\Models\TenantModule;
+use App\Models\User;
+use App\Support\Audit\Audit;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class UserController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $this->authorize('viewAny', User::class);
+
+        $tenantId = $request->user()->tenant_id;
+        $search = $request->string('search')->toString();
+
+        $users = User::query()
+            ->with(['defaultCompany:id,name', 'companies:id,name', 'roles:id,name'])
+            ->where('tenant_id', $tenantId)
+            ->when($search, fn ($query) => $query->where(function ($subQuery) use ($search) {
+                $subQuery
+                    ->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%");
+            }))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString()
+            ->through(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_active' => $user->is_active,
+                'default_company' => $user->defaultCompany?->name,
+                'companies' => $user->companies->map(fn ($company) => [
+                    'id' => $company->id,
+                    'name' => $company->name,
+                ]),
+                'roles' => $user->roles->map(fn ($role) => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                ]),
+            ]);
+
+        return Inertia::render('users/Index', [
+            'users' => $users,
+            'filters' => [
+                'search' => $search,
+            ],
+        ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        $this->authorize('create', User::class);
+
+        return Inertia::render('users/Create', $this->formData($request->user()->tenant_id));
+    }
+
+    public function store(StoreUserRequest $request): RedirectResponse
+    {
+        $tenantId = $request->user()->tenant_id;
+
+        DB::transaction(function () use ($request, $tenantId) {
+            $data = $request->validated();
+
+            $user = User::create([
+                'tenant_id' => $tenantId,
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+                'is_active' => true,
+            ]);
+
+            $user->companies()->sync(
+                collect($data['company_ids'])->mapWithKeys(fn ($companyId) => [
+                    $companyId => ['tenant_id' => $tenantId],
+                ])->toArray()
+            );
+
+            $user->roles()->sync($data['role_ids']);
+            $user->modules()->sync($data['module_ids'] ?? []);
+
+            Audit::event('users.created', $user, [
+                'name' => $user->name,
+                'email' => $user->email,
+                'company_ids' => $data['company_ids'],
+                'role_ids' => $data['role_ids'],
+                'module_ids' => $data['module_ids'] ?? [],
+                'is_active' => $user->is_active,
+            ]);
+        });
+
+        return redirect()->route('users.index');
+    }
+
+    public function edit(Request $request, User $user): Response
+    {
+        $this->authorize('update', $user);
+
+        return Inertia::render('users/Edit', array_merge(
+            $this->formData($request->user()->tenant_id),
+            [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'company_ids' => $user->companies()->pluck('companies.id')->toArray(),
+                    'role_ids' => $user->roles()->pluck('roles.id')->toArray(),
+                    'module_ids' => $user->modules()->pluck('modules.id')->toArray(),
+                    'is_active' => $user->is_active,
+                ],
+            ]
+        ));
+    }
+
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $user) {
+            $data = $request->validated();
+
+            $before = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'company_ids' => $user->companies()->pluck('companies.id')->toArray(),
+                'role_ids' => $user->roles()->pluck('roles.id')->toArray(),
+                'module_ids' => $user->modules()->pluck('modules.id')->toArray(),
+                'is_active' => $user->is_active,
+            ];
+
+            $payload = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'is_active' => $data['is_active'],
+            ];
+
+            if (! empty($data['password'])) {
+                $payload['password'] = $data['password'];
+            }
+
+            $user->update($payload);
+
+            $user->companies()->sync(
+                collect($data['company_ids'])->mapWithKeys(fn ($companyId) => [
+                    $companyId => ['tenant_id' => $user->tenant_id],
+                ])->toArray()
+            );
+
+            $user->roles()->sync($data['role_ids']);
+            $user->modules()->sync($data['module_ids'] ?? []);
+
+            Audit::event('users.updated', $user, [
+                'before' => $before,
+                'after' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'company_ids' => $data['company_ids'],
+                    'role_ids' => $data['role_ids'],
+                    'module_ids' => $data['module_ids'] ?? [],
+                    'is_active' => $user->is_active,
+                ],
+            ]);
+        });
+
+        return redirect()->route('users.index');
+    }
+
+    public function destroy(User $user): RedirectResponse
+    {
+        $this->authorize('delete', $user);
+
+        DB::transaction(function () use ($user) {
+            $snapshot = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'company_ids' => $user->companies()->pluck('companies.id')->toArray(),
+                'role_ids' => $user->roles()->pluck('roles.id')->toArray(),
+                'module_ids' => $user->modules()->pluck('modules.id')->toArray(),
+                'is_active' => $user->is_active,
+            ];
+
+            Audit::event('users.deleted', $user, $snapshot);
+
+            $user->delete();
+        });
+
+        return redirect()->route('users.index');
+    }
+
+    protected function formData(int $tenantId): array
+    {
+        $companies = Company::query()
+            ->where('tenant_id', $tenantId)
+            ->active()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($company) => [
+                'id' => $company->id,
+                'name' => $company->name,
+            ]);
+
+        $roles = Role::query()
+            ->where('tenant_id', $tenantId)
+            ->active()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($role) => [
+                'id' => $role->id,
+                'name' => $role->name,
+            ]);
+
+        $moduleIds = TenantModule::query()
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->pluck('module_id');
+
+        $modules = Module::query()
+            ->whereIn('id', $moduleIds)
+            ->active()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($module) => [
+                'id' => $module->id,
+                'name' => $module->name,
+            ]);
+
+        return [
+            'companies' => $companies,
+            'roles' => $roles,
+            'modules' => $modules,
+        ];
+    }
+}
