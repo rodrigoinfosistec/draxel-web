@@ -28,7 +28,11 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
 
-            ->favicon(asset('favicon.png'))
+            ->favicon(
+                app()->environment('local')
+                    ? asset('favicon.png')
+                    : secure_asset('favicon.png')
+            )
 
             ->colors([
                 'primary' => [
