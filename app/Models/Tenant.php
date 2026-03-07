@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Tenant extends Model
 {
@@ -27,6 +28,15 @@ class Tenant extends Model
         return $this->hasMany(User::class);
     }
 
+    public function modules(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Module::class,
+            'tenant_modules'
+        )->withPivot('is_active')
+        ->withTimestamps();
+    }
+
     public function scopeActive(Builder $query)
     {
         return $query->where('is_active', true);
@@ -35,14 +45,5 @@ class Tenant extends Model
     public function scopeInactive(Builder $query)
     {
         return $query->where('is_active', false);
-    }
-
-    public function modules()
-    {
-        return $this->belongsToMany(
-            Module::class,
-            'tenant_modules'
-        )->withPivot('is_active')
-        ->withTimestamps();
     }
 }

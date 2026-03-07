@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Traits\BelongsToTenant;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -41,43 +43,56 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    public function tenant()
+    public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
     }
 
-    public function companies()
+    public function companies(): BelongsToMany
     {
         return $this->belongsToMany(Company::class, 'user_companies')
+            ->withPivot('tenant_id')
             ->withTimestamps();
     }
 
-    public function defaultCompany()
+    public function defaultCompany(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'default_company_id');
     }
 
-    public function scopeActive(Builder $query)
+    public function modules(): BelongsToMany
+    {
+        return $this->belongsToMany(Module::class, 'user_modules')
+            ->withTimestamps();
+    }
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'user_roles')
+            ->withTimestamps();
+    }
+
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeInactive(Builder $query)
+    public function scopeInactive(Builder $query): Builder
     {
         return $query->where('is_active', false);
     }
 
-    public function scopeFromTenant(Builder $query, int $tenantId)
+    public function scopeFromTenant(Builder $query, int $tenantId): Builder
     {
         return $query->where('tenant_id', $tenantId);
     }
 
-    public function scopeAdmin(Builder $query)
+    public function scopeAdmin(Builder $query): Builder
     {
         return $query->where('is_admin', true);
     }
 
-    public function scopeNoAdmin(Builder $query)
+    public function scopeNoAdmin(Builder $query): Builder
     {
         return $query->where('is_admin', false);
     }
@@ -89,8 +104,8 @@ class User extends Authenticatable implements FilamentUser
         }
 
         return collect(
-                preg_split('/\s+/', trim($this->name))
-            )
+            preg_split('/\s+/', trim($this->name))
+        )
             ->filter()
             ->reject(fn ($word) => in_array(
                 Str::lower($word),

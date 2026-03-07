@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
@@ -25,4 +27,51 @@ class AuditLog extends Model
     protected $casts = [
         'properties' => 'array',
     ];
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function scopeFromTenant(Builder $query, int $tenantId): Builder
+    {
+        return $query->where('tenant_id', $tenantId);
+    }
+
+    public function scopeFromCompany(Builder $query, int $companyId): Builder
+    {
+        return $query->where('company_id', $companyId);
+    }
+
+    public function scopeFromUser(Builder $query, int $userId): Builder
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    public function scopeEvent(Builder $query, string $event): Builder
+    {
+        return $query->where('event', $event);
+    }
+
+    public function scopeSubject(Builder $query, string $subjectType, string|int $subjectId): Builder
+    {
+        return $query
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', (string) $subjectId);
+    }
+
+    public function scopeLatestFirst(Builder $query): Builder
+    {
+        return $query->latest();
+    }
 }

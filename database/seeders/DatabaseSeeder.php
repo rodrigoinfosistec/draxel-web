@@ -12,6 +12,23 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         /**
+         * Seeds essenciais
+         */
+        $this->call([
+            /**
+             * Módulos globais (definidas os "cores")
+             * Permissões globais (vinculadas aos módulos)
+             */
+            ModuleSeeder::class,
+
+            /**
+             * Painel Global (Dpanel)
+             * Permissão total
+             */
+            DpanelSeeder::class,
+        ]);
+
+        /**
          * Seeds apenas para ambiente local
          */
         if (app()->environment('local')) {
@@ -20,17 +37,5 @@ class DatabaseSeeder extends Seeder
                 //
             ]);
         }
-
-        /**
-         * Seeds essenciais depois dos syncs
-         */
-        $this->call([
-            TenantSeeder::class,
-            CompanySeeder::class,
-            UserSeeder::class,
-            RoleSeeder::class,
-            ModuleSeeder::class,
-            RolePermissionSeeder::class,
-        ]);
     }
 }

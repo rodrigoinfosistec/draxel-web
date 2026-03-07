@@ -16,7 +16,7 @@ return new class extends Migration {
 
             $table->string('name');
             $table->string('alias')->nullable();
-            $table->string('cnpj', 14)->unique();
+            $table->string('cnpj', 14);
             $table->string('color', 7)->nullable();
             $table->boolean('is_active')->default(true);
 

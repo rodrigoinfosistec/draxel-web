@@ -8,26 +8,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('user_roles', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('tenant_id')
+            $table->foreignId('user_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->string('slug');
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->foreignId('role_id')
+                ->constrained()
+                ->cascadeOnDelete();
 
             $table->timestamps();
 
-            $table->unique(['tenant_id', 'slug']);
+            $table->unique(['user_id', 'role_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('user_roles');
     }
 };

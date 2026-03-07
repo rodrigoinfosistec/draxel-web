@@ -106,7 +106,6 @@ return [
                 'name' => 'Ver auditoria',
                 'description' => 'Permite visualizar os detalhes de um registro de auditoria',
             ],
-
         ],
     ],
 

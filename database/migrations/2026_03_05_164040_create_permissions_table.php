@@ -10,10 +10,16 @@ return new class extends Migration
     {
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('module_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
             $table->string('slug')->unique();
             $table->string('name');
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
+
             $table->timestamps();
         });
     }

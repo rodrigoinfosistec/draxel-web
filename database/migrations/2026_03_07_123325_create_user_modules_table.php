@@ -8,27 +8,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('module_permissions', function (Blueprint $table) {
-
+        Schema::create('user_modules', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('module_id')
-                ->constrained('modules')
+            $table->foreignId('user_id')
+                ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('permission_id')
-                ->constrained('permissions')
+            $table->foreignId('module_id')
+                ->constrained()
                 ->cascadeOnDelete();
 
             $table->timestamps();
 
-            $table->unique(['module_id', 'permission_id']);
-
+            $table->unique(['user_id', 'module_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('module_permissions');
+        Schema::dropIfExists('user_modules');
     }
 };

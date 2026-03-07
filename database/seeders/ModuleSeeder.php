@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use App\Models\Module;
 use App\Models\Permission;
 
@@ -31,25 +30,15 @@ class ModuleSeeder extends Seeder
 
             foreach ($moduleData['permissions'] as $action => $permissionData) {
 
-                $permissionSlug = "{$moduleSlug}.{$action}";
+                $slug = "{$moduleSlug}.{$action}";
 
-                $permission = Permission::updateOrCreate(
-                    ['slug' => $permissionSlug],
+                Permission::updateOrCreate(
+                    ['slug' => $slug],
                     [
+                        'module_id' => $module->id,
                         'name' => $permissionData['name'],
                         'description' => $permissionData['description'] ?? null,
                         'is_active' => true,
-                    ]
-                );
-
-                DB::table('module_permissions')->updateOrInsert(
-                    [
-                        'module_id' => $module->id,
-                        'permission_id' => $permission->id,
-                    ],
-                    [
-                        'created_at' => now(),
-                        'updated_at' => now(),
                     ]
                 );
             }

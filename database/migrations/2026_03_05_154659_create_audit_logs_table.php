@@ -11,10 +11,17 @@ return new class extends Migration
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->bigIncrements('id');
 
-            $table->unsignedBigInteger('tenant_id');
-            $table->unsignedBigInteger('company_id')->nullable();
+            $table->foreignId('tenant_id')
+                ->constrained()
+                ->cascadeOnDelete();
 
-            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreignId('company_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnDelete();
 
             $table->string('event', 40);
 
@@ -32,7 +39,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['tenant_id', 'company_id']);
-            $table->index(['user_id']);
+            $table->index(['tenant_id', 'user_id']);
             $table->index(['subject_type', 'subject_id']);
             $table->index(['event']);
             $table->index(['created_at']);
