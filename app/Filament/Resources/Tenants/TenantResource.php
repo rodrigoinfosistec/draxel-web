@@ -6,6 +6,7 @@ use App\Filament\Resources\Tenants\Pages\CreateTenant;
 use App\Filament\Resources\Tenants\Pages\EditTenant;
 use App\Filament\Resources\Tenants\Pages\ListTenants;
 use App\Filament\Resources\Tenants\RelationManagers\CompaniesRelationManager;
+use App\Filament\Resources\Tenants\RelationManagers\RolesRelationManager;
 use App\Filament\Resources\Tenants\RelationManagers\UsersRelationManager;
 use App\Filament\Resources\Tenants\Schemas\TenantForm;
 use App\Filament\Resources\Tenants\Tables\TenantsTable;
@@ -39,6 +40,7 @@ class TenantResource extends Resource
         return [
             CompaniesRelationManager::class,
             UsersRelationManager::class,
+            RolesRelationManager::class,
         ];
     }
 

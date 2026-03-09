@@ -13,6 +13,10 @@ class UserPolicy
 
     public function view(User $user, User $target): bool
     {
+        if ($user->is_admin) {
+            return true;
+        }
+
         return $user->tenant_id === $target->tenant_id
             && $this->hasPermission($user, 'users.view');
     }
@@ -24,6 +28,10 @@ class UserPolicy
 
     public function update(User $user, User $target): bool
     {
+        if ($user->is_admin) {
+            return true;
+        }
+
         return $user->tenant_id === $target->tenant_id
             && $this->hasPermission($user, 'users.update');
     }
@@ -32,6 +40,10 @@ class UserPolicy
     {
         if ($user->id === $target->id) {
             return false;
+        }
+
+        if ($user->is_admin) {
+            return true;
         }
 
         return $user->tenant_id === $target->tenant_id

@@ -7,7 +7,7 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -16,36 +16,47 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class CompaniesRelationManager extends RelationManager
+class RolesRelationManager extends RelationManager
 {
-    protected static string $relationship = 'companies';
+    protected static string $relationship = 'roles';
 
     public function form(Schema $schema): Schema
     {
         return $schema
             ->components([
+                TextInput::make('slug')
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn ($rule) => $rule->where('tenant_id', $this->ownerRecord->id)
+                    ),
+
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
 
-                TextInput::make('alias')
-                    ->maxLength(255),
+                TextInput::make('description')
+                    ->maxLength(65535),
 
-                TextInput::make('cnpj')
-                    ->label('CNPJ')
-                    ->mask('99.999.999/9999-99')
-                    ->placeholder('00.000.000/0000-00')
-                    ->required()
-                    ->stripCharacters(['.', '/', '-'])
-                    ->rule('digits:14'),
-
-                ColorPicker::make('color')
-                    ->label('Cor do tema')
-                    ->required()
-                    ->default('#7C3AED'),
+                CheckboxList::make('permissions')
+                    ->label('Permissões vinculadas')
+                    ->relationship(
+                        name: 'permissions',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn ($query) => $query
+                            ->where('permissions.is_active', true)
+                            ->whereHas('module', fn ($moduleQuery) => $moduleQuery
+                                ->where('modules.is_active', true)
+                                ->whereHas('tenants', fn ($tenantQuery) => $tenantQuery
+                                    ->where('tenants.id', $this->ownerRecord->id)
+                                    ->where('tenant_modules.is_active', true)
+                                )
+                            )
+                    ),
 
                 Toggle::make('is_active')
-                    ->label('Empresa ativa')
+                    ->label('Função ativa')
                     ->visible(fn ($operation) => $operation === 'edit'),
             ]);
     }
@@ -53,35 +64,21 @@ class CompaniesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->withoutTenant())
             ->recordTitleAttribute('name')
             ->columns([
+                TextColumn::make('slug')
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('alias')
-                    ->searchable(),
-
-                TextColumn::make('cnpj')
-                    ->formatStateUsing(fn ($state) =>
-                        substr($state, 0, 2) . '.' .
-                        substr($state, 2, 3) . '.' .
-                        substr($state, 5, 3) . '/' .
-                        substr($state, 8, 4) . '-' .
-                        substr($state, 12, 2)
-                    )
-                    ->searchable(),
-
-                TextColumn::make('color')
-                    ->label('Cor')
-                    ->formatStateUsing(fn ($state) => strtoupper($state))
-                    ->extraAttributes(fn ($record) => [
-                        'style' => "background-color: {$record->color}; color: #fff;",
-                        'class' => 'rounded-md px-3 py-1 text-center font-medium',
-                    ]),
+                TextColumn::make('description')
+                    ->limit(40),
 
                 IconColumn::make('is_active')
+                    ->label('Ativa')
                     ->boolean(),
             ])
             ->headerActions([
