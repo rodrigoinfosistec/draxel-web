@@ -15,8 +15,23 @@ import {
 } from '@/components/ui/sidebar'
 import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { LayoutGrid, ShieldCheck, Users } from 'lucide-vue-next'
+
+const page = usePage<{
+    auth: {
+        user: {
+            id: number
+            name: string
+            email: string
+        } | null
+        permissions: string[]
+    }
+}>()
+
+function can(permission: string): boolean {
+    return page.props.auth.permissions.includes(permission)
+}
 
 const mainNavItems: NavItem[] = [
     {
@@ -27,16 +42,25 @@ const mainNavItems: NavItem[] = [
 ]
 
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Usuários',
-        href: '/users',
-        icon: Users,
-    },
-    {
-        title: 'Funções de usuário',
-        href: '/roles',
-        icon: ShieldCheck,
-    },
+    ...(can('users.viewAny')
+        ? [
+              {
+                  title: 'Usuários',
+                  href: '/users',
+                  icon: Users,
+              },
+          ]
+        : []),
+
+    ...(can('roles.viewAny')
+        ? [
+              {
+                  title: 'Funções de usuário',
+                  href: '/roles',
+                  icon: ShieldCheck,
+              },
+          ]
+        : []),
 ]
 </script>
 

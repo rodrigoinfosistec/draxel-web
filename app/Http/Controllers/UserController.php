@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\TenantModule;
 use App\Models\User;
 use App\Support\Audit\Audit;
+use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -101,7 +102,9 @@ class UserController extends Controller
             ]);
         });
 
-        return redirect()->route('users.index');
+        return redirect()
+            ->route('users.index')
+            ->with('alert', Flash::success('Usuário criado', 'O usuário foi criado com sucesso.'));
     }
 
     public function edit(Request $request, User $user): Response
@@ -172,7 +175,9 @@ class UserController extends Controller
             ]);
         });
 
-        return redirect()->route('users.index');
+        return redirect()
+            ->route('users.index')
+            ->with('alert', Flash::success('Usuário atualizado', 'As alterações foram salvas com sucesso.'));
     }
 
     public function destroy(User $user): RedirectResponse
@@ -194,7 +199,9 @@ class UserController extends Controller
             $user->delete();
         });
 
-        return redirect()->route('users.index');
+        return redirect()
+            ->route('users.index')
+            ->with('alert', Flash::success('Usuário removido', 'O usuário foi removido com sucesso.'));
     }
 
     protected function formData(int $tenantId): array

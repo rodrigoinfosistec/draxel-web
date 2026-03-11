@@ -128,23 +128,23 @@ class User extends Authenticatable implements FilamentUser
     }
 
     public function getAllPermissionSlugs(): array
-{
-    $tenantId = TenantContext::id();
+    {
+        $tenantId = TenantContext::id();
 
-    if (! $tenantId) {
-        return [];
+        if (! $tenantId) {
+            return [];
+        }
+
+        return DB::table('user_roles')
+            ->join('roles', 'roles.id', '=', 'user_roles.role_id')
+            ->join('role_permissions', 'role_permissions.role_id', '=', 'roles.id')
+            ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
+            ->where('user_roles.user_id', $this->id)
+            ->where('roles.tenant_id', $tenantId)
+            ->distinct()
+            ->orderBy('permissions.slug')
+            ->pluck('permissions.slug')
+            ->values()
+            ->all();
     }
-
-    return DB::table('user_roles')
-        ->join('roles', 'roles.id', '=', 'user_roles.role_id')
-        ->join('role_permissions', 'role_permissions.role_id', '=', 'roles.id')
-        ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
-        ->where('user_roles.user_id', $this->id)
-        ->where('roles.tenant_id', $tenantId)
-        ->distinct()
-        ->orderBy('permissions.slug')
-        ->pluck('permissions.slug')
-        ->values()
-        ->all();
-}
 }

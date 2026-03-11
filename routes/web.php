@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Jobs\TestIntegrationJob;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,7 @@ Route::get('/test/integration', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('users', UserController::class)->except(['show']);
+    Route::resource('roles', RoleController::class)->except(['show']);
 });
 
 require __DIR__.'/settings.php';
