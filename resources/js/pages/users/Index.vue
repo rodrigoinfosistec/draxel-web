@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Can from '@/components/Can.vue'
 import Heading from '@/components/Heading.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -79,9 +80,11 @@ function submitSearch() {
                     description="Gerencie os usuários."
                 />
 
-                <Link href="/users/create" class="w-full sm:w-auto">
-                    <Button class="w-full sm:w-auto">Novo usuário</Button>
-                </Link>
+                <Can permission="users.create">
+                    <Link href="/users/create" class="w-full sm:w-auto">
+                        <Button class="w-full sm:w-auto">Novo usuário</Button>
+                    </Link>
+                </Can>
             </div>
 
             <div class="rounded-xl border bg-card p-4 shadow-sm">
@@ -158,12 +161,14 @@ function submitSearch() {
                                 </td>
 
                                 <td class="px-4 py-3 text-right align-top">
-                                    <Link
-                                        :href="`/users/${user.id}/edit`"
-                                        class="text-sm font-medium underline whitespace-nowrap"
-                                    >
-                                        Editar
-                                    </Link>
+                                    <Can permission="users.update">
+                                        <Link
+                                            :href="`/users/${user.id}/edit`"
+                                            class="text-sm font-medium underline whitespace-nowrap"
+                                        >
+                                            Editar
+                                        </Link>
+                                    </Can>
                                 </td>
                             </tr>
 

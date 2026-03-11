@@ -20,6 +20,10 @@ class CompaniesRelationManager extends RelationManager
 {
     protected static string $relationship = 'companies';
 
+    protected static ?string $title = 'Empresas';
+    protected static ?string $label = 'Empresa';
+    protected static ?string $pluralLabel = 'Empresas';
+
     public function form(Schema $schema): Schema
     {
         return $schema

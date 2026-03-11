@@ -19,18 +19,29 @@ class SetCompanyContext
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $companyId = session('current_company_id');
+        $company = null;
 
-        if (! $companyId) {
-            $companyId = $user->default_company_id;
+        $sessionCompanyId = session('current_company_id');
+
+        if ($sessionCompanyId) {
+            $company = $user->companies()
+                ->where('companies.id', $sessionCompanyId)
+                ->first();
         }
 
-        $company = $user->companies()
-            ->where('companies.id', $companyId)
-            ->first();
+        if (! $company && $user->default_company_id) {
+            $company = $user->companies()
+                ->where('companies.id', $user->default_company_id)
+                ->first();
+        }
 
         if (! $company) {
-            abort(403);
+            $company = $user->companies()->first();
+        }
+
+        if (! $company) {
+            session()->forget('current_company_id');
+            abort(403, 'Usuário sem empresa vinculada.');
         }
 
         session(['current_company_id' => $company->id]);

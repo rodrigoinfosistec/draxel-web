@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TenantContext;
 use App\Traits\BelongsToTenant;
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
@@ -124,4 +126,25 @@ class User extends Authenticatable implements FilamentUser
 
         return (bool) $this->is_admin;
     }
+
+    public function getAllPermissionSlugs(): array
+{
+    $tenantId = TenantContext::id();
+
+    if (! $tenantId) {
+        return [];
+    }
+
+    return DB::table('user_roles')
+        ->join('roles', 'roles.id', '=', 'user_roles.role_id')
+        ->join('role_permissions', 'role_permissions.role_id', '=', 'roles.id')
+        ->join('permissions', 'permissions.id', '=', 'role_permissions.permission_id')
+        ->where('user_roles.user_id', $this->id)
+        ->where('roles.tenant_id', $tenantId)
+        ->distinct()
+        ->orderBy('permissions.slug')
+        ->pluck('permissions.slug')
+        ->values()
+        ->all();
+}
 }

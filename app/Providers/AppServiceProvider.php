@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Listeners\ClearUserPermissionsFromSession;
+use App\Listeners\StoreUserPermissionsInSession;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Event;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        Event::listen(Login::class, StoreUserPermissionsInSession::class);
+        Event::listen(Logout::class, ClearUserPermissionsFromSession::class);
     }
 
     /**

@@ -20,6 +20,10 @@ class RolesRelationManager extends RelationManager
 {
     protected static string $relationship = 'roles';
 
+    protected static ?string $title = 'Funções';
+    protected static ?string $label = 'Função';
+    protected static ?string $pluralLabel = 'Funções';
+
     public function form(Schema $schema): Schema
     {
         return $schema

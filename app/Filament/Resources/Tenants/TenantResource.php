@@ -39,8 +39,8 @@ class TenantResource extends Resource
     {
         return [
             CompaniesRelationManager::class,
-            UsersRelationManager::class,
             RolesRelationManager::class,
+            UsersRelationManager::class,
         ];
     }
 

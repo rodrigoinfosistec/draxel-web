@@ -21,6 +21,10 @@ class UsersRelationManager extends RelationManager
 {
     protected static string $relationship = 'users';
 
+    protected static ?string $title = 'Usuários';
+    protected static ?string $label = 'Usuário';
+    protected static ?string $pluralLabel = 'Usuários';
+
     public function form(Schema $schema): Schema
     {
         return $schema
