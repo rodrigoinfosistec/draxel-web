@@ -9,12 +9,12 @@ class AuditLogPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array('audit.viewAny', $user->getAllPermissionSlugs(), true);
+        return $user->hasPermission('audit.viewAny');
     }
 
     public function view(User $user, AuditLog $auditLog): bool
     {
         return $user->tenant_id === $auditLog->tenant_id
-            && in_array('audit.view', $user->getAllPermissionSlugs(), true);
+            && $user->hasPermission('audit.view');
     }
 }

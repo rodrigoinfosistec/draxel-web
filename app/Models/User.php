@@ -147,4 +147,9 @@ class User extends Authenticatable implements FilamentUser
             ->values()
             ->all();
     }
+
+    public function hasPermission(string $permissionSlug): bool
+    {
+        return in_array($permissionSlug, $this->getAllPermissionSlugs(), true);
+    }
 }
