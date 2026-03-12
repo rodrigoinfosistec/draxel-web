@@ -136,31 +136,17 @@ return [
                 'description' => 'Permite enviar respostas em chamados de suporte',
             ],
 
-            'update' => [
-                'name' => 'Atualizar chamado',
-                'description' => 'Permite editar dados do chamado',
-            ],
-
             'changeStatus' => [
                 'name' => 'Alterar status do chamado',
                 'description' => 'Permite alterar o status de um chamado',
-            ],
-
-            'close' => [
-                'name' => 'Fechar chamado',
-                'description' => 'Permite encerrar chamados',
-            ],
-
-            'reopen' => [
-                'name' => 'Reabrir chamado',
-                'description' => 'Permite reabrir chamados encerrados',
             ],
 
             'delete' => [
                 'name' => 'Excluir chamado',
                 'description' => 'Permite excluir chamados do sistema',
             ],
-                        'manageAll' => [
+
+            'manageAll' => [
                 'name' => 'Gerenciar todos os chamados',
                 'description' => 'Permite visualizar e operar todos os chamados da empresa em contexto',
             ],

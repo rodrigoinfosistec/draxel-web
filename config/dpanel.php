@@ -1,6 +1,7 @@
 <?php
 
 $baseHost = config('app.base_domain');
+$email= "super@dpanel.{$baseHost}";
 
 return [
 
@@ -24,7 +25,7 @@ return [
 
     'user' => [
         [
-            'email' => "super@dpanel.{$baseHost}",
+            'email' => "rodrigo.infosistec@gmail.com",
             'name' => "Super Usuário",
             'password' => 'App1000#',
             'email_verified_at' => now(),

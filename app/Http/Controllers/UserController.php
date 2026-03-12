@@ -10,12 +10,15 @@ use App\Models\Role;
 use App\Models\TenantModule;
 use App\Models\User;
 use App\Support\Audit\Audit;
+use App\Support\CompanyContext;
 use App\Support\Flash;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class UserController extends Controller
 {
@@ -59,6 +62,123 @@ class UserController extends Controller
                 'search' => $search,
             ],
         ]);
+    }
+
+    public function exportCsv(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        $tenantId = $request->user()->tenant_id;
+        $search = $request->string('search')->toString();
+        $filename = 'users-' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        $users = User::query()
+            ->with(['companies:id,name', 'roles:id,name'])
+            ->where('tenant_id', $tenantId)
+            ->when($search, fn ($query) => $query->where(function ($subQuery) use ($search) {
+                $subQuery
+                    ->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%");
+            }))
+            ->latest()
+            ->get();
+
+        return response()->streamDownload(function () use ($users) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'ID',
+                'Nome',
+                'Email',
+                'Status',
+                'Empresas',
+                'Funcoes',
+                'Criado em',
+            ], ';');
+
+            foreach ($users as $user) {
+                fputcsv($handle, [
+                    $user->id,
+                    $user->name,
+                    $user->email,
+                    $user->is_active ? 'Ativo' : 'Inativo',
+                    $user->companies->pluck('name')->implode(', '),
+                    $user->roles->pluck('name')->implode(', '),
+                    $user->created_at?->format('d/m/Y H:i:s'),
+                ], ';');
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $this->authorize('viewAny', User::class);
+
+        $tenantId = $request->user()->tenant_id;
+        $search = $request->string('search')->toString();
+
+        $users = User::query()
+            ->with(['companies:id,name', 'roles:id,name'])
+            ->where('tenant_id', $tenantId)
+            ->when($search, fn ($query) => $query->where(function ($subQuery) use ($search) {
+                $subQuery
+                    ->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('email', 'ilike', "%{$search}%");
+            }))
+            ->latest()
+            ->get()
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'status' => $user->is_active ? 'Ativo' : 'Inativo',
+                'companies' => $user->companies->pluck('name')->implode(', '),
+                'roles' => $user->roles->pluck('name')->implode(', '),
+                'created_at' => $user->created_at?->format('d/m/Y H:i:s'),
+            ]);
+
+        $pdf = Pdf::setOption([
+                'isPhpEnabled' => false,
+            ])
+            ->loadView('pdf.users-report', [
+                'users' => $users,
+                'filters' => [
+                    'search' => $search,
+                ],
+                'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
+                'companyName' => CompanyContext::current()?->name ?? 'Empresa',
+            ])
+            ->setPaper('a4', 'landscape');
+
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
+
+        $canvas->page_text(
+            680,
+            560,
+            '{PAGE_NUM}/{PAGE_COUNT}',
+            $font,
+            9,
+            [0.42, 0.45, 0.5]
+        );
+
+        return response(
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="users-' . now()->format('Y-m-d_H-i-s') . '.pdf"',
+            ]
+        );
     }
 
     public function create(Request $request): Response

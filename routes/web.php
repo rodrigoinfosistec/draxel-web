@@ -25,8 +25,12 @@ Route::post('/company/switch', function (\Illuminate\Http\Request $request) {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('users', UserController::class)->except(['show']);
+    Route::get('/users/export/csv', [UserController::class, 'exportCsv'])->name('users.export.csv');
+    Route::get('/users/export/pdf', [UserController::class, 'exportPdf'])->name('users.export.pdf');
 
     Route::resource('roles', RoleController::class)->except(['show']);
+    Route::get('/roles/export/csv', [RoleController::class, 'exportCsv'])->name('roles.export.csv');
+    Route::get('/roles/export/pdf', [RoleController::class, 'exportPdf'])->name('roles.export.pdf');
 
     Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
     Route::get('/audit/export/csv', [AuditController::class, 'exportCsv'])->name('audit.export.csv');

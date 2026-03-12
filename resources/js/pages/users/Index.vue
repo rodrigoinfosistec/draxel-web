@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Pencil, Users } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { Download, FileText, Pencil, Users } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 type Role = {
     id: number
@@ -60,13 +60,26 @@ const search = ref(props.filters.search ?? '')
 function submitSearch() {
     router.get(
         '/users',
-        { search: search.value },
+        { search: search.value || undefined },
         {
             preserveState: true,
             replace: true,
         },
     )
 }
+
+const exportParams = computed(() => {
+    const params = new URLSearchParams()
+
+    if (search.value) params.set('search', search.value)
+
+    const query = params.toString()
+
+    return {
+        csv: query ? `/users/export/csv?${query}` : '/users/export/csv',
+        pdf: query ? `/users/export/pdf?${query}` : '/users/export/pdf',
+    }
+})
 </script>
 
 <template>
@@ -81,11 +94,31 @@ function submitSearch() {
                     :icon="Users"
                 />
 
-                <Can permission="users.create">
-                    <Link href="/users/create" class="w-full sm:w-auto">
-                        <Button class="w-full sm:w-auto">Novo usuário</Button>
-                    </Link>
-                </Can>
+                <div class="flex flex-col gap-3 sm:flex-row">
+                    <Can permission="users.viewAny">
+                        <Button as-child variant="outline" class="w-full sm:w-auto">
+                            <a :href="exportParams.csv">
+                                <Download class="mr-2 h-4 w-4" />
+                                Exportar CSV
+                            </a>
+                        </Button>
+                    </Can>
+
+                    <Can permission="users.viewAny">
+                        <Button as-child variant="outline" class="w-full sm:w-auto">
+                            <a :href="exportParams.pdf">
+                                <FileText class="mr-2 h-4 w-4" />
+                                Exportar PDF
+                            </a>
+                        </Button>
+                    </Can>
+
+                    <Can permission="users.create">
+                        <Link href="/users/create" class="w-full sm:w-auto">
+                            <Button class="w-full sm:w-auto">Novo usuário</Button>
+                        </Link>
+                    </Can>
+                </div>
             </div>
 
             <div class="rounded-xl border bg-card p-4 shadow-sm">
