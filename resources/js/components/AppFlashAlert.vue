@@ -30,12 +30,37 @@ const page = usePage<{
 
 const alert = computed(() => page.props.flash?.alert ?? null)
 
+function getAlertSignature(value: FlashAlert): string {
+    if (!value) {
+        return ''
+    }
+
+    return JSON.stringify({
+        type: value.type ?? 'success',
+        title: value.title ?? '',
+        text: value.text ?? '',
+        toast: value.toast ?? true,
+        position: value.position ?? 'top-end',
+        timer: value.timer ?? 2500,
+        confirmButtonText: value.confirmButtonText ?? 'OK',
+    })
+}
+
 watch(
     alert,
     (value) => {
         if (!value) {
             return
         }
+
+        const signature = getAlertSignature(value)
+        const lastShown = sessionStorage.getItem('last_flash_alert')
+
+        if (lastShown === signature) {
+            return
+        }
+
+        sessionStorage.setItem('last_flash_alert', signature)
 
         Swal.fire({
             icon: value.type ?? 'success',

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Users } from 'lucide-vue-next'
 
 type Option = {
     id: number
@@ -58,6 +59,7 @@ function submit() {
             <Heading
                 title="Novo usuário"
                 description="Cadastre um novo usuário."
+                :icon="Users"
             />
 
             <form

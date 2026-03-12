@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Pencil } from 'lucide-vue-next'
+import { Pencil, ShieldCheck } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 type PermissionItem = {
@@ -67,6 +67,7 @@ function submitSearch() {
                 <Heading
                     title="Funções de usuário"
                     description="Gerencie as funções do tenant."
+                    :icon="ShieldCheck"
                 />
 
                 <Can permission="roles.create">

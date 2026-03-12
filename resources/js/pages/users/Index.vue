@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Pencil } from 'lucide-vue-next'
+import { Pencil, Users } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 type Role = {
@@ -78,6 +78,7 @@ function submitSearch() {
                 <Heading
                     title="Usuários"
                     description="Gerencie os usuários."
+                    :icon="Users"
                 />
 
                 <Can permission="users.create">

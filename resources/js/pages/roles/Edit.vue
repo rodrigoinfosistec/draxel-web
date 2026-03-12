@@ -9,6 +9,7 @@ import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
+import { ShieldCheck } from 'lucide-vue-next'
 
 type PermissionItem = {
     id: number
@@ -73,6 +74,7 @@ async function destroy() {
             <Heading
                 title="Editar função"
                 description="Atualize os dados da função."
+                :icon="ShieldCheck"
             />
 
             <form

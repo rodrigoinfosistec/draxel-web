@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
+import { ShieldCheck } from 'lucide-vue-next'
 
 type PermissionItem = {
     id: number
@@ -46,6 +47,7 @@ function submit() {
             <Heading
                 title="Nova função"
                 description="Cadastre uma nova função."
+                :icon="ShieldCheck"
             />
 
             <form

@@ -9,6 +9,7 @@ import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
+import { Users } from 'lucide-vue-next'
 
 type Option = {
     id: number
@@ -87,6 +88,7 @@ async function destroy() {
             <Heading
                 title="Editar usuário"
                 description="Atualize os dados do usuário."
+                :icon="Users"
             />
 
             <form
