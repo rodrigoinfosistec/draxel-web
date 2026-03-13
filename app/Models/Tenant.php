@@ -38,6 +38,11 @@ class Tenant extends Model
         ->withTimestamps();
     }
 
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
     public function roles(): HasMany
     {
         return $this->hasMany(Role::class);

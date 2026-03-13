@@ -27,6 +27,16 @@ class SupportTicketMessage extends Model
         ];
     }
 
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(SupportTicket::class, 'support_ticket_id');
