@@ -154,6 +154,27 @@ return [
         ],
     ],
 
+    'parameters' => [
+
+        'name' => 'Parâmetros',
+        'description' => 'Parâmetros operacionais da empresa em contexto',
+        'is_core' => true,
+
+        'permissions' => [
+
+            'view' => [
+                'name' => 'Ver parâmetros',
+                'description' => 'Permite visualizar os parâmetros da empresa em contexto',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar parâmetros',
+                'description' => 'Permite atualizar os parâmetros da empresa em contexto',
+            ],
+
+        ],
+    ],
+
     'worktime' => [
 
         'name' => 'Ponto',

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\ParametersController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\UserController;
@@ -72,6 +73,11 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
             Route::get('/csv', [SupportTicketController::class, 'exportCsv'])->name('csv');
             Route::get('/pdf', [SupportTicketController::class, 'exportPdf'])->name('pdf');
         });
+    });
+
+    Route::prefix('parameters')->name('parameters.')->group(function () {
+        Route::get('/', [ParametersController::class, 'index'])->name('index');
+        Route::patch('/company-default-times', [ParametersController::class, 'updateCompanyDefaultTimes'])->name('company-default-times.update');
     });
 });
 
