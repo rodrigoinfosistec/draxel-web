@@ -71,7 +71,10 @@ const workspaceItems = [
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-6">
             <section class="relative overflow-hidden rounded-3xl border bg-card shadow-sm">
-                <div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
+                <div
+                    class="absolute inset-0"
+                    style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
+                />
 
                 <div class="relative flex flex-col gap-6 p-6 md:p-8">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -82,7 +85,10 @@ const workspaceItems = [
                             </div>
 
                             <div class="space-y-2">
-                                <h1 class="text-3xl font-semibold tracking-tight text-primary md:text-4xl">
+                                <h1
+                                    class="text-3xl font-semibold tracking-tight md:text-4xl"
+                                    style="color: var(--company-color);"
+                                >
                                     Bem-vindo, {{ user?.name }}
                                 </h1>
 
@@ -224,91 +230,91 @@ const workspaceItems = [
             </section>
 
             <section class="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
-                <div class="rounded-3xl border bg-card p-6 shadow-sm md:p-8">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <h3 class="text-lg font-semibold tracking-tight">
-                                Visão do ambiente
-                            </h3>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                Resumo institucional do espaço operacional atual dentro do tenant.
-                            </p>
-                        </div>
-
-                        <div class="rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground">
-                            Dashboard
-                        </div>
+            <div class="rounded-3xl border bg-card p-6 shadow-sm md:p-8">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-semibold tracking-tight">
+                            Visão do ambiente
+                        </h3>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Resumo institucional do espaço operacional atual dentro do tenant.
+                        </p>
                     </div>
 
-                    <div class="mt-6 grid gap-4 md:grid-cols-2">
-                        <div class="rounded-2xl border bg-background/70 p-5">
-                            <p class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                Tenant atual
-                            </p>
-                            <p class="mt-2 text-lg font-semibold">
-                                {{ tenant?.name ?? 'Não identificado' }}
-                            </p>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                Estrutura principal do ambiente em uso.
-                            </p>
-                        </div>
-
-                        <div class="rounded-2xl border bg-background/70 p-5">
-                            <p class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                Empresa em contexto
-                            </p>
-                            <p class="mt-2 text-lg font-semibold">
-                                {{ currentCompany?.name ?? 'Não selecionada' }}
-                            </p>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                Unidade operacional vinculada à navegação atual.
-                            </p>
-                        </div>
+                    <div class="rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground">
+                        Dashboard
                     </div>
                 </div>
 
-                <div class="rounded-3xl border bg-card p-6 shadow-sm md:p-8">
-                    <h3 class="text-lg font-semibold tracking-tight">
-                        Ambiente operacional
-                    </h3>
-                    <p class="mt-1 text-sm text-muted-foreground">
-                        Informações gerais do ambiente para acompanhamento institucional e operacional.
-                    </p>
+                <div class="mt-6 grid gap-4 md:grid-cols-2">
+                    <div class="rounded-2xl border bg-background/70 p-5">
+                        <p class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                            Tenant atual
+                        </p>
+                        <p class="mt-2 text-lg font-semibold">
+                            {{ tenant?.name ?? 'Não identificado' }}
+                        </p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Estrutura principal do ambiente em uso.
+                        </p>
+                    </div>
 
-                    <div class="mt-6 space-y-3">
-                        <div class="rounded-2xl border bg-background/70 p-4">
-                            <p class="text-sm font-medium">
-                                Estrutura ativa
-                            </p>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                O sistema está operando dentro do tenant
-                                <strong>{{ tenant?.name ?? 'Não identificado' }}</strong>
-                                com a empresa
-                                <strong>{{ currentCompany?.name ?? 'Não selecionada' }}</strong>
-                                como contexto atual.
-                            </p>
-                        </div>
-
-                        <div class="rounded-2xl border bg-background/70 p-4">
-                            <p class="text-sm font-medium">
-                                Acesso autenticado
-                            </p>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                Usuário conectado com sessão ativa e ambiente preparado para navegação segura nas rotinas disponíveis.
-                            </p>
-                        </div>
-
-                        <div class="rounded-2xl border bg-background/70 p-4">
-                            <p class="text-sm font-medium">
-                                Disponibilidade
-                            </p>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                O ambiente está disponível para acompanhamento, operação e utilização dos recursos liberados para este contexto.
-                            </p>
-                        </div>
+                    <div class="rounded-2xl border bg-background/70 p-5">
+                        <p class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                            Empresa em contexto
+                        </p>
+                        <p class="mt-2 text-lg font-semibold">
+                            {{ currentCompany?.name ?? 'Não selecionada' }}
+                        </p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Unidade operacional vinculada à navegação atual.
+                        </p>
                     </div>
                 </div>
-            </section>
+            </div>
+
+            <div class="rounded-3xl border bg-card p-6 shadow-sm md:p-8">
+                <h3 class="text-lg font-semibold tracking-tight">
+                    Ambiente operacional
+                </h3>
+                <p class="mt-1 text-sm text-muted-foreground">
+                    Informações gerais do ambiente para acompanhamento institucional e operacional.
+                </p>
+
+                <div class="mt-6 space-y-3">
+                    <div class="rounded-2xl border bg-background/70 p-4">
+                        <p class="text-sm font-medium">
+                            Estrutura ativa
+                        </p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            O sistema está operando dentro do tenant
+                            <strong>{{ tenant?.name ?? 'Não identificado' }}</strong>
+                            com a empresa
+                            <strong>{{ currentCompany?.name ?? 'Não selecionada' }}</strong>
+                            como contexto atual.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border bg-background/70 p-4">
+                        <p class="text-sm font-medium">
+                            Acesso autenticado
+                        </p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Usuário conectado com sessão ativa e ambiente preparado para navegação segura nas rotinas disponíveis.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border bg-background/70 p-4">
+                        <p class="text-sm font-medium">
+                            Disponibilidade
+                        </p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            O ambiente está disponível para acompanhamento, operação e utilização dos recursos liberados para este contexto.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
         </div>
     </AppLayout>
 </template>

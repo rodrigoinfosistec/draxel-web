@@ -180,33 +180,42 @@ const hasData = computed(() => props.audits.data.length > 0)
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                <Heading
-                    title="Auditoria"
-                    description="Visualize eventos e alterações realizadas no tenant."
-                    :icon="Inspect"
+            <div
+                class="relative overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5"
+            >
+                <div
+                    class="absolute inset-0"
+                    style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
                 />
 
-                <Can permission="audit.viewAny">
-                    <div class="flex flex-col gap-3 sm:flex-row">
-                        <Button as-child variant="outline" class="w-full sm:w-auto">
-                            <a :href="exportParams.csv">
-                                <Download class="mr-2 h-4 w-4" />
-                                Exportar CSV
-                            </a>
-                        </Button>
+                <div class="relative flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <Heading
+                        title="Auditoria"
+                        description="Visualize eventos e alterações realizadas no tenant."
+                        :icon="Inspect"
+                    />
 
-                        <Button as-child variant="outline" class="w-full sm:w-auto">
-                            <a :href="exportParams.pdf">
-                                <FileText class="mr-2 h-4 w-4" />
-                                Exportar PDF
-                            </a>
-                        </Button>
-                    </div>
-                </Can>
+                    <Can permission="audit.viewAny">
+                        <div class="flex flex-col gap-3 sm:flex-row">
+                            <Button as-child variant="outline" class="w-full sm:w-auto">
+                                <a :href="exportParams.csv">
+                                    <Download class="mr-2 h-4 w-4" />
+                                    Exportar CSV
+                                </a>
+                            </Button>
+
+                            <Button as-child variant="outline" class="w-full sm:w-auto">
+                                <a :href="exportParams.pdf">
+                                    <FileText class="mr-2 h-4 w-4" />
+                                    Exportar PDF
+                                </a>
+                            </Button>
+                        </div>
+                    </Can>
+                </div>
             </div>
 
-            <div class="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+            <div class="rounded-2xl border bg-card/50 p-4 shadow-sm sm:p-5">
                 <form class="grid gap-4 xl:grid-cols-5" @submit.prevent="submitFilters">
                     <div class="xl:col-span-2">
                         <label class="mb-2 block text-sm font-medium">Busca</label>
@@ -271,7 +280,7 @@ const hasData = computed(() => props.audits.data.length > 0)
                 </form>
             </div>
 
-            <div class="rounded-2xl border bg-card shadow-sm">
+            <div class="rounded-2xl border bg-card/50 shadow-sm">
                 <div class="overflow-x-auto">
                     <table class="min-w-[980px] w-full text-sm">
                         <thead class="bg-muted/50">

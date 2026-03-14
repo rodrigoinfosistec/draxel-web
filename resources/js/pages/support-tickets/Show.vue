@@ -110,25 +110,34 @@ function statusBadgeClass(statusValue: string) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <Heading
-                    :title="ticket.code"
-                    :description="ticket.subject"
-                    :icon="Headset"
+            <div
+                class="relative overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5"
+            >
+                <div
+                    class="absolute inset-0"
+                    style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
                 />
 
-                <Link
-                    href="/support-tickets"
-                    class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                >
-                    <ArrowLeft class="h-4 w-4" />
-                    <span>Voltar</span>
-                </Link>
+                <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <Heading
+                        :title="ticket.code"
+                        :description="ticket.subject"
+                        :icon="Headset"
+                    />
+
+                    <Link
+                        href="/support-tickets"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                    >
+                        <ArrowLeft class="h-4 w-4" />
+                        <span>Voltar</span>
+                    </Link>
+                </div>
             </div>
 
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr),320px]">
                 <div class="space-y-6">
-                    <div class="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                    <div class="rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6">
                         <div class="mb-4 flex flex-col gap-3 border-b pb-4 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <div class="text-sm text-muted-foreground">Solicitante</div>
@@ -156,7 +165,7 @@ function statusBadgeClass(statusValue: string) {
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                    <div class="rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6">
                         <div class="mb-4">
                             <h2 class="text-sm font-semibold tracking-tight">Histórico do chamado</h2>
                             <p class="text-sm text-muted-foreground">
@@ -204,7 +213,7 @@ function statusBadgeClass(statusValue: string) {
                     </div>
 
                     <form
-                        class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm sm:p-6"
+                        class="space-y-4 rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6"
                         @submit.prevent="submitReply"
                     >
                         <div>
@@ -245,7 +254,7 @@ function statusBadgeClass(statusValue: string) {
                 </div>
 
                 <div class="space-y-6">
-                    <div class="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                    <div class="rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6">
                         <div class="space-y-3">
                             <div>
                                 <div class="text-sm text-muted-foreground">Código</div>
@@ -272,7 +281,7 @@ function statusBadgeClass(statusValue: string) {
                     </div>
 
                     <form
-                        class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm sm:p-6"
+                        class="space-y-4 rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6"
                         @submit.prevent="submitStatus"
                     >
                         <div>

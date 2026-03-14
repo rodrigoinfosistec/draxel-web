@@ -76,41 +76,50 @@ const exportParams = computed(() => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <Heading
-                    title="Funções de usuário"
-                    description="Gerencie as funções de usuários."
-                    :icon="ShieldCheck"
+            <div
+                class="relative overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5"
+            >
+                <div
+                    class="absolute inset-0"
+                    style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
                 />
 
-                <div class="flex flex-col gap-3 sm:flex-row">
-                    <Can permission="roles.viewAny">
-                        <Button as-child variant="outline" class="w-full sm:w-auto">
-                            <a :href="exportParams.csv">
-                                <Download class="mr-2 h-4 w-4" />
-                                Exportar CSV
-                            </a>
-                        </Button>
-                    </Can>
+                <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <Heading
+                        title="Funções de usuário"
+                        description="Gerencie as funções de usuários."
+                        :icon="ShieldCheck"
+                    />
 
-                    <Can permission="roles.viewAny">
-                        <Button as-child variant="outline" class="w-full sm:w-auto">
-                            <a :href="exportParams.pdf">
-                                <FileText class="mr-2 h-4 w-4" />
-                                Exportar PDF
-                            </a>
-                        </Button>
-                    </Can>
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <Can permission="roles.viewAny">
+                            <Button as-child variant="outline" class="w-full sm:w-auto">
+                                <a :href="exportParams.csv">
+                                    <Download class="mr-2 h-4 w-4" />
+                                    Exportar CSV
+                                </a>
+                            </Button>
+                        </Can>
 
-                    <Can permission="roles.create">
-                        <Link href="/roles/create" class="w-full sm:w-auto">
-                            <Button class="w-full sm:w-auto">Nova função</Button>
-                        </Link>
-                    </Can>
+                        <Can permission="roles.viewAny">
+                            <Button as-child variant="outline" class="w-full sm:w-auto">
+                                <a :href="exportParams.pdf">
+                                    <FileText class="mr-2 h-4 w-4" />
+                                    Exportar PDF
+                                </a>
+                            </Button>
+                        </Can>
+
+                        <Can permission="roles.create">
+                            <Link href="/roles/create" class="w-full sm:w-auto">
+                                <Button class="w-full sm:w-auto">Nova função</Button>
+                            </Link>
+                        </Can>
+                    </div>
                 </div>
             </div>
 
-            <div class="rounded-xl border bg-card p-4 shadow-sm">
+            <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
                 <form class="flex flex-col gap-3 sm:flex-row" @submit.prevent="submitSearch">
                     <Input
                         v-model="search"
@@ -124,7 +133,7 @@ const exportParams = computed(() => {
                 </form>
             </div>
 
-            <div class="rounded-xl border bg-card shadow-sm">
+            <div class="rounded-xl border bg-card/50 shadow-sm">
                 <div class="overflow-x-auto">
                     <table class="min-w-[720px] w-full text-sm">
                         <thead class="bg-muted/50">
