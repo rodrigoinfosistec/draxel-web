@@ -32,7 +32,8 @@ function switchCompany(companyId: number) {
             <select
                 :value="currentCompanyId"
                 @change="switchCompany(Number(($event.target as HTMLSelectElement).value))"
-                class="w-full border rounded px-2 py-2 text-sm bg-background"
+                class="w-full border rounded px-2 py-2 text-sm bg-background focus:outline-none focus:ring-2"
+                style="--tw-ring-color: var(--company-color); border-color: var(--company-color);"
             >
                 <option
                     v-for="company in companies"
@@ -48,7 +49,8 @@ function switchCompany(companyId: number) {
         <div class="hidden group-data-[state=collapsed]/sidebar:block">
             <button
                 type="button"
-                class="w-full border rounded px-2 py-2 text-sm bg-background text-left"
+                class="w-full border rounded px-4 py-2 text-sm bg-background text-left focus:outline-none focus:ring-2"
+                style="--tw-ring-color: var(--company-color); border-color: var(--company-color);"
                 @click="open = !open"
                 title="Trocar empresa"
             >
@@ -63,12 +65,13 @@ function switchCompany(companyId: number) {
             <div
                 v-if="open"
                 class="mt-2 rounded border bg-background shadow-sm overflow-hidden"
+                style="border-color: var(--company-color);"
             >
                 <button
                     v-for="company in companies"
                     :key="company.id"
                     type="button"
-                    class="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                    class="w-full px-10 py-2 text-left text-sm hover:bg-muted focus:outline-none"
                     @click="switchCompany(company.id)"
                 >
                     {{ company.name }}
@@ -81,7 +84,8 @@ function switchCompany(companyId: number) {
             <select
                 :value="currentCompanyId"
                 @change="switchCompany(Number(($event.target as HTMLSelectElement).value))"
-                class="w-full border rounded px-2 py-2 text-sm bg-background"
+                class="w-full border rounded px-2 py-1 text-sm bg-background focus:outline-none focus:ring-2"
+                style="--tw-ring-color: var(--company-color); border-color: var(--company-color);"
             >
                 <option
                     v-for="company in companies"
@@ -89,6 +93,7 @@ function switchCompany(companyId: number) {
                     :value="company.id"
                 >
                     {{ company.name }}
+                    &nbsp;&nbsp;
                 </option>
             </select>
         </div>
