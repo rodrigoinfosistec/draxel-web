@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { Headset } from 'lucide-vue-next'
+import { ArrowLeft, Headset } from 'lucide-vue-next'
 
 type UserItem = {
     id: number
@@ -119,9 +119,10 @@ function statusBadgeClass(statusValue: string) {
 
                 <Link
                     href="/support-tickets"
-                    class="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
                 >
-                    Voltar
+                    <ArrowLeft class="h-4 w-4" />
+                    <span>Voltar</span>
                 </Link>
             </div>
 

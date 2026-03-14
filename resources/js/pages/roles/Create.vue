@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { ShieldCheck } from 'lucide-vue-next'
+import { ArrowLeft, ShieldCheck } from 'lucide-vue-next'
 
 type PermissionItem = {
     id: number
@@ -44,11 +44,21 @@ function submit() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <Heading
-                title="Nova função"
-                description="Cadastre uma nova função."
-                :icon="ShieldCheck"
-            />
+            <div class="flex items-start justify-between gap-4">
+                <Heading
+                    title="Nova função"
+                    description="Cadastre uma nova função."
+                    :icon="ShieldCheck"
+                />
+
+                <Link
+                    href="/roles"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                >
+                    <ArrowLeft class="h-4 w-4" />
+                    <span>Voltar</span>
+                </Link>
+            </div>
 
             <form
                 class="space-y-8 rounded-2xl border bg-card p-5 shadow-sm sm:p-6"

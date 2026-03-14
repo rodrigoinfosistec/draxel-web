@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { Users } from 'lucide-vue-next'
+import { ArrowLeft, Users } from 'lucide-vue-next'
 
 type Option = {
     id: number
@@ -56,11 +56,21 @@ function submit() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <Heading
-                title="Novo usuário"
-                description="Cadastre um novo usuário."
-                :icon="Users"
-            />
+            <div class="flex items-start justify-between gap-4">
+                <Heading
+                    title="Novo usuário"
+                    description="Cadastre um novo usuário."
+                    :icon="Users"
+                />
+
+                <Link
+                    href="/users"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                >
+                    <ArrowLeft class="h-4 w-4" />
+                    <span>Voltar</span>
+                </Link>
+            </div>
 
             <form
                 class="space-y-8 rounded-2xl border bg-card p-5 shadow-sm sm:p-6"
