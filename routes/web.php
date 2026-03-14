@@ -4,45 +4,75 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::inertia('/dashboard', 'Dashboard')->name('dashboard');
+
+    Route::post('/company/switch', function (Request $request) {
+        $request->validate([
+            'company_id' => ['required', 'integer'],
+        ]);
+
+        session(['current_company_id' => $request->company_id]);
+
+        return back();
+    })->name('company.switch');
+
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/create', [UserController::class, 'create'])->name('create');
+        Route::post('/', [UserController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [UserController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [UserController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('roles')->name('roles.')->group(function () {
+        Route::get('/', [RoleController::class, 'index'])->name('index');
+        Route::get('/create', [RoleController::class, 'create'])->name('create');
+        Route::post('/', [RoleController::class, 'store'])->name('store');
+        Route::get('/{role}/edit', [RoleController::class, 'edit'])->name('edit');
+        Route::put('/{role}', [RoleController::class, 'update'])->name('update');
+        Route::delete('/{role}', [RoleController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [RoleController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [RoleController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('audit')->name('audit.')->group(function () {
+        Route::get('/', [AuditController::class, 'index'])->name('index');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [AuditController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [AuditController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('support-tickets')->name('support-tickets.')->group(function () {
+        Route::get('/', [SupportTicketController::class, 'index'])->name('index');
+        Route::get('/create', [SupportTicketController::class, 'create'])->name('create');
+        Route::post('/', [SupportTicketController::class, 'store'])->name('store');
+        Route::get('/{supportTicket}', [SupportTicketController::class, 'show'])->name('show');
+
+        Route::post('/{supportTicket}/reply', [SupportTicketController::class, 'reply'])->name('reply');
+        Route::patch('/{supportTicket}/status', [SupportTicketController::class, 'updateStatus'])->name('update-status');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [SupportTicketController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [SupportTicketController::class, 'exportPdf'])->name('pdf');
+        });
+    });
 });
 
-Route::post('/company/switch', function (\Illuminate\Http\Request $request) {
-
-    $request->validate([
-        'company_id' => ['required', 'integer'],
-    ]);
-
-    session(['current_company_id' => $request->company_id]);
-
-    return back();
-})->middleware(['auth', 'requireTenant'])->name('company.switch');
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('users', UserController::class)->except(['show']);
-    Route::get('/users/export/csv', [UserController::class, 'exportCsv'])->name('users.export.csv');
-    Route::get('/users/export/pdf', [UserController::class, 'exportPdf'])->name('users.export.pdf');
-
-    Route::resource('roles', RoleController::class)->except(['show']);
-    Route::get('/roles/export/csv', [RoleController::class, 'exportCsv'])->name('roles.export.csv');
-    Route::get('/roles/export/pdf', [RoleController::class, 'exportPdf'])->name('roles.export.pdf');
-
-    Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
-    Route::get('/audit/export/csv', [AuditController::class, 'exportCsv'])->name('audit.export.csv');
-    Route::get('/audit/export/pdf', [AuditController::class, 'exportPdf'])->name('audit.export.pdf');
-
-    Route::resource('support-tickets', SupportTicketController::class)->except(['edit', 'update', 'destroy']);
-    Route::post('support-tickets/{supportTicket}/reply', [SupportTicketController::class, 'reply'])->name('support-tickets.reply');
-    Route::patch('support-tickets/{supportTicket}/status', [SupportTicketController::class, 'updateStatus'])->name('support-tickets.update-status');
-    Route::get('/support-tickets/export/csv', [SupportTicketController::class, 'exportCsv'])->name('support-tickets.export.csv');
-    Route::get('/support-tickets/export/pdf', [SupportTicketController::class, 'exportPdf'])->name('support-tickets.export.pdf');
-
-
-});
-
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';
