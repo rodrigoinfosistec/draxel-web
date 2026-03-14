@@ -10,7 +10,7 @@ import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { Activity, Headset, Inspect, LogOut, Settings, Shield } from 'lucide-vue-next';
+import { Activity, Inspect, LogOut, Settings, Shield } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 type Props = {
@@ -87,22 +87,6 @@ const handleLogout = () => {
             >
                 <Inspect class="mr-2 h-4 w-4" />
                 Auditoria
-            </a>
-        </DropdownMenuItem>
-    </DropdownMenuGroup>
-
-    <DropdownMenuSeparator v-if="showAdminAccess" />
-
-    <DropdownMenuGroup>
-        <DropdownMenuItem as-child>
-            <a
-                href="/support-tickets"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="block w-full cursor-pointer"
-            >
-                <Headset class="mr-2 h-4 w-4" />
-                Suporte
             </a>
         </DropdownMenuItem>
     </DropdownMenuGroup>

@@ -16,7 +16,7 @@ import {
 import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
 import { Link, usePage } from '@inertiajs/vue3'
-import { LayoutGrid, ShieldCheck, Users } from 'lucide-vue-next'
+import { Headset, LayoutGrid, Settings2, ShieldCheck, Users } from 'lucide-vue-next'
 
 const page = usePage<{
     auth: {
@@ -39,9 +39,7 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-]
 
-const footerNavItems: NavItem[] = [
     ...(can('users.viewAny')
         ? [
               {
@@ -62,6 +60,28 @@ const footerNavItems: NavItem[] = [
           ]
         : []),
 ]
+
+const footerNavItems: NavItem[] = [
+    ...(can('support.viewAny')
+        ? [
+              {
+                  title: 'Suporte',
+                  href: '/support-tickets',
+                  icon: Headset,
+              },
+          ]
+        : []),
+
+    ...(can('parameters.view')
+        ? [
+              {
+                  title: 'Parâmetros',
+                  href: '/parameters',
+                  icon: Settings2,
+              },
+          ]
+        : []),
+]
 </script>
 
 <template>
@@ -77,7 +97,7 @@ const footerNavItems: NavItem[] = [
                 </SidebarMenuItem>
             </SidebarMenu>
 
-            <div class="p-2 mt-2">
+            <div class="mt-2 p-2">
                 <CompanySwitcher />
             </div>
         </SidebarHeader>
@@ -91,5 +111,6 @@ const footerNavItems: NavItem[] = [
             <NavUser />
         </SidebarFooter>
     </Sidebar>
+
     <slot />
 </template>
