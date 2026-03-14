@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Company;
+use App\Observers\CompanyObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
+        // Observers
+        Company::observe(CompanyObserver::class);
     }
 
     /**

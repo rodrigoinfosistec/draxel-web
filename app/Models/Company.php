@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\CompanyDefaultTime;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
@@ -35,6 +37,11 @@ class Company extends Model
         return $this->belongsToMany(User::class, 'user_companies')
             ->withPivot('tenant_id')
             ->withTimestamps();
+    }
+
+    public function defaultTimes(): HasMany
+    {
+        return $this->hasMany(CompanyDefaultTime::class);
     }
 
     public function scopeActive(Builder $query): Builder
