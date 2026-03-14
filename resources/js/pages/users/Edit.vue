@@ -3,34 +3,34 @@ import Can from '@/components/Can.vue'
 import Heading from '@/components/Heading.vue'
 import InputError from '@/components/InputError.vue'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { ArrowLeft, Settings2 } from 'lucide-vue-next'
+import { ArrowLeft, Users } from 'lucide-vue-next'
 
-type TabItem = {
-    key: string
-    label: string
-}
-
-type CompanyItem = {
+type Option = {
     id: number
     name: string
 }
 
-type DefaultTimeItem = {
-    weekday: string
-    weekday_label: string
-    start_time: string | null
-    end_time: string | null
-    break_duration: string | null
+type UserFormData = {
+    id: number
+    name: string
+    email: string
+    company_ids: number[]
+    role_ids: number[]
+    module_ids: number[]
+    is_active: boolean
 }
 
 const props = defineProps<{
-    company: CompanyItem
-    tabs: TabItem[]
-    defaultTimes: DefaultTimeItem[]
+    user: UserFormData
+    companies: Option[]
+    roles: Option[]
+    modules: Option[]
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -39,68 +39,61 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/dashboard',
     },
     {
-        title: 'Parâmetros',
-        href: '/parameters',
+        title: 'Usuários',
+        href: '/users',
+    },
+    {
+        title: 'Editar usuário',
+        href: `/users/${props.user.id}/edit`,
     },
 ]
 
-const activeTab = 'company-default-times'
-
 const form = useForm({
-    times: props.defaultTimes.map((time) => ({
-        weekday: time.weekday,
-        weekday_label: time.weekday_label,
-        start_time: time.start_time,
-        end_time: time.end_time,
-        break_duration: time.break_duration,
-    })),
+    name: props.user.name,
+    email: props.user.email,
+    password: '',
+    password_confirmation: '',
+    company_ids: props.user.company_ids,
+    role_ids: props.user.role_ids,
+    module_ids: props.user.module_ids,
+    is_active: props.user.is_active,
 })
 
-function submitCompanyDefaultTimes() {
-    form.patch('/parameters/company-default-times')
+function submit() {
+    form.put(`/users/${props.user.id}`)
 }
 
-function setDayOff(index: number) {
-    form.times[index].start_time = null
-    form.times[index].end_time = null
-    form.times[index].break_duration = null
-}
+async function destroy() {
+    const confirmed = await useConfirm({
+        title: 'Excluir usuário?',
+        text: 'Essa ação removerá o usuário permanentemente.',
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar',
+        icon: 'warning',
+    })
 
-function applyDefaultDay(index: number) {
-    if (form.times[index].weekday === 'saturday') {
-        form.times[index].start_time = '08:00'
-        form.times[index].end_time = '17:00'
-        form.times[index].break_duration = '00:00'
+    if (!confirmed) {
         return
     }
 
-    if (form.times[index].weekday === 'sunday') {
-        form.times[index].start_time = null
-        form.times[index].end_time = null
-        form.times[index].break_duration = null
-        return
-    }
-
-    form.times[index].start_time = '08:00'
-    form.times[index].end_time = '17:00'
-    form.times[index].break_duration = '01:00'
+    form.delete(`/users/${props.user.id}`)
 }
 </script>
 
 <template>
-    <Head title="Parâmetros" />
+    <Head title="Editar usuário" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
             <div class="flex items-start justify-between gap-4">
                 <Heading
-                    title="Parâmetros"
-                    :description="`Gerencie os parâmetros da empresa ${company.name}.`"
-                    :icon="Settings2"
+                    title="Editar usuário"
+                    description="Atualize os dados do usuário."
+                    :icon="Users"
                 />
 
                 <Link
-                    href="/dashboard"
+                    href="/users"
                     class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
                 >
                     <ArrowLeft class="h-4 w-4" />
@@ -110,122 +103,196 @@ function applyDefaultDay(index: number) {
 
             <form
                 class="space-y-8 rounded-2xl border bg-card p-5 shadow-sm sm:p-6"
-                @submit.prevent="submitCompanyDefaultTimes"
+                @submit.prevent="submit"
             >
                 <section class="space-y-4">
-                    <div class="flex flex-wrap gap-2 border-b pb-4">
-                        <button
-                            v-for="tab in tabs"
-                            :key="tab.key"
-                            type="button"
-                            class="inline-flex items-center rounded-lg border px-4 py-2 text-sm font-medium transition"
-                            :class="
-                                activeTab === tab.key
-                                    ? 'border-primary bg-primary/10 text-primary'
-                                    : 'border-border bg-background text-foreground hover:bg-muted'
-                            "
-                        >
-                            {{ tab.label }}
-                        </button>
-                    </div>
-                </section>
-
-                <section
-                    v-if="activeTab === 'company-default-times'"
-                    class="space-y-6"
-                >
                     <div>
-                        <h2 class="text-sm font-semibold tracking-tight">Horários padrão da empresa</h2>
+                        <h2 class="text-sm font-semibold tracking-tight">Dados principais</h2>
                         <p class="text-sm text-muted-foreground">
-                            Defina os horários padrão de funcionamento da empresa em contexto.
+                            Atualize as informações básicas do usuário.
                         </p>
                     </div>
 
-                    <div class="space-y-4">
-                        <div
-                            v-for="(time, index) in form.times"
-                            :key="time.weekday"
-                            class="rounded-xl border bg-background p-4"
-                        >
-                            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <h3 class="font-medium">{{ time.weekday_label }}</h3>
-                                    <p class="text-sm text-muted-foreground">
-                                        Configure início, fim e intervalo padrão do dia.
-                                    </p>
-                                </div>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="name">Nome</Label>
+                            <Input id="name" v-model="form.name" />
+                            <InputError :message="form.errors.name" />
+                        </div>
 
-                                <div class="flex flex-wrap gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="applyDefaultDay(index)"
-                                    >
-                                        Aplicar padrão
-                                    </Button>
+                        <div class="grid gap-2">
+                            <Label for="email">Email</Label>
+                            <Input id="email" v-model="form.email" type="email" />
+                            <InputError :message="form.errors.email" />
+                        </div>
 
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="setDayOff(index)"
-                                    >
-                                        Marcar folga
-                                    </Button>
-                                </div>
-                            </div>
+                        <div class="grid gap-2">
+                            <Label for="password">Nova senha</Label>
+                            <Input id="password" v-model="form.password" type="password" />
+                            <InputError :message="form.errors.password" />
+                        </div>
 
-                            <div class="grid gap-4 md:grid-cols-3">
-                                <div class="grid gap-2">
-                                    <Label :for="`start_time_${time.weekday}`">Início</Label>
-                                    <input
-                                        :id="`start_time_${time.weekday}`"
-                                        v-model="form.times[index].start_time"
-                                        type="time"
-                                        class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
-                                    >
-                                </div>
-
-                                <div class="grid gap-2">
-                                    <Label :for="`end_time_${time.weekday}`">Fim</Label>
-                                    <input
-                                        :id="`end_time_${time.weekday}`"
-                                        v-model="form.times[index].end_time"
-                                        type="time"
-                                        class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
-                                    >
-                                </div>
-
-                                <div class="grid gap-2">
-                                    <Label :for="`break_duration_${time.weekday}`">Intervalo</Label>
-                                    <input
-                                        :id="`break_duration_${time.weekday}`"
-                                        v-model="form.times[index].break_duration"
-                                        type="time"
-                                        class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
-                                    >
-                                </div>
-                            </div>
+                        <div class="grid gap-2">
+                            <Label for="password_confirmation">Confirmar nova senha</Label>
+                            <Input
+                                id="password_confirmation"
+                                v-model="form.password_confirmation"
+                                type="password"
+                            />
                         </div>
                     </div>
-
-                    <InputError :message="form.errors.times" />
                 </section>
 
-                <div class="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-end">
-                    <Link
-                        href="/dashboard"
-                        class="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                    >
-                        Cancelar
-                    </Link>
+                <section class="space-y-4">
+                    <div>
+                        <h2 class="text-sm font-semibold tracking-tight">Vínculos e acessos</h2>
+                        <p class="text-sm text-muted-foreground">
+                            Defina empresas, funções e módulos disponíveis para este usuário.
+                        </p>
+                    </div>
 
-                    <Can permission="parameters.update">
-                        <Button :disabled="form.processing" class="sm:min-w-[160px]">
-                            {{ form.processing ? 'Salvando...' : 'Salvar horários' }}
-                        </Button>
-                    </Can>
+                    <div class="grid gap-4 xl:grid-cols-3">
+                        <div class="grid gap-2">
+                            <Label>Empresas</Label>
+                            <div class="rounded-xl border bg-background p-4">
+                                <div class="space-y-3">
+                                    <label
+                                        v-for="company in companies"
+                                        :key="company.id"
+                                        class="flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/60"
+                                    >
+                                        <input
+                                            v-model="form.company_ids"
+                                            :value="company.id"
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-border"
+                                        />
+                                        <span class="leading-none">{{ company.name }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <InputError :message="form.errors.company_ids" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label>Funções</Label>
+                            <div class="rounded-xl border bg-background p-4">
+                                <div class="space-y-3">
+                                    <label
+                                        v-for="role in roles"
+                                        :key="role.id"
+                                        class="flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/60"
+                                    >
+                                        <input
+                                            v-model="form.role_ids"
+                                            :value="role.id"
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-border"
+                                        />
+                                        <span class="leading-none">{{ role.name }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <InputError :message="form.errors.role_ids" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label>Módulos</Label>
+                            <div class="rounded-xl border bg-background p-4">
+                                <div class="space-y-3">
+                                    <label
+                                        v-for="module in modules"
+                                        :key="module.id"
+                                        class="flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/60"
+                                    >
+                                        <input
+                                            v-model="form.module_ids"
+                                            :value="module.id"
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-border"
+                                        />
+                                        <span class="leading-none">{{ module.name }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <InputError :message="form.errors.module_ids" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="space-y-4">
+                    <div>
+                        <h2 class="text-sm font-semibold tracking-tight">Status</h2>
+                        <p class="text-sm text-muted-foreground">
+                            Controle se o usuário permanece ativo no sistema.
+                        </p>
+                    </div>
+
+                    <div class="rounded-xl border bg-background p-4">
+                        <label
+                            class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition hover:bg-muted/40"
+                        >
+                            <div class="space-y-1">
+                                <div class="text-sm font-medium">Usuário ativo</div>
+                                <div class="text-xs text-muted-foreground">
+                                    {{
+                                        form.is_active
+                                            ? 'O usuário poderá acessar normalmente o sistema.'
+                                            : 'O usuário ficará impedido de acessar o sistema.'
+                                    }}
+                                </div>
+                            </div>
+
+                            <div class="relative inline-flex items-center">
+                                <input
+                                    v-model="form.is_active"
+                                    type="checkbox"
+                                    class="peer sr-only"
+                                />
+
+                                <div
+                                    class="h-6 w-11 rounded-full bg-muted transition peer-checked:bg-green-600"
+                                />
+
+                                <div
+                                    class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"
+                                />
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <div
+                    class="flex flex-col-reverse gap-3 border-t pt-6 lg:flex-row lg:items-center lg:justify-between"
+                >
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <Can permission="users.delete">
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                :disabled="form.processing"
+                                class="sm:min-w-[140px]"
+                                @click="destroy"
+                            >
+                                Excluir
+                            </Button>
+                        </Can>
+                    </div>
+
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+                        <Link
+                            href="/users"
+                            class="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                        >
+                            Cancelar
+                        </Link>
+
+                        <Can permission="users.update">
+                            <Button :disabled="form.processing" class="sm:min-w-[140px]">
+                                {{ form.processing ? 'Salvando...' : 'Salvar' }}
+                            </Button>
+                        </Can>
+                    </div>
                 </div>
             </form>
         </div>
