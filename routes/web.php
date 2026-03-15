@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeTimeController;
 use App\Http\Controllers\ParametersController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\RoleController;
@@ -108,6 +109,9 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
             Route::get('/csv', [EmployeeController::class, 'exportCsv'])->name('csv');
             Route::get('/pdf', [EmployeeController::class, 'exportPdf'])->name('pdf');
         });
+
+        Route::get('/{employee}/times', [EmployeeTimeController::class, 'edit'])->name('times.edit');
+        Route::patch('/{employee}/times', [EmployeeTimeController::class, 'update'])->name('times.update');
     });
 });
 

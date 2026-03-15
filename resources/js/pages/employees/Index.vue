@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Download, FileText, IdCard, Pencil } from 'lucide-vue-next'
+import { Clock3, Download, FileText, IdCard, Pencil } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 type PositionItem = {
@@ -181,6 +181,15 @@ const exportParams = computed(() => {
                                 </td>
 
                                 <td class="px-4 py-3 text-right align-top">
+                                    <Can permission="employees.times">
+                                        <Link
+                                            :href="`/employees/${employee.id}/times`"
+                                            class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                                        >
+                                            <Clock3 class="h-4 w-4" />
+                                            <span class="hidden sm:inline">Horários</span>
+                                        </Link>
+                                    </Can>
                                     <Can permission="employees.update">
                                         <Link
                                             :href="`/employees/${employee.id}/edit`"

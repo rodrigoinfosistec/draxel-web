@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Company;
+use App\Models\Employee;
 use App\Observers\CompanyObserver;
+use App\Observers\EmployeeObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Observers
         Company::observe(CompanyObserver::class);
+        Employee::observe(EmployeeObserver::class);
     }
 
     /**

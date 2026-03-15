@@ -38,7 +38,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/dashboard',
     },
     {
-        title: 'Cargos',
+        title: 'Cargos de funcionário',
         href: '/positions',
     },
 ]
@@ -85,7 +85,7 @@ const exportParams = computed(() => {
 
                 <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
-                        title="Cargos"
+                        title="Cargos de funcionário"
                         description="Gerencie os cargos."
                         :icon="BriefcaseBusiness"
                     />

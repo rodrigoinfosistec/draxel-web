@@ -317,6 +317,10 @@ return [
                 'description' => 'Permite excluir funcionários',
             ],
 
+            'times' => [
+                'name' => 'Excluir funcionário',
+                'description' => 'Permite excluir funcionários',
+            ],
         ],
     ],
 ];
