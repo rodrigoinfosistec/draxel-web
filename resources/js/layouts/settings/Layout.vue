@@ -11,6 +11,7 @@ import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import type { NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
+import { ArrowLeft, Settings } from 'lucide-vue-next';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -40,10 +41,30 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 
 <template>
     <div class="px-4 py-6">
-        <Heading
-            title="Configurações"
-            description="Gerencie seu perfil e as configurações da sua conta."
-        />
+        <div
+            class="relative mb-6 overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5"
+        >
+            <div
+                class="absolute inset-0"
+                style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
+            />
+
+            <div class="relative flex items-start justify-between gap-4">
+                <Heading
+                    title="Configurações"
+                    description="Gerencie seu perfil e as configurações da sua conta."
+                    :icon="Settings"
+                />
+
+                <Link
+                    href="/dashboard"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                >
+                    <ArrowLeft class="h-4 w-4" />
+                    <span>Voltar</span>
+                </Link>
+            </div>
+        </div>
 
         <div class="flex flex-col lg:flex-row lg:space-x-12">
             <aside class="w-full max-w-xl lg:w-48">
@@ -62,7 +83,6 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                         as-child
                     >
                         <Link :href="item.href">
-                            <component :is="item.icon" class="h-4 w-4" />
                             {{ item.title }}
                         </Link>
                     </Button>
