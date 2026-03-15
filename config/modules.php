@@ -113,6 +113,7 @@ return [
 
         'name' => 'Suporte',
         'description' => 'Gestão de chamados de suporte',
+        'is_core' => true,
 
         'permissions' => [
 
@@ -254,6 +255,7 @@ return [
 
         'name' => 'Cargos de funcionário',
         'description' => 'Gestão de cargos',
+        'is_core' => true,
 
         'permissions' => [
 
@@ -289,6 +291,7 @@ return [
 
         'name' => 'Funcionários',
         'description' => 'Gestão de funcionários',
+        'is_core' => true,
 
         'permissions' => [
 
