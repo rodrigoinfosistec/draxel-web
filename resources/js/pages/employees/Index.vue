@@ -57,6 +57,16 @@ function submitSearch() {
     )
 }
 
+function formatCpf(value: string) {
+    const digits = value.replace(/\D/g, '')
+
+    if (digits.length !== 11) {
+        return value
+    }
+
+    return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
+}
+
 const exportParams = computed(() => {
     const params = new URLSearchParams()
 
@@ -154,7 +164,7 @@ const exportParams = computed(() => {
                                 <td class="px-4 py-3 align-top">
                                     <div class="font-medium">{{ employee.name }}</div>
                                     <div class="text-xs text-muted-foreground">
-                                        CPF: {{ employee.cpf }}
+                                        CPF: {{ formatCpf(employee.cpf) }}
                                     </div>
                                     <div class="text-xs text-muted-foreground">
                                         Matrícula: {{ employee.registration }}
@@ -181,24 +191,27 @@ const exportParams = computed(() => {
                                 </td>
 
                                 <td class="px-4 py-3 text-right align-top">
-                                    <Can permission="employees.times">
-                                        <Link
-                                            :href="`/employees/${employee.id}/times`"
-                                            class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
-                                        >
-                                            <Clock3 class="h-4 w-4" />
-                                            <span class="hidden sm:inline">Horários</span>
-                                        </Link>
-                                    </Can>
-                                    <Can permission="employees.update">
-                                        <Link
-                                            :href="`/employees/${employee.id}/edit`"
-                                            class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
-                                        >
-                                            <Pencil class="h-4 w-4" />
-                                            <span class="hidden sm:inline">Editar</span>
-                                        </Link>
-                                    </Can>
+                                    <div class="flex justify-end gap-2">
+                                        <Can permission="employees.update">
+                                            <Link
+                                                :href="`/employees/${employee.id}/times`"
+                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                                            >
+                                                <Clock3 class="h-4 w-4" />
+                                                <span class="hidden sm:inline">Horários</span>
+                                            </Link>
+                                        </Can>
+
+                                        <Can permission="employees.update">
+                                            <Link
+                                                :href="`/employees/${employee.id}/edit`"
+                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                                            >
+                                                <Pencil class="h-4 w-4" />
+                                                <span class="hidden sm:inline">Editar</span>
+                                            </Link>
+                                        </Can>
+                                    </div>
                                 </td>
                             </tr>
 

@@ -101,7 +101,7 @@ class EmployeeController extends Controller
                 fputcsv($handle, [
                     $employee->id,
                     $employee->name,
-                    $employee->cpf,
+                    $this->formatCpf($employee->cpf),
                     $employee->registration,
                     $employee->position?->name,
                     $employee->is_active ? 'Ativo' : 'Inativo',
@@ -138,7 +138,7 @@ class EmployeeController extends Controller
             ->map(fn (Employee $employee) => [
                 'id' => $employee->id,
                 'name' => $employee->name,
-                'cpf' => $employee->cpf,
+                'cpf' => $this->formatCpf($employee->cpf),
                 'registration' => $employee->registration,
                 'position' => $employee->position?->name,
                 'status' => $employee->is_active ? 'Ativo' : 'Inativo',
@@ -322,5 +322,20 @@ class EmployeeController extends Controller
         return [
             'positions' => $positions,
         ];
+    }
+
+    protected function formatCpf(?string $value): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $value);
+
+        if (strlen($digits) !== 11) {
+            return $value;
+        }
+
+        return preg_replace(
+            '/(\d{3})(\d{3})(\d{3})(\d{2})/',
+            '$1.$2.$3-$4',
+            $digits
+        );
     }
 }

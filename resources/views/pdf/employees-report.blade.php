@@ -10,7 +10,7 @@
 <body>
     @include('pdf.partials.report-header', [
         'title' => 'Relatório de Funcionários',
-        'subtitle' => 'Funcionários cadastrados no tenant',
+        'subtitle' => 'Funcionários cadastrados no grupo',
         'generatedAt' => $generatedAt,
         'tenantName' => $tenantName ?? 'Tenant',
         'companyName' => $companyName ?? 'Empresa',
