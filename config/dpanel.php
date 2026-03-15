@@ -14,7 +14,7 @@ return [
         'name' => 'Empresa Global',
         'alias' => 'Empresa Global',
         'cnpj' => '00000000000000',
-        'color' => '#7C3AED',
+        'color' => '#6500e6',
     ],
 
     'role' => [
