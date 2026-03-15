@@ -69,7 +69,7 @@ const workspaceItems = [
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-col gap-6 p-6">
+        <div class="flex flex-col gap-6 p-4 sm:p-6">
             <section class="relative overflow-hidden rounded-3xl border bg-card/40 shadow-sm backdrop-blur-[1px]">
                 <div
                     class="absolute inset-0"
@@ -77,8 +77,8 @@ const workspaceItems = [
                 />
 
                 <div class="relative flex flex-col gap-6 p-6 md:p-8">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="space-y-3">
+                    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="space-y-4">
                             <div class="inline-flex w-fit items-center gap-2 rounded-full border bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
                                 <Sparkles class="h-3.5 w-3.5" />
                                 Ambiente operacional ativo
@@ -93,12 +93,12 @@ const workspaceItems = [
                                 </h1>
 
                                 <p class="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                                    Tenha uma visão central do seu ambiente, acompanhe a operação atual e navegue com mais clareza pelos recursos do sistema.
+                                    Tenha uma visão central do ambiente atual, acompanhe o contexto operacional e acesse com mais clareza os recursos do sistema.
                                 </p>
                             </div>
                         </div>
 
-                        <div class="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
+                        <div class="grid gap-3 sm:grid-cols-2 lg:min-w-[380px]">
                             <div class="rounded-2xl border bg-background/80 p-4 shadow-sm backdrop-blur">
                                 <p class="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                                     Tenant
@@ -130,7 +130,7 @@ const workspaceItems = [
                             <div class="flex items-start justify-between">
                                 <div>
                                     <p class="text-sm text-muted-foreground">
-                                        Usuário logado
+                                        Usuário conectado
                                     </p>
                                     <h2 class="mt-2 text-xl font-semibold">
                                         {{ user?.name }}
@@ -143,7 +143,7 @@ const workspaceItems = [
                             </div>
 
                             <p class="mt-4 text-xs leading-5 text-muted-foreground">
-                                Sessão autenticada e pronta para operar os recursos disponíveis no ambiente atual.
+                                Sessão autenticada e pronta para navegação nas rotinas disponíveis do ambiente.
                             </p>
                         </div>
 
@@ -151,7 +151,7 @@ const workspaceItems = [
                             <div class="flex items-start justify-between">
                                 <div>
                                     <p class="text-sm text-muted-foreground">
-                                        Estrutura ativa
+                                        Contexto atual
                                     </p>
                                     <h2 class="mt-2 text-xl font-semibold">
                                         {{ currentCompany?.name ?? 'Aguardando contexto' }}
@@ -164,7 +164,7 @@ const workspaceItems = [
                             </div>
 
                             <p class="mt-4 text-xs leading-5 text-muted-foreground">
-                                A navegação e os dados exibidos acompanham o contexto operacional da empresa selecionada.
+                                Os dados e fluxos acompanham a empresa atualmente selecionada.
                             </p>
                         </div>
 
@@ -185,7 +185,7 @@ const workspaceItems = [
                             </div>
 
                             <p class="mt-4 text-xs leading-5 text-muted-foreground">
-                                Ambiente operacional disponível para uso, gestão e acompanhamento das rotinas do tenant.
+                                Ambiente disponível para uso, gestão e acompanhamento das rotinas do tenant.
                             </p>
                         </div>
                     </div>
@@ -229,7 +229,7 @@ const workspaceItems = [
                 </div>
             </section>
 
-            <section class="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
+            <section class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                 <div class="rounded-3xl border bg-card/50 p-6 shadow-sm md:p-8">
                     <div class="flex items-center justify-between gap-4">
                         <div>
@@ -237,7 +237,7 @@ const workspaceItems = [
                                 Visão do ambiente
                             </h3>
                             <p class="mt-1 text-sm text-muted-foreground">
-                                Resumo institucional do espaço operacional atual dentro do tenant.
+                                Resumo institucional e operacional do contexto atual.
                             </p>
                         </div>
 
@@ -249,7 +249,7 @@ const workspaceItems = [
                     <div class="mt-6 grid gap-4 md:grid-cols-2">
                         <div class="rounded-2xl border bg-background/70 p-5">
                             <p class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                Tenant atual
+                                Tenant
                             </p>
                             <p class="mt-2 text-lg font-semibold">
                                 {{ tenant?.name ?? 'Não identificado' }}
@@ -261,13 +261,13 @@ const workspaceItems = [
 
                         <div class="rounded-2xl border bg-background/70 p-5">
                             <p class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                Empresa em contexto
+                                Empresa
                             </p>
                             <p class="mt-2 text-lg font-semibold">
                                 {{ currentCompany?.name ?? 'Não selecionada' }}
                             </p>
                             <p class="mt-1 text-sm text-muted-foreground">
-                                Unidade operacional vinculada à navegação atual.
+                                Unidade operacional vinculada ao contexto atual.
                             </p>
                         </div>
                     </div>
@@ -275,23 +275,31 @@ const workspaceItems = [
 
                 <div class="rounded-3xl border bg-card/50 p-6 shadow-sm md:p-8">
                     <h3 class="text-lg font-semibold tracking-tight">
-                        Ambiente operacional
+                        Leitura rápida
                     </h3>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Informações gerais do ambiente para acompanhamento institucional e operacional.
+                        Síntese do estado atual do ambiente.
                     </p>
 
                     <div class="mt-6 space-y-3">
                         <div class="rounded-2xl border bg-background/70 p-4">
                             <p class="text-sm font-medium">
-                                Estrutura ativa
+                                Operação ativa
                             </p>
                             <p class="mt-1 text-sm text-muted-foreground">
-                                O sistema está operando dentro do tenant
-                                <strong>{{ tenant?.name ?? 'Não identificado' }}</strong>
-                                com a empresa
-                                <strong>{{ currentCompany?.name ?? 'Não selecionada' }}</strong>
-                                como contexto atual.
+                                O ambiente está carregado e pronto para uso no tenant
+                                <strong>{{ tenant?.name ?? 'Não identificado' }}</strong>.
+                            </p>
+                        </div>
+
+                        <div class="rounded-2xl border bg-background/70 p-4">
+                            <p class="text-sm font-medium">
+                                Empresa em contexto
+                            </p>
+                            <p class="mt-1 text-sm text-muted-foreground">
+                                As rotinas atuais consideram
+                                <strong>{{ currentCompany?.name ?? 'nenhuma empresa selecionada' }}</strong>
+                                como base operacional.
                             </p>
                         </div>
 
@@ -300,16 +308,7 @@ const workspaceItems = [
                                 Acesso autenticado
                             </p>
                             <p class="mt-1 text-sm text-muted-foreground">
-                                Usuário conectado com sessão ativa e ambiente preparado para navegação segura nas rotinas disponíveis.
-                            </p>
-                        </div>
-
-                        <div class="rounded-2xl border bg-background/70 p-4">
-                            <p class="text-sm font-medium">
-                                Disponibilidade
-                            </p>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                O ambiente está disponível para acompanhamento, operação e utilização dos recursos liberados para este contexto.
+                                Sessão de <strong>{{ user?.name }}</strong> ativa e pronta para navegação segura.
                             </p>
                         </div>
                     </div>
