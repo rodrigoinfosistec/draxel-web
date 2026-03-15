@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ParametersController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\RoleController;
@@ -92,6 +93,20 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
         Route::prefix('export')->name('export.')->group(function () {
             Route::get('/csv', [PositionController::class, 'exportCsv'])->name('csv');
             Route::get('/pdf', [PositionController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('employees')->name('employees.')->group(function () {
+        Route::get('/', [EmployeeController::class, 'index'])->name('index');
+        Route::get('/create', [EmployeeController::class, 'create'])->name('create');
+        Route::post('/', [EmployeeController::class, 'store'])->name('store');
+        Route::get('/{employee}/edit', [EmployeeController::class, 'edit'])->name('edit');
+        Route::put('/{employee}', [EmployeeController::class, 'update'])->name('update');
+        Route::delete('/{employee}', [EmployeeController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [EmployeeController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [EmployeeController::class, 'exportPdf'])->name('pdf');
         });
     });
 });

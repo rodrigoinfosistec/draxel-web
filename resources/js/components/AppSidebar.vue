@@ -16,7 +16,7 @@ import {
 import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
 import { Link, usePage } from '@inertiajs/vue3'
-import { BriefcaseBusiness, Headset, LayoutGrid, Settings2, ShieldCheck, Users } from 'lucide-vue-next'
+import { BriefcaseBusiness, Headset, IdCard, LayoutGrid, Settings2, ShieldCheck, Users } from 'lucide-vue-next'
 
 const page = usePage<{
     auth: {
@@ -39,6 +39,16 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+
+    ...(can('employees.viewAny')
+        ? [
+              {
+                  title: 'Funcionários',
+                  href: '/employees',
+                  icon: IdCard,
+              },
+          ]
+        : []),
 
     ...(can('positions.viewAny')
         ? [

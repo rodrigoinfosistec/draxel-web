@@ -285,4 +285,38 @@ return [
         ],
     ],
 
+    'employees' => [
+
+        'name' => 'Funcionários',
+        'description' => 'Gestão de funcionários',
+
+        'permissions' => [
+
+            'viewAny' => [
+                'name' => 'Ver lista de funcionários',
+                'description' => 'Permite visualizar a lista de funcionários',
+            ],
+
+            'view' => [
+                'name' => 'Ver funcionário',
+                'description' => 'Permite visualizar os dados de um funcionário',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar funcionário',
+                'description' => 'Permite cadastrar novos funcionários',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar funcionário',
+                'description' => 'Permite editar funcionários',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir funcionário',
+                'description' => 'Permite excluir funcionários',
+            ],
+
+        ],
+    ],
 ];

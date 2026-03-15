@@ -48,6 +48,11 @@ class Tenant extends Model
         return $this->hasMany(Role::class);
     }
 
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class);
+    }
+
     public function scopeActive(Builder $query)
     {
         return $query->where('is_active', true);

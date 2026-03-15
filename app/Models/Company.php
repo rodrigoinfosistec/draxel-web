@@ -44,6 +44,11 @@ class Company extends Model
         return $this->hasMany(CompanyDefaultTime::class);
     }
 
+    public function employees()
+    {
+        return $this->hasMany(Employee::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
