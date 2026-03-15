@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ParametersController;
+use App\Http\Controllers\PositionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\UserController;
@@ -78,6 +79,20 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
     Route::prefix('parameters')->name('parameters.')->group(function () {
         Route::get('/', [ParametersController::class, 'index'])->name('index');
         Route::patch('/company-default-times', [ParametersController::class, 'updateCompanyDefaultTimes'])->name('company-default-times.update');
+    });
+
+    Route::prefix('positions')->name('positions.')->group(function () {
+        Route::get('/', [PositionController::class, 'index'])->name('index');
+        Route::get('/create', [PositionController::class, 'create'])->name('create');
+        Route::post('/', [PositionController::class, 'store'])->name('store');
+        Route::get('/{position}/edit', [PositionController::class, 'edit'])->name('edit');
+        Route::put('/{position}', [PositionController::class, 'update'])->name('update');
+        Route::delete('/{position}', [PositionController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [PositionController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [PositionController::class, 'exportPdf'])->name('pdf');
+        });
     });
 });
 

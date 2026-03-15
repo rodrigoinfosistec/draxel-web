@@ -16,7 +16,7 @@ import {
 import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
 import { Link, usePage } from '@inertiajs/vue3'
-import { Headset, LayoutGrid, Settings2, ShieldCheck, Users } from 'lucide-vue-next'
+import { BriefcaseBusiness, Headset, LayoutGrid, Settings2, ShieldCheck, Users } from 'lucide-vue-next'
 
 const page = usePage<{
     auth: {
@@ -40,6 +40,16 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
 
+    ...(can('positions.viewAny')
+        ? [
+                {
+                    title: 'Cargos de funcionário',
+                    href: '/positions',
+                    icon: BriefcaseBusiness,
+                },
+          ]
+        : []),
+
     ...(can('users.viewAny')
         ? [
               {
@@ -59,6 +69,8 @@ const mainNavItems: NavItem[] = [
               },
           ]
         : []),
+
+
 ]
 
 const footerNavItems: NavItem[] = [

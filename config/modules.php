@@ -250,4 +250,39 @@ return [
         ],
     ],
 
+    'positions' => [
+
+        'name' => 'Cargos',
+        'description' => 'Gestão de cargos',
+
+        'permissions' => [
+
+            'viewAny' => [
+                'name' => 'Ver lista de cargos',
+                'description' => 'Permite visualizar a lista de cargos do tenant',
+            ],
+
+            'view' => [
+                'name' => 'Ver cargo',
+                'description' => 'Permite visualizar os dados de um cargo',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar cargo',
+                'description' => 'Permite cadastrar novos cargos',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar cargo',
+                'description' => 'Permite editar cargos',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir cargo',
+                'description' => 'Permite excluir cargos',
+            ],
+
+        ],
+    ],
+
 ];
