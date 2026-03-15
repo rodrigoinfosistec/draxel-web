@@ -50,7 +50,7 @@ return [
 
     'roles' => [
 
-        'name' => 'Funções',
+        'name' => 'Funções de usuário',
         'description' => 'Gestão de funções de acesso',
         'is_core' => true,
 
@@ -252,7 +252,7 @@ return [
 
     'positions' => [
 
-        'name' => 'Cargos',
+        'name' => 'Cargos de funcionário',
         'description' => 'Gestão de cargos',
 
         'permissions' => [
