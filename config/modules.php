@@ -326,4 +326,42 @@ return [
             ],
         ],
     ],
+
+    'holidays' => [
+
+        'name' => 'Feriados',
+        'description' => 'Gestão de feriados',
+        'is_core' => true,
+
+        'permissions' => [
+
+            'viewAny' => [
+                'name' => 'Ver lista de feriados',
+                'description' => 'Permite visualizar a lista de feriados do tenant',
+            ],
+
+            'view' => [
+                'name' => 'Ver feriado',
+                'description' => 'Permite visualizar os dados de um feriado',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar feriado',
+                'description' => 'Permite cadastrar novos feriados',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar feriado',
+                'description' => 'Permite editar feriados',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir feriado',
+                'description' => 'Permite excluir feriados',
+            ],
+
+        ],
+    ],
+
+
 ];

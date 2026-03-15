@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeTimeController;
+use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\ParametersController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\RoleController;
@@ -112,6 +113,20 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
 
         Route::get('/{employee}/times', [EmployeeTimeController::class, 'edit'])->name('times.edit');
         Route::patch('/{employee}/times', [EmployeeTimeController::class, 'update'])->name('times.update');
+    });
+
+    Route::prefix('holidays')->name('holidays.')->group(function () {
+        Route::get('/', [HolidayController::class, 'index'])->name('index');
+        Route::get('/create', [HolidayController::class, 'create'])->name('create');
+        Route::post('/', [HolidayController::class, 'store'])->name('store');
+        Route::get('/{holiday}/edit', [HolidayController::class, 'edit'])->name('edit');
+        Route::put('/{holiday}', [HolidayController::class, 'update'])->name('update');
+        Route::delete('/{holiday}', [HolidayController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [HolidayController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [HolidayController::class, 'exportPdf'])->name('pdf');
+        });
     });
 });
 
