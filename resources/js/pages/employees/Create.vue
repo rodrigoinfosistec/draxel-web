@@ -33,8 +33,29 @@ const form = useForm({
     is_active: true,
 })
 
+function onlyDigits(value: string) {
+    return value.replace(/\D/g, '')
+}
+
+function formatCpf(value: string) {
+    const digits = onlyDigits(value).slice(0, 11)
+
+    return digits
+        .replace(/^(\d{3})(\d)/, '$1.$2')
+        .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+        .replace(/\.(\d{3})(\d)/, '.$1-$2')
+}
+
+function handleCpfInput(event: Event) {
+    const target = event.target as HTMLInputElement
+    form.cpf = formatCpf(target.value)
+}
+
 function submit() {
-    form.post('/employees')
+    form.transform((data) => ({
+        ...data,
+        cpf: onlyDigits(data.cpf),
+    })).post('/employees')
 }
 </script>
 
@@ -89,7 +110,14 @@ function submit() {
 
                         <div class="grid gap-2">
                             <Label for="cpf">CPF</Label>
-                            <Input id="cpf" v-model="form.cpf" />
+                            <Input
+                                id="cpf"
+                                :model-value="form.cpf"
+                                inputmode="numeric"
+                                maxlength="14"
+                                placeholder="000.000.000-00"
+                                @input="handleCpfInput"
+                            />
                             <InputError :message="form.errors.cpf" />
                         </div>
 

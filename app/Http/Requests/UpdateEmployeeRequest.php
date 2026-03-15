@@ -16,6 +16,13 @@ class UpdateEmployeeRequest extends FormRequest
         return $this->user()?->can('update', $employee) ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'cpf' => preg_replace('/\D+/', '', (string) $this->cpf),
+        ]);
+    }
+
     public function rules(): array
     {
         /** @var Employee $employee */
@@ -28,8 +35,7 @@ class UpdateEmployeeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'cpf' => [
                 'required',
-                'string',
-                'max:14',
+                'digits:11',
                 Rule::unique('employees', 'cpf')
                     ->ignore($employee->id)
                     ->where(fn ($query) => $query

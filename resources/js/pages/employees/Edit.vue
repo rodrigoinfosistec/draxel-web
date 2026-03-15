@@ -36,16 +36,37 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Editar funcionário', href: `/employees/${props.employee.id}/edit` },
 ]
 
+function onlyDigits(value: string) {
+    return value.replace(/\D/g, '')
+}
+
+function formatCpf(value: string) {
+    const digits = onlyDigits(value).slice(0, 11)
+
+    return digits
+        .replace(/^(\d{3})(\d)/, '$1.$2')
+        .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+        .replace(/\.(\d{3})(\d)/, '.$1-$2')
+}
+
 const form = useForm({
     name: props.employee.name,
-    cpf: props.employee.cpf,
+    cpf: formatCpf(props.employee.cpf),
     registration: props.employee.registration,
     position_id: props.employee.position_id ?? '',
     is_active: props.employee.is_active,
 })
 
+function handleCpfInput(event: Event) {
+    const target = event.target as HTMLInputElement
+    form.cpf = formatCpf(target.value)
+}
+
 function submit() {
-    form.put(`/employees/${props.employee.id}`)
+    form.transform((data) => ({
+        ...data,
+        cpf: onlyDigits(data.cpf),
+    })).put(`/employees/${props.employee.id}`)
 }
 
 async function destroy() {
@@ -116,7 +137,14 @@ async function destroy() {
 
                         <div class="grid gap-2">
                             <Label for="cpf">CPF</Label>
-                            <Input id="cpf" v-model="form.cpf" />
+                            <Input
+                                id="cpf"
+                                :model-value="form.cpf"
+                                inputmode="numeric"
+                                maxlength="14"
+                                placeholder="000.000.000-00"
+                                @input="handleCpfInput"
+                            />
                             <InputError :message="form.errors.cpf" />
                         </div>
 

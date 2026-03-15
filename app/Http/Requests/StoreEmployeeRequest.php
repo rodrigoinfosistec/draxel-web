@@ -12,6 +12,13 @@ class StoreEmployeeRequest extends FormRequest
         return $this->user()?->hasPermission('employees.create') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'cpf' => preg_replace('/\D+/', '', (string) $this->cpf),
+        ]);
+    }
+
     public function rules(): array
     {
         $tenantId = $this->user()->tenant_id;
@@ -21,8 +28,7 @@ class StoreEmployeeRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'cpf' => [
                 'required',
-                'string',
-                'max:14',
+                'digits:11',
                 Rule::unique('employees', 'cpf')->where(fn ($query) => $query
                     ->where('tenant_id', $tenantId)
                     ->where('company_id', $companyId)),
