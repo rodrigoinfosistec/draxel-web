@@ -21,10 +21,14 @@ class Company extends Model
         'cnpj',
         'color',
         'is_active',
+        'uses_hour_bank',
+        'hour_bank_starts_at',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'uses_hour_bank' => 'boolean',
+        'hour_bank_starts_at' => 'date',
     ];
 
     public function tenant(): BelongsTo

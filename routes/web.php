@@ -82,6 +82,7 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
     Route::prefix('parameters')->name('parameters.')->group(function () {
         Route::get('/', [ParametersController::class, 'index'])->name('index');
         Route::patch('/company-default-times', [ParametersController::class, 'updateCompanyDefaultTimes'])->name('company-default-times.update');
+        Route::patch('/company-hour-bank', [ParametersController::class, 'updateCompanyHourBank'])->name('company-hour-bank.update');
     });
 
     Route::prefix('positions')->name('positions.')->group(function () {

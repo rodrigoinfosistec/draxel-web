@@ -8,6 +8,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, Settings2 } from 'lucide-vue-next'
+import { ref, watch } from 'vue'
 
 type TabItem = {
     key: string
@@ -17,6 +18,8 @@ type TabItem = {
 type CompanyItem = {
     id: number
     name: string
+    uses_hour_bank: boolean
+    hour_bank_starts_at: string | null
 }
 
 type DefaultTimeItem = {
@@ -44,9 +47,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ]
 
-const activeTab = 'company-default-times'
+const activeTab = ref('company-default-times')
 
-const form = useForm({
+const defaultTimesForm = useForm({
     times: props.defaultTimes.map((time) => ({
         weekday: time.weekday,
         weekday_label: time.weekday_label,
@@ -56,34 +59,52 @@ const form = useForm({
     })),
 })
 
+const hourBankForm = useForm({
+    uses_hour_bank: props.company.uses_hour_bank,
+    hour_bank_starts_at: props.company.hour_bank_starts_at,
+})
+
+watch(
+    () => hourBankForm.uses_hour_bank,
+    (value) => {
+        if (!value) {
+            hourBankForm.hour_bank_starts_at = null
+        }
+    },
+)
+
 function submitCompanyDefaultTimes() {
-    form.patch('/parameters/company-default-times')
+    defaultTimesForm.patch('/parameters/company-default-times')
+}
+
+function submitCompanyHourBank() {
+    hourBankForm.patch('/parameters/company-hour-bank')
 }
 
 function setDayOff(index: number) {
-    form.times[index].start_time = null
-    form.times[index].end_time = null
-    form.times[index].break_duration = null
+    defaultTimesForm.times[index].start_time = null
+    defaultTimesForm.times[index].end_time = null
+    defaultTimesForm.times[index].break_duration = null
 }
 
 function applyDefaultDay(index: number) {
-    if (form.times[index].weekday === 'saturday') {
-        form.times[index].start_time = '08:00'
-        form.times[index].end_time = '17:00'
-        form.times[index].break_duration = '00:00'
+    if (defaultTimesForm.times[index].weekday === 'saturday') {
+        defaultTimesForm.times[index].start_time = '08:00'
+        defaultTimesForm.times[index].end_time = '17:00'
+        defaultTimesForm.times[index].break_duration = '00:00'
         return
     }
 
-    if (form.times[index].weekday === 'sunday') {
-        form.times[index].start_time = null
-        form.times[index].end_time = null
-        form.times[index].break_duration = null
+    if (defaultTimesForm.times[index].weekday === 'sunday') {
+        defaultTimesForm.times[index].start_time = null
+        defaultTimesForm.times[index].end_time = null
+        defaultTimesForm.times[index].break_duration = null
         return
     }
 
-    form.times[index].start_time = '08:00'
-    form.times[index].end_time = '17:00'
-    form.times[index].break_duration = '01:00'
+    defaultTimesForm.times[index].start_time = '08:00'
+    defaultTimesForm.times[index].end_time = '17:00'
+    defaultTimesForm.times[index].break_duration = '01:00'
 }
 </script>
 
@@ -117,10 +138,7 @@ function applyDefaultDay(index: number) {
                 </div>
             </div>
 
-            <form
-                class="space-y-8 rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6"
-                @submit.prevent="submitCompanyDefaultTimes"
-            >
+            <div class="rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6">
                 <section class="space-y-4">
                     <div class="flex flex-wrap gap-2 border-b pb-4">
                         <button
@@ -133,110 +151,193 @@ function applyDefaultDay(index: number) {
                                     ? 'border-primary bg-primary/10 text-primary'
                                     : 'border-border bg-background text-foreground hover:bg-muted'
                             "
+                            @click="activeTab = tab.key"
                         >
                             {{ tab.label }}
                         </button>
                     </div>
                 </section>
 
-                <section
+                <form
                     v-if="activeTab === 'company-default-times'"
-                    class="space-y-6"
+                    class="mt-8 space-y-8"
+                    @submit.prevent="submitCompanyDefaultTimes"
                 >
-                    <div>
-                        <h2 class="text-sm font-semibold tracking-tight">Horários padrão da empresa</h2>
-                        <p class="text-sm text-muted-foreground">
-                            Defina os horários padrão de funcionamento da empresa em contexto.
-                        </p>
-                    </div>
+                    <section class="space-y-6">
+                        <div>
+                            <h2 class="text-sm font-semibold tracking-tight">Horários padrão da empresa</h2>
+                            <p class="text-sm text-muted-foreground">
+                                Defina os horários padrão de funcionamento da empresa em contexto.
+                            </p>
+                        </div>
 
-                    <div class="space-y-4">
-                        <div
-                            v-for="(time, index) in form.times"
-                            :key="time.weekday"
-                            class="rounded-xl border bg-background p-4"
-                        >
-                            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <h3 class="font-medium">{{ time.weekday_label }}</h3>
-                                    <p class="text-sm text-muted-foreground">
-                                        Configure início, fim e intervalo padrão do dia.
-                                    </p>
+                        <div class="space-y-4">
+                            <div
+                                v-for="(time, index) in defaultTimesForm.times"
+                                :key="time.weekday"
+                                class="rounded-xl border bg-background p-4"
+                            >
+                                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h3 class="font-medium">{{ time.weekday_label }}</h3>
+                                        <p class="text-sm text-muted-foreground">
+                                            Configure início, fim e intervalo padrão do dia.
+                                        </p>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="applyDefaultDay(index)"
+                                        >
+                                            Aplicar padrão
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="setDayOff(index)"
+                                        >
+                                            Marcar folga
+                                        </Button>
+                                    </div>
                                 </div>
 
-                                <div class="flex flex-wrap gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="applyDefaultDay(index)"
-                                    >
-                                        Aplicar padrão
-                                    </Button>
+                                <div class="grid gap-4 md:grid-cols-3">
+                                    <div class="grid gap-2">
+                                        <Label :for="`start_time_${time.weekday}`">Início</Label>
+                                        <input
+                                            :id="`start_time_${time.weekday}`"
+                                            v-model="defaultTimesForm.times[index].start_time"
+                                            type="time"
+                                            class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
+                                        >
+                                    </div>
 
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        @click="setDayOff(index)"
-                                    >
-                                        Marcar folga
-                                    </Button>
-                                </div>
-                            </div>
+                                    <div class="grid gap-2">
+                                        <Label :for="`end_time_${time.weekday}`">Fim</Label>
+                                        <input
+                                            :id="`end_time_${time.weekday}`"
+                                            v-model="defaultTimesForm.times[index].end_time"
+                                            type="time"
+                                            class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
+                                        >
+                                    </div>
 
-                            <div class="grid gap-4 md:grid-cols-3">
-                                <div class="grid gap-2">
-                                    <Label :for="`start_time_${time.weekday}`">Início</Label>
-                                    <input
-                                        :id="`start_time_${time.weekday}`"
-                                        v-model="form.times[index].start_time"
-                                        type="time"
-                                        class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
-                                    >
-                                </div>
-
-                                <div class="grid gap-2">
-                                    <Label :for="`end_time_${time.weekday}`">Fim</Label>
-                                    <input
-                                        :id="`end_time_${time.weekday}`"
-                                        v-model="form.times[index].end_time"
-                                        type="time"
-                                        class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
-                                    >
-                                </div>
-
-                                <div class="grid gap-2">
-                                    <Label :for="`break_duration_${time.weekday}`">Intervalo</Label>
-                                    <input
-                                        :id="`break_duration_${time.weekday}`"
-                                        v-model="form.times[index].break_duration"
-                                        type="time"
-                                        class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
-                                    >
+                                    <div class="grid gap-2">
+                                        <Label :for="`break_duration_${time.weekday}`">Intervalo</Label>
+                                        <input
+                                            :id="`break_duration_${time.weekday}`"
+                                            v-model="defaultTimesForm.times[index].break_duration"
+                                            type="time"
+                                            class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
+                                        >
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <InputError :message="defaultTimesForm.errors.times" />
+                    </section>
+
+                    <div class="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-end">
+                        <Link
+                            href="/dashboard"
+                            class="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                        >
+                            Cancelar
+                        </Link>
+
+                        <Can permission="parameters.update">
+                            <Button :disabled="defaultTimesForm.processing" class="sm:min-w-[160px]">
+                                {{ defaultTimesForm.processing ? 'Salvando...' : 'Salvar horários' }}
+                            </Button>
+                        </Can>
                     </div>
+                </form>
 
-                    <InputError :message="form.errors.times" />
-                </section>
+                <form
+                    v-if="activeTab === 'company-hour-bank'"
+                    class="mt-8 space-y-8"
+                    @submit.prevent="submitCompanyHourBank"
+                >
+                    <section class="space-y-6">
+                        <div>
+                            <h2 class="text-sm font-semibold tracking-tight">Banco de horas</h2>
+                            <p class="text-sm text-muted-foreground">
+                                Defina se a empresa em contexto utiliza banco de horas e a data inicial de contagem.
+                            </p>
+                        </div>
 
-                <div class="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-end">
-                    <Link
-                        href="/dashboard"
-                        class="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                    >
-                        Cancelar
-                    </Link>
+                        <div class="rounded-xl border bg-background p-4">
+                            <label
+                                class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition hover:bg-muted/40"
+                            >
+                                <div class="space-y-1">
+                                    <div class="text-sm font-medium">Usa banco de horas</div>
+                                    <div class="text-xs text-muted-foreground">
+                                        {{
+                                            hourBankForm.uses_hour_bank
+                                                ? 'A empresa está configurada para utilizar banco de horas.'
+                                                : 'A empresa não utiliza banco de horas.'
+                                        }}
+                                    </div>
+                                </div>
 
-                    <Can permission="parameters.update">
-                        <Button :disabled="form.processing" class="sm:min-w-[160px]">
-                            {{ form.processing ? 'Salvando...' : 'Salvar horários' }}
-                        </Button>
-                    </Can>
-                </div>
-            </form>
+                                <div class="relative inline-flex items-center">
+                                    <input
+                                        v-model="hourBankForm.uses_hour_bank"
+                                        type="checkbox"
+                                        class="peer sr-only"
+                                    />
+
+                                    <div
+                                        class="h-6 w-11 rounded-full bg-muted transition peer-checked:bg-green-600"
+                                    />
+
+                                    <div
+                                        class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"
+                                    />
+                                </div>
+                            </label>
+                        </div>
+
+                        <InputError :message="hourBankForm.errors.uses_hour_bank" />
+
+                        <div
+                            v-if="hourBankForm.uses_hour_bank"
+                            class="grid gap-2 md:max-w-sm"
+                        >
+                            <Label for="hour_bank_starts_at">Data inicial</Label>
+                            <input
+                                id="hour_bank_starts_at"
+                                v-model="hourBankForm.hour_bank_starts_at"
+                                type="date"
+                                class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
+                            >
+                            <InputError :message="hourBankForm.errors.hour_bank_starts_at" />
+                        </div>
+                    </section>
+
+                    <div class="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-end">
+                        <Link
+                            href="/dashboard"
+                            class="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                        >
+                            Cancelar
+                        </Link>
+
+                        <Can permission="parameters.update">
+                            <Button :disabled="hourBankForm.processing" class="sm:min-w-[180px]">
+                                {{ hourBankForm.processing ? 'Salvando...' : 'Salvar banco de horas' }}
+                            </Button>
+                        </Can>
+                    </div>
+                </form>
+            </div>
         </div>
     </AppLayout>
 </template>

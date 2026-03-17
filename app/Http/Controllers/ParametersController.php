@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateCompanyDefaultTimesRequest;
+use App\Http\Requests\UpdateCompanyHourBankRequest;
 use App\Models\CompanyDefaultTime;
 use App\Support\Audit\Audit;
 use App\Support\CompanyContext;
@@ -38,11 +39,17 @@ class ParametersController extends Controller
             'company' => [
                 'id' => $company->id,
                 'name' => $company->name,
+                'uses_hour_bank' => (bool) $company->uses_hour_bank,
+                'hour_bank_starts_at' => $company->hour_bank_starts_at?->format('Y-m-d'),
             ],
             'tabs' => [
                 [
                     'key' => 'company-default-times',
                     'label' => 'Horários padrão',
+                ],
+                [
+                    'key' => 'company-hour-bank',
+                    'label' => 'Banco de horas',
                 ],
             ],
             'defaultTimes' => $times,
@@ -80,5 +87,38 @@ class ParametersController extends Controller
         });
 
         return back()->with('success', 'Horários padrão atualizados com sucesso.');
+    }
+
+    public function updateCompanyHourBank(UpdateCompanyHourBankRequest $request): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermission('parameters.update'), 403);
+
+        $company = CompanyContext::current();
+
+        abort_unless($company, 404);
+
+        DB::transaction(function () use ($request, $company) {
+            $before = [
+                'uses_hour_bank' => (bool) $company->uses_hour_bank,
+                'hour_bank_starts_at' => $company->hour_bank_starts_at?->format('Y-m-d'),
+            ];
+
+            $company->update([
+                'uses_hour_bank' => $request->boolean('uses_hour_bank'),
+                'hour_bank_starts_at' => $request->boolean('uses_hour_bank')
+                    ? $request->validated('hour_bank_starts_at')
+                    : null,
+            ]);
+
+            Audit::event('parameters.company_hour_bank_updated', $company, [
+                'before' => $before,
+                'after' => [
+                    'uses_hour_bank' => (bool) $company->uses_hour_bank,
+                    'hour_bank_starts_at' => $company->hour_bank_starts_at?->format('Y-m-d'),
+                ],
+            ]);
+        });
+
+        return back()->with('success', 'Banco de horas atualizado com sucesso.');
     }
 }
