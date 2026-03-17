@@ -44,7 +44,7 @@ const currentCompany = computed(() => page.props.currentCompany)
 const workspaceItems = [
     {
         title: 'Módulos',
-        description: 'Controle da estrutura funcional do tenant, habilitando e acompanhando os recursos ativos do sistema.',
+        description: 'Controle da estrutura funcional do grupo, habilitando e acompanhando os recursos ativos do sistema.',
         icon: FolderKanban,
     },
     {
@@ -59,7 +59,7 @@ const workspaceItems = [
     },
     {
         title: 'Configurações',
-        description: 'Ajustes estruturais do ambiente, parâmetros da operação e personalização do tenant e empresa.',
+        description: 'Ajustes estruturais do ambiente, parâmetros da operação e personalização do grupo e empresa.',
         icon: Settings,
     },
 ]
@@ -101,7 +101,7 @@ const workspaceItems = [
                         <div class="grid gap-3 sm:grid-cols-2 lg:min-w-[380px]">
                             <div class="rounded-2xl border bg-background/80 p-4 shadow-sm backdrop-blur">
                                 <p class="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                    Tenant
+                                    Grupo
                                 </p>
                                 <p class="mt-2 text-base font-semibold text-foreground">
                                     {{ tenant?.name ?? 'Não identificado' }}
@@ -185,7 +185,7 @@ const workspaceItems = [
                             </div>
 
                             <p class="mt-4 text-xs leading-5 text-muted-foreground">
-                                Ambiente disponível para uso, gestão e acompanhamento das rotinas do tenant.
+                                Ambiente disponível para uso, gestão e acompanhamento das rotinas do grupo.
                             </p>
                         </div>
                     </div>
@@ -249,7 +249,7 @@ const workspaceItems = [
                     <div class="mt-6 grid gap-4 md:grid-cols-2">
                         <div class="rounded-2xl border bg-background/70 p-5">
                             <p class="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                Tenant
+                                Grupo
                             </p>
                             <p class="mt-2 text-lg font-semibold">
                                 {{ tenant?.name ?? 'Não identificado' }}
@@ -287,7 +287,7 @@ const workspaceItems = [
                                 Operação ativa
                             </p>
                             <p class="mt-1 text-sm text-muted-foreground">
-                                O ambiente está carregado e pronto para uso no tenant
+                                O ambiente está carregado e pronto para uso no grupo
                                 <strong>{{ tenant?.name ?? 'Não identificado' }}</strong>.
                             </p>
                         </div>
