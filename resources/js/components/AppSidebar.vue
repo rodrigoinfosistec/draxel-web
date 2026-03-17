@@ -16,7 +16,17 @@ import {
 import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
 import { Link, usePage } from '@inertiajs/vue3'
-import { BriefcaseBusiness, CalendarDays, Headset, IdCard, LayoutGrid, Settings2, ShieldCheck, Users } from 'lucide-vue-next'
+import {
+    BriefcaseBusiness,
+    CalendarClock,
+    CalendarDays,
+    Headset,
+    IdCard,
+    LayoutGrid,
+    Settings2,
+    ShieldCheck,
+    Users,
+} from 'lucide-vue-next'
 
 const page = usePage<{
     auth: {
@@ -52,21 +62,31 @@ const mainNavItems: NavItem[] = [
 
     ...(can('positions.viewAny')
         ? [
-                {
-                    title: 'Cargos de funcionário',
-                    href: '/positions',
-                    icon: BriefcaseBusiness,
-                },
+              {
+                  title: 'Cargos de funcionário',
+                  href: '/positions',
+                  icon: BriefcaseBusiness,
+              },
+          ]
+        : []),
+
+    ...(can('worktime.viewAny')
+        ? [
+              {
+                  title: 'Ponto',
+                  href: '/worktime/employee-events',
+                  icon: CalendarClock,
+              },
           ]
         : []),
 
     ...(can('holidays.viewAny')
         ? [
-                {
-                    title: 'Feriados',
-                    href: '/holidays',
-                    icon: CalendarDays,
-                },
+              {
+                  title: 'Feriados',
+                  href: '/holidays',
+                  icon: CalendarDays,
+              },
           ]
         : []),
 
@@ -89,8 +109,6 @@ const mainNavItems: NavItem[] = [
               },
           ]
         : []),
-
-
 ]
 
 const footerNavItems: NavItem[] = [

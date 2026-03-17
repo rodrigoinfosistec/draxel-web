@@ -179,23 +179,38 @@ return [
     'worktime' => [
 
         'name' => 'Ponto',
-        'description' => 'Controle de jornada e registro de ponto',
+        'description' => 'Controle de jornada, ponto e eventos de funcionários',
 
         'permissions' => [
 
             'viewAny' => [
-                'name' => 'Ver lista de registros de ponto',
-                'description' => 'Permite visualizar registros de jornada',
+                'name' => 'Ver lista de eventos de ponto',
+                'description' => 'Permite visualizar a lista de eventos e registros do módulo de ponto',
+            ],
+
+            'view' => [
+                'name' => 'Ver evento de ponto',
+                'description' => 'Permite visualizar os dados de um evento do módulo de ponto',
             ],
 
             'create' => [
-                'name' => 'Registrar ponto',
-                'description' => 'Permite registrar novos pontos',
+                'name' => 'Cadastrar evento de ponto',
+                'description' => 'Permite cadastrar novos eventos de jornada para funcionários',
             ],
 
             'update' => [
-                'name' => 'Editar registro de ponto',
-                'description' => 'Permite editar registros de jornada',
+                'name' => 'Atualizar evento de ponto',
+                'description' => 'Permite editar eventos de jornada de funcionários',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir evento de ponto',
+                'description' => 'Permite excluir eventos de jornada de funcionários',
+            ],
+
+            'export' => [
+                'name' => 'Exportar eventos de ponto',
+                'description' => 'Permite exportar relatórios e listagens do módulo de ponto',
             ],
 
         ],
@@ -321,7 +336,7 @@ return [
             ],
 
             'times' => [
-                'name' => 'Excluir funcionário',
+                'name' => 'Gerenciar horário de funcionários',
                 'description' => 'Permite excluir funcionários',
             ],
         ],

@@ -130,4 +130,6 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
     });
 });
 
+require base_path('app/Modules/Worktime/Routes/web.php');
+
 require __DIR__ . '/settings.php';
