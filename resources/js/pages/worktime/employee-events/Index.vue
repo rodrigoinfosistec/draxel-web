@@ -44,6 +44,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Ponto',
+        href: '/worktime',
+    },
+    {
+        title: 'Eventos de funcionário',
         href: '/worktime/employee-events',
     },
 ]

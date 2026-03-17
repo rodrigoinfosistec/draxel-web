@@ -1,10 +1,13 @@
 <?php
 
 use App\Modules\Worktime\Http\Controllers\EmployeeEventController;
+use App\Modules\Worktime\Http\Controllers\WorktimeDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
     Route::prefix('worktime')->name('worktime.')->group(function () {
+        Route::get('/', [WorktimeDashboardController::class, 'index'])->name('dashboard');
+
         Route::prefix('employee-events')->name('employee-events.')->group(function () {
             Route::get('/', [EmployeeEventController::class, 'index'])->name('index');
             Route::get('/create', [EmployeeEventController::class, 'create'])->name('create');

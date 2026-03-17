@@ -74,7 +74,7 @@ const mainNavItems: NavItem[] = [
         ? [
               {
                   title: 'Ponto',
-                  href: '/worktime/employee-events',
+                  href: '/worktime/',
                   icon: CalendarClock,
               },
           ]
