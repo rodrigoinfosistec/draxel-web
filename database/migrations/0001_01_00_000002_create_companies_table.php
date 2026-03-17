@@ -20,6 +20,12 @@ return new class extends Migration {
             $table->string('color', 7)->nullable();
             $table->boolean('is_active')->default(true);
 
+            $table->boolean('uses_hour_bank')
+                ->default(false);
+
+            $table->date('hour_bank_starts_at')
+                ->nullable();
+
             $table->timestamps();
 
             $table->unique(['tenant_id', 'cnpj']);
