@@ -242,6 +242,31 @@ return [
                 'name' => 'Exportar registros de ponto',
                 'description' => 'Permite exportar relatórios e listagens de registros de ponto',
             ],
+
+            'viewAnyClockRecordImport' => [
+                'name' => 'Ver lista de importações de ponto',
+                'description' => 'Permite visualizar a lista de importações de registros de ponto',
+            ],
+
+            'viewClockRecordImport' => [
+                'name' => 'Ver importação de ponto',
+                'description' => 'Permite visualizar os detalhes de uma importação de registros de ponto',
+            ],
+
+            'createClockRecordImport' => [
+                'name' => 'Criar importação de ponto',
+                'description' => 'Permite enviar arquivos para importação de registros de ponto',
+            ],
+
+            'launchClockRecordImport' => [
+                'name' => 'Lançar importação de ponto',
+                'description' => 'Permite lançar os registros validados da importação para os registros de ponto',
+            ],
+
+            'exportClockRecordImport' => [
+                'name' => 'Exportar importações de ponto',
+                'description' => 'Permite exportar relatórios e listagens de importações de ponto',
+            ],
         ],
     ],
 

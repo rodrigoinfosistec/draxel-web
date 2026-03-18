@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Worktime\Http\Controllers\ClockRecordController;
+use App\Modules\Worktime\Http\Controllers\ClockRecordImportController;
 use App\Modules\Worktime\Http\Controllers\EmployeeEventController;
 use App\Modules\Worktime\Http\Controllers\WorktimeDashboardController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,19 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
             Route::prefix('export')->name('export.')->group(function () {
                 Route::get('/csv', [ClockRecordController::class, 'exportCsv'])->name('csv');
                 Route::get('/pdf', [ClockRecordController::class, 'exportPdf'])->name('pdf');
+            });
+        });
+
+        Route::prefix('clock-record-imports')->name('clock-record-imports.')->group(function () {
+            Route::get('/', [ClockRecordImportController::class, 'index'])->name('index');
+            Route::get('/create', [ClockRecordImportController::class, 'create'])->name('create');
+            Route::post('/', [ClockRecordImportController::class, 'store'])->name('store');
+            Route::get('/{clockRecordImport}', [ClockRecordImportController::class, 'show'])->name('show');
+            Route::post('/{clockRecordImport}/launch', [ClockRecordImportController::class, 'launch'])->name('launch');
+
+            Route::prefix('export')->name('export.')->group(function () {
+                Route::get('/csv', [ClockRecordImportController::class, 'exportCsv'])->name('csv');
+                Route::get('/pdf', [ClockRecordImportController::class, 'exportPdf'])->name('pdf');
             });
         });
     });

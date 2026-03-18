@@ -1,0 +1,274 @@
+<?php
+
+namespace App\Modules\Worktime\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Modules\Worktime\Http\Requests\StoreClockRecordImportRequest;
+use App\Modules\Worktime\Models\ClockRecordImport;
+use App\Modules\Worktime\Models\TenantClockDevice;
+use App\Modules\Worktime\Services\ClockRecordImportService;
+use App\Support\Audit\Audit;
+use App\Support\CompanyContext;
+use App\Support\Flash;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class ClockRecordImportController extends Controller
+{
+    public function __construct(
+        protected ClockRecordImportService $service,
+    ) {
+    }
+
+    public function index(Request $request): Response
+    {
+        abort_unless($request->user()->hasPermission('worktime.viewAnyClockRecordImport'), 403);
+
+        $imports = ClockRecordImport::query()
+            ->with('tenantClockDevice.clockDevice')
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('company_id', session('current_company_id'))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString()
+            ->through(fn (ClockRecordImport $import) => [
+                'id' => $import->id,
+                'original_filename' => $import->original_filename,
+                'status' => $import->status?->value,
+                'status_label' => $import->status?->label(),
+                'device_name' => $import->tenantClockDevice?->clockDevice?->name,
+                'total_items' => $import->total_items,
+                'valid_items' => $import->valid_items,
+                'invalid_items' => $import->invalid_items,
+                'created_at' => $import->created_at?->format('d/m/Y H:i'),
+            ]);
+
+        return Inertia::render('worktime/clock-record-imports/Index', [
+            'imports' => $imports,
+        ]);
+    }
+
+    public function exportCsv(Request $request): StreamedResponse
+    {
+        abort_unless($request->user()->hasPermission('worktime.exportClockRecordImport'), 403);
+
+        $imports = ClockRecordImport::query()
+            ->with('tenantClockDevice.clockDevice')
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('company_id', session('current_company_id'))
+            ->latest()
+            ->get();
+
+        $filename = 'clock-record-imports-' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        return response()->streamDownload(function () use ($imports) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'ID',
+                'Arquivo',
+                'Device',
+                'Status',
+                'Total de itens',
+                'Itens válidos',
+                'Itens divergentes',
+                'Criado em',
+            ], ';');
+
+            foreach ($imports as $import) {
+                fputcsv($handle, [
+                    $import->id,
+                    $import->original_filename,
+                    $import->tenantClockDevice?->clockDevice?->name,
+                    $import->status?->label(),
+                    $import->total_items,
+                    $import->valid_items,
+                    $import->invalid_items,
+                    $import->created_at?->format('d/m/Y H:i:s'),
+                ], ';');
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        abort_unless($request->user()->hasPermission('worktime.exportClockRecordImport'), 403);
+
+        $imports = ClockRecordImport::query()
+            ->with('tenantClockDevice.clockDevice')
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('company_id', session('current_company_id'))
+            ->latest()
+            ->get()
+            ->map(fn (ClockRecordImport $import) => [
+                'id' => $import->id,
+                'original_filename' => $import->original_filename,
+                'device_name' => $import->tenantClockDevice?->clockDevice?->name,
+                'status' => $import->status?->label(),
+                'total_items' => $import->total_items,
+                'valid_items' => $import->valid_items,
+                'invalid_items' => $import->invalid_items,
+                'created_at' => $import->created_at?->format('d/m/Y H:i:s'),
+            ]);
+
+        $pdf = Pdf::setOption([
+                'isPhpEnabled' => false,
+            ])
+            ->loadView('pdf.clock-record-imports-report', [
+                'imports' => $imports,
+                'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
+                'companyName' => CompanyContext::current()?->name ?? 'Empresa',
+            ])
+            ->setPaper('a4', 'landscape');
+
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
+
+        $canvas->page_text(
+            680,
+            560,
+            '{PAGE_NUM}/{PAGE_COUNT}',
+            $font,
+            9,
+            [0.42, 0.45, 0.5]
+        );
+
+        return response(
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="clock-record-imports-' . now()->format('Y-m-d_H-i-s') . '.pdf"',
+            ]
+        );
+    }
+
+    public function create(Request $request): Response
+    {
+        abort_unless($request->user()->hasPermission('worktime.createClockRecordImport'), 403);
+
+        $devices = TenantClockDevice::query()
+            ->with('clockDevice')
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->get()
+            ->map(fn ($device) => [
+                'id' => $device->id,
+                'name' => $device->clockDevice?->name,
+            ]);
+
+        return Inertia::render('worktime/clock-record-imports/Create', [
+            'devices' => $devices,
+        ]);
+    }
+
+    public function store(StoreClockRecordImportRequest $request): RedirectResponse
+    {
+        $import = $this->service->createFromUpload(
+            data: $request->validated(),
+            user: $request->user(),
+        );
+
+        Audit::event('worktime.clock-record-imports.created', $import, [
+            'original_filename' => $import->original_filename,
+            'status' => $import->status?->value,
+            'total_items' => $import->total_items,
+            'valid_items' => $import->valid_items,
+            'invalid_items' => $import->invalid_items,
+        ]);
+
+        return redirect()
+            ->route('worktime.clock-record-imports.show', $import)
+            ->with('alert', Flash::success('Importação criada', 'O arquivo foi processado com sucesso.'));
+    }
+
+    public function show(Request $request, ClockRecordImport $clockRecordImport): Response
+    {
+        abort_unless($request->user()->hasPermission('worktime.viewClockRecordImport'), 403);
+        abort_unless(
+            $clockRecordImport->tenant_id === $request->user()->tenant_id
+            && $clockRecordImport->company_id === session('current_company_id'),
+            404
+        );
+
+        $clockRecordImport->load(['items.employee', 'tenantClockDevice.clockDevice']);
+
+        $groups = $clockRecordImport->items
+            ->sortBy('recorded_at')
+            ->groupBy(function ($item) {
+                $employeeKey = $item->employee?->name ?? $item->employee_code ?? 'Sem funcionário';
+                $dateKey = $item->recorded_at?->format('d/m/Y') ?? 'Sem data';
+
+                return $employeeKey . '|' . $dateKey;
+            })
+            ->map(function ($items, $groupKey) {
+                [$employeeName, $dateLabel] = explode('|', $groupKey);
+
+                return [
+                    'employee_name' => $employeeName,
+                    'date_label' => $dateLabel,
+                    'items' => $items->map(fn ($item) => [
+                        'id' => $item->id,
+                        'line_number' => $item->line_number,
+                        'employee_code' => $item->employee_code,
+                        'employee_name' => $item->employee?->name,
+                        'recorded_at' => $item->recorded_at?->format('d/m/Y H:i'),
+                        'time' => $item->recorded_at?->format('H:i'),
+                        'status' => $item->status?->value,
+                        'status_label' => $item->status?->label(),
+                        'divergence_reason' => $item->divergence_reason,
+                        'raw_line' => $item->raw_line,
+                    ])->values(),
+                ];
+            })
+            ->values();
+
+        return Inertia::render('worktime/clock-record-imports/Show', [
+            'import' => [
+                'id' => $clockRecordImport->id,
+                'original_filename' => $clockRecordImport->original_filename,
+                'status' => $clockRecordImport->status?->value,
+                'status_label' => $clockRecordImport->status?->label(),
+                'device_name' => $clockRecordImport->tenantClockDevice?->clockDevice?->name,
+                'total_items' => $clockRecordImport->total_items,
+                'valid_items' => $clockRecordImport->valid_items,
+                'invalid_items' => $clockRecordImport->invalid_items,
+                'can_launch' => $clockRecordImport->status?->value === 'ready_to_launch',
+            ],
+            'groups' => $groups,
+        ]);
+    }
+
+    public function launch(Request $request, ClockRecordImport $clockRecordImport): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermission('worktime.launchClockRecordImport'), 403);
+        abort_unless(
+            $clockRecordImport->tenant_id === $request->user()->tenant_id
+            && $clockRecordImport->company_id === session('current_company_id'),
+            404
+        );
+
+        $clockRecordImport = $this->service->launch($clockRecordImport, $request->user());
+
+        Audit::event('worktime.clock-record-imports.launched', $clockRecordImport, [
+            'status' => $clockRecordImport->status?->value,
+            'launched_at' => $clockRecordImport->launched_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        return redirect()
+            ->route('worktime.clock-record-imports.show', $clockRecordImport)
+            ->with('alert', Flash::success('Importação lançada', 'Os registros foram lançados com sucesso.'));
+    }
+}

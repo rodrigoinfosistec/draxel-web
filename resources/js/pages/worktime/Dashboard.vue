@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
-import { AlarmClock, ArrowRight, CalendarClock, Clock3, LayoutGrid } from 'lucide-vue-next'
+import { AlarmClock, ArrowRight, CalendarClock, Clock3, FileClock, LayoutGrid } from 'lucide-vue-next'
 
 type CardItem = {
     title: string
@@ -38,6 +38,10 @@ function resolveIcon(icon: string) {
 
     if (icon === 'clock-3') {
         return Clock3
+    }
+
+    if (icon === 'file-clock') {
+        return FileClock
     }
 
     return LayoutGrid

@@ -31,6 +31,14 @@ class WorktimeDashboardController extends Controller
                     'action_label' => 'Acessar registros',
                     'icon' => 'clock-3',
                 ],
+                [
+                    'title' => 'Importações',
+                    'description' => 'Envie arquivos TXT, revise divergências e lance os registros.',
+                    'href' => '/worktime/clock-record-imports',
+                    'permission' => 'worktime.viewAnyClockRecordImport',
+                    'action_label' => 'Acessar importações',
+                    'icon' => 'file-clock',
+                ],
             ],
         ]);
     }
