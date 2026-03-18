@@ -6,7 +6,7 @@ import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, FileClock } from 'lucide-vue-next'
 
-type ImportItem = {
+type ImportData = {
     id: number
     original_filename: string
     status: string
@@ -36,7 +36,7 @@ type GroupItem = {
 }
 
 const props = defineProps<{
-    import: ImportItem
+    importData: ImportData
     groups: GroupItem[]
 }>()
 
@@ -44,14 +44,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Ponto', href: '/worktime' },
     { title: 'Importações', href: '/worktime/clock-record-imports' },
-    { title: `Importação #${props.import.id}`, href: `/worktime/clock-record-imports/${props.import.id}` },
+    { title: `Importação #${props.importData.id}`, href: `/worktime/clock-record-imports/${props.importData.id}` },
 ]
 
 const form = useForm({})
 </script>
 
 <template>
-    <Head :title="`Importação #${import.id}`" />
+    <Head :title="`Importação #${props.importData.id}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
@@ -63,7 +63,7 @@ const form = useForm({})
 
                 <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
-                        :title="`Importação #${import.id}`"
+                        :title="`Importação #${props.importData.id}`"
                         description="Revise as divergências antes de lançar os registros."
                         :icon="FileClock"
                     />
@@ -78,9 +78,9 @@ const form = useForm({})
                         </Link>
 
                         <Button
-                            v-if="import.can_launch"
+                            v-if="props.importData.can_launch"
                             :disabled="form.processing"
-                            @click="form.post(`/worktime/clock-record-imports/${import.id}/launch`)"
+                            @click="form.post(`/worktime/clock-record-imports/${props.importData.id}/launch`)"
                         >
                             {{ form.processing ? 'Lançando...' : 'Lançar registros' }}
                         </Button>
@@ -91,24 +91,24 @@ const form = useForm({})
             <div class="grid gap-4 md:grid-cols-4">
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
                     <div class="text-sm text-muted-foreground">Arquivo</div>
-                    <div class="mt-1 font-medium">{{ import.original_filename }}</div>
+                    <div class="mt-1 font-medium">{{ props.importData.original_filename }}</div>
                 </div>
 
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
                     <div class="text-sm text-muted-foreground">Device</div>
-                    <div class="mt-1 font-medium">{{ import.device_name || '—' }}</div>
+                    <div class="mt-1 font-medium">{{ props.importData.device_name || '—' }}</div>
                 </div>
 
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
                     <div class="text-sm text-muted-foreground">Status</div>
-                    <div class="mt-1 font-medium">{{ import.status_label }}</div>
+                    <div class="mt-1 font-medium">{{ props.importData.status_label }}</div>
                 </div>
 
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
                     <div class="text-sm text-muted-foreground">Resumo</div>
                     <div class="mt-1 font-medium">
-                        {{ import.valid_items }}/{{ import.total_items }} válidos
-                        <span v-if="import.invalid_items > 0"> • {{ import.invalid_items }} divergentes</span>
+                        {{ props.importData.valid_items }}/{{ props.importData.total_items }} válidos
+                        <span v-if="props.importData.invalid_items > 0"> • {{ props.importData.invalid_items }} divergentes</span>
                     </div>
                 </div>
             </div>

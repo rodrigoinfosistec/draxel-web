@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
-import { AlarmClock, ArrowRight, CalendarClock, Clock3, FileClock, LayoutGrid } from 'lucide-vue-next'
+import { ArrowRight, Calculator, CalendarClock, Clock3, FileClock, LayoutGrid } from 'lucide-vue-next'
 
 type CardItem = {
     title: string
@@ -44,6 +44,10 @@ function resolveIcon(icon: string) {
         return FileClock
     }
 
+    if (icon === 'calculator') {
+        return Calculator
+    }
+
     return LayoutGrid
 }
 </script>
@@ -65,7 +69,7 @@ function resolveIcon(icon: string) {
                     <Heading
                         title="Ponto"
                         description="Acesse os serviços do módulo de jornada e controle de ponto."
-                        :icon="AlarmClock"
+                        :icon="LayoutGrid"
                     />
                 </div>
             </div>

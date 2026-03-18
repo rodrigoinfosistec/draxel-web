@@ -267,6 +267,16 @@ return [
                 'name' => 'Exportar importações de ponto',
                 'description' => 'Permite exportar relatórios e listagens de importações de ponto',
             ],
+
+            'viewAnyApuration' => [
+                'name' => 'Ver apurações de ponto',
+                'description' => 'Permite visualizar a apuração de ponto por período e funcionário',
+            ],
+
+            'exportApuration' => [
+                'name' => 'Exportar apurações de ponto',
+                'description' => 'Permite exportar relatórios e listagens da apuração de ponto',
+            ],
         ],
     ],
 

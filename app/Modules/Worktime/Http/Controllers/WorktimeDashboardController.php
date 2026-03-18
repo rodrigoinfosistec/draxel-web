@@ -39,6 +39,14 @@ class WorktimeDashboardController extends Controller
                     'action_label' => 'Acessar importações',
                     'icon' => 'file-clock',
                 ],
+                [
+                    'title' => 'Apuração',
+                    'description' => 'Apure o período por funcionário e dia antes do fechamento.',
+                    'href' => '/worktime/apurations',
+                    'permission' => 'worktime.viewAnyApuration',
+                    'action_label' => 'Acessar apuração',
+                    'icon' => 'calculator',
+                ],
             ],
         ]);
     }

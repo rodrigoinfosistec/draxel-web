@@ -3,6 +3,7 @@
 use App\Modules\Worktime\Http\Controllers\ClockRecordController;
 use App\Modules\Worktime\Http\Controllers\ClockRecordImportController;
 use App\Modules\Worktime\Http\Controllers\EmployeeEventController;
+use App\Modules\Worktime\Http\Controllers\WorktimeApurationController;
 use App\Modules\Worktime\Http\Controllers\WorktimeDashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,15 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
             Route::prefix('export')->name('export.')->group(function () {
                 Route::get('/csv', [ClockRecordImportController::class, 'exportCsv'])->name('csv');
                 Route::get('/pdf', [ClockRecordImportController::class, 'exportPdf'])->name('pdf');
+            });
+        });
+
+        Route::prefix('apurations')->name('apurations.')->group(function () {
+            Route::get('/', [WorktimeApurationController::class, 'index'])->name('index');
+
+            Route::prefix('export')->name('export.')->group(function () {
+                Route::get('/csv', [WorktimeApurationController::class, 'exportCsv'])->name('csv');
+                Route::get('/pdf', [WorktimeApurationController::class, 'exportPdf'])->name('pdf');
             });
         });
     });
