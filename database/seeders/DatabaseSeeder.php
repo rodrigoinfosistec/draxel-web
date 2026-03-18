@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Modules\Worktime\Database\Seeders\WorktimeSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -22,10 +23,16 @@ class DatabaseSeeder extends Seeder
             ModuleSeeder::class,
 
             /**
+             * Dispositivos de ponto suportados
+             */
+            WorktimeSeeder::class,
+
+            /**
              * Painel Global (Dpanel)
              * Permissão total
              */
             DpanelSeeder::class,
+
         ]);
 
         /**

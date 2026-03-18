@@ -12,11 +12,14 @@ class CreateTenant extends CreateRecord
     protected function afterCreate(): void
     {
         $modules = $this->data['modules'] ?? [];
+        $clockDevices = $this->data['clock_devices'] ?? [];
 
         $this->record->modules()->sync(
             collect($modules)->mapWithKeys(fn ($moduleId) => [
                 $moduleId => ['is_active' => true],
             ])->toArray()
         );
+
+        $this->record->clockDevices()->sync($clockDevices);
     }
 }

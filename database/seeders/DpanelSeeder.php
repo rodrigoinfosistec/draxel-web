@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\TenantModule;
 use App\Models\User;
+use App\Modules\Worktime\Models\ClockDevice;
 use Illuminate\Database\Seeder;
 
 class DpanelSeeder extends Seeder
@@ -56,6 +57,12 @@ class DpanelSeeder extends Seeder
                 ]
             );
         }
+
+        $clockDeviceIds = ClockDevice::query()
+            ->pluck('id')
+            ->toArray();
+
+        $tenant->clockDevices()->syncWithoutDetaching($clockDeviceIds);
 
         $role = Role::updateOrCreate(
             [

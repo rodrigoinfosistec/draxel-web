@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Tenants\Schemas;
 
 use App\Models\Module;
+use App\Modules\Worktime\Models\ClockDevice;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -28,6 +29,17 @@ class TenantForm
                     ->options(
                         Module::query()
                             ->where('is_active', true)
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->toArray()
+                    )
+                    ->columns(2)
+                    ->dehydrated(false),
+
+                CheckboxList::make('clock_devices')
+                    ->label('Devices de ponto')
+                    ->options(
+                        ClockDevice::query()
                             ->orderBy('name')
                             ->pluck('name', 'id')
                             ->toArray()

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Modules\Worktime\Models\ClockDevice;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -56,6 +57,14 @@ class Tenant extends Model
     public function holidays(): HasMany
     {
         return $this->hasMany(Holiday::class);
+    }
+
+    public function clockDevices(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ClockDevice::class,
+            'tenant_clock_devices'
+        )->withTimestamps();
     }
 
     public function scopeActive(Builder $query)
