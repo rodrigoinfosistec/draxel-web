@@ -23,6 +23,14 @@ class WorktimeDashboardController extends Controller
                     'action_label' => 'Acessar eventos',
                     'icon' => 'calendar-clock',
                 ],
+                [
+                    'title' => 'Registros de ponto',
+                    'description' => 'Cadastre, ajuste e trate os registros manuais de ponto.',
+                    'href' => '/worktime/clock-records',
+                    'permission' => 'worktime.viewAnyClockRecord',
+                    'action_label' => 'Acessar registros',
+                    'icon' => 'clock-3',
+                ],
             ],
         ]);
     }

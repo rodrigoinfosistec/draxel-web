@@ -185,7 +185,7 @@ return [
 
             'viewAny' => [
                 'name' => 'Ver lista de eventos de ponto',
-                'description' => 'Permite visualizar a lista de eventos e registros do módulo de ponto',
+                'description' => 'Permite visualizar a lista de eventos do módulo de ponto',
             ],
 
             'view' => [
@@ -213,6 +213,35 @@ return [
                 'description' => 'Permite exportar relatórios e listagens do módulo de ponto',
             ],
 
+            'viewAnyClockRecord' => [
+                'name' => 'Ver lista de registros de ponto',
+                'description' => 'Permite visualizar a lista de registros de ponto do módulo',
+            ],
+
+            'viewClockRecord' => [
+                'name' => 'Ver registro de ponto',
+                'description' => 'Permite visualizar os dados de um registro de ponto',
+            ],
+
+            'createClockRecord' => [
+                'name' => 'Cadastrar registro de ponto',
+                'description' => 'Permite cadastrar registros manuais de ponto',
+            ],
+
+            'updateClockRecord' => [
+                'name' => 'Atualizar registro de ponto',
+                'description' => 'Permite editar registros de ponto',
+            ],
+
+            'deleteClockRecord' => [
+                'name' => 'Excluir registro de ponto',
+                'description' => 'Permite excluir registros de ponto',
+            ],
+
+            'exportClockRecord' => [
+                'name' => 'Exportar registros de ponto',
+                'description' => 'Permite exportar relatórios e listagens de registros de ponto',
+            ],
         ],
     ],
 
@@ -337,7 +366,7 @@ return [
 
             'times' => [
                 'name' => 'Gerenciar horário de funcionários',
-                'description' => 'Permite excluir funcionários',
+                'description' => 'Permite gerenciar os horários padrão dos funcionários',
             ],
         ],
     ],
@@ -377,6 +406,5 @@ return [
 
         ],
     ],
-
 
 ];

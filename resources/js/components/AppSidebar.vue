@@ -17,15 +17,15 @@ import { dashboard } from '@/routes'
 import type { NavItem } from '@/types'
 import { Link, usePage } from '@inertiajs/vue3'
 import {
+    AlarmClock,
     BriefcaseBusiness,
-    CalendarClock,
     CalendarDays,
     Headset,
     IdCard,
     LayoutGrid,
     Settings2,
     ShieldCheck,
-    Users,
+    Users
 } from 'lucide-vue-next'
 
 const page = usePage<{
@@ -75,7 +75,7 @@ const mainNavItems: NavItem[] = [
               {
                   title: 'Ponto',
                   href: '/worktime/',
-                  icon: CalendarClock,
+                  icon: AlarmClock,
               },
           ]
         : []),
