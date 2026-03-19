@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             ModuleSeeder::class,
 
             /**
+             * Módulo de Controle de Ponto
              * Dispositivos de ponto suportados
              */
             WorktimeSeeder::class,
@@ -33,6 +34,10 @@ class DatabaseSeeder extends Seeder
              */
             DpanelSeeder::class,
 
+            /**
+             * Cargos de funcionários
+             */
+            PositionSeeder::class,
         ]);
 
         /**
