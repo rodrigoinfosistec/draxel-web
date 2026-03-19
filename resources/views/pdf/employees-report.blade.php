@@ -29,6 +29,7 @@
                 <th>Nome</th>
                 <th>CPF</th>
                 <th>Matrícula</th>
+                <th>Departamento</th>
                 <th>Cargo</th>
                 <th>Status</th>
                 <th>Criado em</th>
@@ -41,13 +42,14 @@
                     <td>{{ $employee['name'] }}</td>
                     <td>{{ $employee['cpf'] }}</td>
                     <td>{{ $employee['registration'] }}</td>
+                    <td>{{ $employee['department'] ?: '—' }}</td>
                     <td>{{ $employee['position'] ?: '—' }}</td>
                     <td>{{ $employee['status'] }}</td>
                     <td>{{ $employee['created_at'] ?? '—' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7">Nenhum funcionário encontrado.</td>
+                    <td colspan="8">Nenhum funcionário encontrado.</td>
                 </tr>
             @endforelse
         </tbody>

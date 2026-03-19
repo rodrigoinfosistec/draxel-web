@@ -19,13 +19,14 @@ import { Link, usePage } from '@inertiajs/vue3'
 import {
     AlarmClock,
     BriefcaseBusiness,
+    Building2,
     CalendarDays,
     Headset,
     IdCard,
     LayoutGrid,
     Settings2,
     ShieldCheck,
-    Users
+    Users,
 } from 'lucide-vue-next'
 
 const page = usePage<{
@@ -66,6 +67,16 @@ const mainNavItems: NavItem[] = [
                   title: 'Cargos de funcionário',
                   href: '/positions',
                   icon: BriefcaseBusiness,
+              },
+          ]
+        : []),
+
+    ...(can('departments.viewAny')
+        ? [
+              {
+                  title: 'Departamentos',
+                  href: '/departments',
+                  icon: Building2,
               },
           ]
         : []),

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeTimeController;
 use App\Http\Controllers\HolidayController;
@@ -83,6 +84,20 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
         Route::get('/', [ParametersController::class, 'index'])->name('index');
         Route::patch('/company-default-times', [ParametersController::class, 'updateCompanyDefaultTimes'])->name('company-default-times.update');
         Route::patch('/company-hour-bank', [ParametersController::class, 'updateCompanyHourBank'])->name('company-hour-bank.update');
+    });
+
+    Route::prefix('departments')->name('departments.')->group(function () {
+        Route::get('/', [DepartmentController::class, 'index'])->name('index');
+        Route::get('/create', [DepartmentController::class, 'create'])->name('create');
+        Route::post('/', [DepartmentController::class, 'store'])->name('store');
+        Route::get('/{department}/edit', [DepartmentController::class, 'edit'])->name('edit');
+        Route::put('/{department}', [DepartmentController::class, 'update'])->name('update');
+        Route::delete('/{department}', [DepartmentController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [DepartmentController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [DepartmentController::class, 'exportPdf'])->name('pdf');
+        });
     });
 
     Route::prefix('positions')->name('positions.')->group(function () {

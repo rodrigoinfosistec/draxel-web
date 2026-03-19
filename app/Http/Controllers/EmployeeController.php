@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Support\Audit\Audit;
@@ -28,7 +29,10 @@ class EmployeeController extends Controller
         $search = $request->string('search')->toString();
 
         $employees = Employee::query()
-            ->with('position:id,name')
+            ->with([
+                'department:id,name',
+                'position:id,name',
+            ])
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
             ->when($search, fn ($query) => $query->where(function ($subQuery) use ($search) {
@@ -46,6 +50,12 @@ class EmployeeController extends Controller
                 'cpf' => $employee->cpf,
                 'registration' => $employee->registration,
                 'is_active' => $employee->is_active,
+                'department' => $employee->department
+                    ? [
+                        'id' => $employee->department->id,
+                        'name' => $employee->department->name,
+                    ]
+                    : null,
                 'position' => $employee->position
                     ? [
                         'id' => $employee->position->id,
@@ -72,7 +82,10 @@ class EmployeeController extends Controller
         $filename = 'employees-' . now()->format('Y-m-d_H-i-s') . '.csv';
 
         $employees = Employee::query()
-            ->with('position:id,name')
+            ->with([
+                'department:id,name',
+                'position:id,name',
+            ])
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
             ->when($search, fn ($query) => $query->where(function ($subQuery) use ($search) {
@@ -91,7 +104,8 @@ class EmployeeController extends Controller
                 'ID',
                 'Nome',
                 'CPF',
-                'Matricula',
+                'Matrícula',
+                'Departamento',
                 'Cargo',
                 'Status',
                 'Criado em',
@@ -103,6 +117,7 @@ class EmployeeController extends Controller
                     $employee->name,
                     $this->formatCpf($employee->cpf),
                     $employee->registration,
+                    $employee->department?->name,
                     $employee->position?->name,
                     $employee->is_active ? 'Ativo' : 'Inativo',
                     $employee->created_at?->format('d/m/Y H:i:s'),
@@ -124,7 +139,10 @@ class EmployeeController extends Controller
         $search = $request->string('search')->toString();
 
         $employees = Employee::query()
-            ->with('position:id,name')
+            ->with([
+                'department:id,name',
+                'position:id,name',
+            ])
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
             ->when($search, fn ($query) => $query->where(function ($subQuery) use ($search) {
@@ -140,6 +158,7 @@ class EmployeeController extends Controller
                 'name' => $employee->name,
                 'cpf' => $this->formatCpf($employee->cpf),
                 'registration' => $employee->registration,
+                'department' => $employee->department?->name,
                 'position' => $employee->position?->name,
                 'status' => $employee->is_active ? 'Ativo' : 'Inativo',
                 'created_at' => $employee->created_at?->format('d/m/Y H:i:s'),
@@ -203,6 +222,7 @@ class EmployeeController extends Controller
             $employee = Employee::create([
                 'tenant_id' => $tenantId,
                 'company_id' => $companyId,
+                'department_id' => $data['department_id'] ?? null,
                 'position_id' => $data['position_id'] ?? null,
                 'name' => $data['name'],
                 'cpf' => $data['cpf'],
@@ -214,6 +234,7 @@ class EmployeeController extends Controller
                 'name' => $employee->name,
                 'cpf' => $employee->cpf,
                 'registration' => $employee->registration,
+                'department_id' => $employee->department_id,
                 'position_id' => $employee->position_id,
                 'is_active' => $employee->is_active,
             ]);
@@ -236,6 +257,7 @@ class EmployeeController extends Controller
                     'name' => $employee->name,
                     'cpf' => $employee->cpf,
                     'registration' => $employee->registration,
+                    'department_id' => $employee->department_id,
                     'position_id' => $employee->position_id,
                     'is_active' => $employee->is_active,
                 ],
@@ -252,11 +274,13 @@ class EmployeeController extends Controller
                 'name' => $employee->name,
                 'cpf' => $employee->cpf,
                 'registration' => $employee->registration,
+                'department_id' => $employee->department_id,
                 'position_id' => $employee->position_id,
                 'is_active' => $employee->is_active,
             ];
 
             $employee->update([
+                'department_id' => $data['department_id'] ?? null,
                 'position_id' => $data['position_id'] ?? null,
                 'name' => $data['name'],
                 'cpf' => $data['cpf'],
@@ -270,6 +294,7 @@ class EmployeeController extends Controller
                     'name' => $employee->name,
                     'cpf' => $employee->cpf,
                     'registration' => $employee->registration,
+                    'department_id' => $employee->department_id,
                     'position_id' => $employee->position_id,
                     'is_active' => $employee->is_active,
                 ],
@@ -290,6 +315,7 @@ class EmployeeController extends Controller
                 'name' => $employee->name,
                 'cpf' => $employee->cpf,
                 'registration' => $employee->registration,
+                'department_id' => $employee->department_id,
                 'position_id' => $employee->position_id,
                 'is_active' => $employee->is_active,
             ];
@@ -308,6 +334,17 @@ class EmployeeController extends Controller
     {
         $tenantId = $request->user()->tenant_id;
 
+        $departments = Department::query()
+            ->where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Department $department) => [
+                'id' => $department->id,
+                'name' => $department->name,
+            ])
+            ->values()
+            ->toArray();
+
         $positions = Position::query()
             ->where('tenant_id', $tenantId)
             ->orderBy('name')
@@ -320,6 +357,7 @@ class EmployeeController extends Controller
             ->toArray();
 
         return [
+            'departments' => $departments,
             'positions' => $positions,
         ];
     }

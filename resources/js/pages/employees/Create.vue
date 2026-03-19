@@ -10,12 +10,18 @@ import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, IdCard } from 'lucide-vue-next'
 
+type DepartmentOption = {
+    id: number
+    name: string
+}
+
 type PositionOption = {
     id: number
     name: string
 }
 
 defineProps<{
+    departments: DepartmentOption[]
     positions: PositionOption[]
 }>()
 
@@ -29,6 +35,7 @@ const form = useForm({
     name: '',
     cpf: '',
     registration: '',
+    department_id: '' as number | string,
     position_id: '' as number | string,
     is_active: true,
 })
@@ -125,6 +132,25 @@ function submit() {
                             <Label for="registration">Matrícula</Label>
                             <Input id="registration" v-model="form.registration" />
                             <InputError :message="form.errors.registration" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="department_id">Departamento</Label>
+                            <select
+                                id="department_id"
+                                v-model="form.department_id"
+                                class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            >
+                                <option value="">Selecione</option>
+                                <option
+                                    v-for="department in departments"
+                                    :key="department.id"
+                                    :value="department.id"
+                                >
+                                    {{ department.name }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.department_id" />
                         </div>
 
                         <div class="grid gap-2">

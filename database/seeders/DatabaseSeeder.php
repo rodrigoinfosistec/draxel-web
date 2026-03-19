@@ -35,6 +35,11 @@ class DatabaseSeeder extends Seeder
             DpanelSeeder::class,
 
             /**
+             * Departamentos onde ficam alocados os funcionários
+             */
+            DepartmentSeeder::class,
+
+            /**
              * Cargos de funcionários
              */
             PositionSeeder::class,

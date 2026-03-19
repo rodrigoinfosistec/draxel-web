@@ -52,7 +52,18 @@ class UpdateEmployeeRequest extends FormRequest
                         ->where('tenant_id', $tenantId)
                         ->where('company_id', $companyId)),
             ],
-            'position_id' => ['nullable', 'integer', 'exists:positions,id'],
+            'department_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('departments', 'id')->where(fn ($query) => $query
+                    ->where('tenant_id', $tenantId)),
+            ],
+            'position_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('positions', 'id')->where(fn ($query) => $query
+                    ->where('tenant_id', $tenantId)),
+            ],
             'is_active' => ['required', 'boolean'],
         ];
     }

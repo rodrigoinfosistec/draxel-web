@@ -11,6 +11,11 @@ import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, IdCard } from 'lucide-vue-next'
 
+type DepartmentOption = {
+    id: number
+    name: string
+}
+
 type PositionOption = {
     id: number
     name: string
@@ -21,12 +26,14 @@ type EmployeeFormData = {
     name: string
     cpf: string
     registration: string
+    department_id: number | null
     position_id: number | null
     is_active: boolean
 }
 
 const props = defineProps<{
     employee: EmployeeFormData
+    departments: DepartmentOption[]
     positions: PositionOption[]
 }>()
 
@@ -53,6 +60,7 @@ const form = useForm({
     name: props.employee.name,
     cpf: formatCpf(props.employee.cpf),
     registration: props.employee.registration,
+    department_id: props.employee.department_id ?? '',
     position_id: props.employee.position_id ?? '',
     is_active: props.employee.is_active,
 })
@@ -152,6 +160,25 @@ async function destroy() {
                             <Label for="registration">Matrícula</Label>
                             <Input id="registration" v-model="form.registration" />
                             <InputError :message="form.errors.registration" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="department_id">Departamento</Label>
+                            <select
+                                id="department_id"
+                                v-model="form.department_id"
+                                class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            >
+                                <option value="">Selecione</option>
+                                <option
+                                    v-for="department in departments"
+                                    :key="department.id"
+                                    :value="department.id"
+                                >
+                                    {{ department.name }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.department_id" />
                         </div>
 
                         <div class="grid gap-2">

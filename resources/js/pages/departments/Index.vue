@@ -6,27 +6,15 @@ import { Input } from '@/components/ui/input'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Clock3, Download, FileText, IdCard, Pencil } from 'lucide-vue-next'
+import { Building2, Download, FileText, Pencil } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 type DepartmentItem = {
     id: number
     name: string
-} | null
-
-type PositionItem = {
-    id: number
-    name: string
-} | null
-
-type EmployeeItem = {
-    id: number
-    name: string
-    cpf: string
-    registration: string
-    is_active: boolean
-    department: DepartmentItem
-    position: PositionItem
+    slug: string
+    description: string | null
+    created_at: string | null
 }
 
 type PaginationLink = {
@@ -36,8 +24,8 @@ type PaginationLink = {
 }
 
 const props = defineProps<{
-    employees: {
-        data: EmployeeItem[]
+    departments: {
+        data: DepartmentItem[]
         links: PaginationLink[]
     }
     filters: {
@@ -47,30 +35,20 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Funcionários', href: '/employees' },
+    { title: 'Departamentos', href: '/departments' },
 ]
 
 const search = ref(props.filters.search ?? '')
 
 function submitSearch() {
     router.get(
-        '/employees',
+        '/departments',
         { search: search.value || undefined },
         {
             preserveState: true,
             replace: true,
         },
     )
-}
-
-function formatCpf(value: string) {
-    const digits = value.replace(/\D/g, '')
-
-    if (digits.length !== 11) {
-        return value
-    }
-
-    return digits.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
 }
 
 const exportParams = computed(() => {
@@ -81,14 +59,14 @@ const exportParams = computed(() => {
     const query = params.toString()
 
     return {
-        csv: query ? `/employees/export/csv?${query}` : '/employees/export/csv',
-        pdf: query ? `/employees/export/pdf?${query}` : '/employees/export/pdf',
+        csv: query ? `/departments/export/csv?${query}` : '/departments/export/csv',
+        pdf: query ? `/departments/export/pdf?${query}` : '/departments/export/pdf',
     }
 })
 </script>
 
 <template>
-    <Head title="Funcionários" />
+    <Head title="Departamentos" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
@@ -102,13 +80,13 @@ const exportParams = computed(() => {
 
                 <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
-                        title="Funcionários"
-                        description="Gerencie os funcionários."
-                        :icon="IdCard"
+                        title="Departamentos"
+                        description="Gerencie os departamentos do tenant."
+                        :icon="Building2"
                     />
 
                     <div class="flex flex-col gap-3 sm:flex-row">
-                        <Can permission="employees.viewAny">
+                        <Can permission="departments.viewAny">
                             <Button as-child variant="outline" class="w-full sm:w-auto">
                                 <a :href="exportParams.csv">
                                     <Download class="mr-2 h-4 w-4" />
@@ -117,7 +95,7 @@ const exportParams = computed(() => {
                             </Button>
                         </Can>
 
-                        <Can permission="employees.viewAny">
+                        <Can permission="departments.viewAny">
                             <Button as-child variant="outline" class="w-full sm:w-auto">
                                 <a :href="exportParams.pdf">
                                     <FileText class="mr-2 h-4 w-4" />
@@ -126,9 +104,9 @@ const exportParams = computed(() => {
                             </Button>
                         </Can>
 
-                        <Can permission="employees.create">
-                            <Link href="/employees/create" class="w-full sm:w-auto">
-                                <Button class="w-full sm:w-auto">Novo funcionário</Button>
+                        <Can permission="departments.create">
+                            <Link href="/departments/create" class="w-full sm:w-auto">
+                                <Button class="w-full sm:w-auto">Novo departamento</Button>
                             </Link>
                         </Can>
                     </div>
@@ -140,7 +118,7 @@ const exportParams = computed(() => {
                     <Input
                         v-model="search"
                         type="text"
-                        placeholder="Buscar por nome, CPF ou matrícula"
+                        placeholder="Buscar por nome, slug ou descrição"
                         class="w-full"
                     />
                     <Button type="submit" variant="outline" class="w-full sm:w-auto">
@@ -151,86 +129,59 @@ const exportParams = computed(() => {
 
             <div class="rounded-xl border bg-card/50 shadow-sm">
                 <div class="overflow-x-auto">
-                    <table class="min-w-[920px] w-full text-sm">
+                    <table class="min-w-[860px] w-full text-sm">
                         <thead class="bg-muted/50">
                             <tr>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Funcionário</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Departamento</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Cargo</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Status</th>
+                                <th class="px-4 py-3 text-left whitespace-nowrap">Nome</th>
+                                <th class="px-4 py-3 text-left whitespace-nowrap">Slug</th>
+                                <th class="px-4 py-3 text-left whitespace-nowrap">Descrição</th>
+                                <th class="px-4 py-3 text-left whitespace-nowrap">Criado em</th>
                                 <th class="px-4 py-3 text-right whitespace-nowrap">Ações</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             <tr
-                                v-for="employee in employees.data"
-                                :key="employee.id"
+                                v-for="department in departments.data"
+                                :key="department.id"
                                 class="border-t"
                             >
                                 <td class="px-4 py-3 align-top">
-                                    <div class="font-medium">{{ employee.name }}</div>
-                                    <div class="text-xs text-muted-foreground">
-                                        CPF: {{ formatCpf(employee.cpf) }}
-                                    </div>
-                                    <div class="text-xs text-muted-foreground">
-                                        Matrícula: {{ employee.registration }}
+                                    <div class="font-medium">{{ department.name }}</div>
+                                </td>
+
+                                <td class="px-4 py-3 align-top">
+                                    <div class="text-sm text-muted-foreground">
+                                        {{ department.slug }}
                                     </div>
                                 </td>
 
                                 <td class="px-4 py-3 align-top">
                                     <div class="text-sm text-muted-foreground">
-                                        {{ employee.department?.name ?? '—' }}
+                                        {{ department.description || '—' }}
                                     </div>
                                 </td>
 
                                 <td class="px-4 py-3 align-top">
-                                    <div class="text-sm text-muted-foreground">
-                                        {{ employee.position?.name ?? '—' }}
-                                    </div>
-                                </td>
-
-                                <td class="px-4 py-3 align-top">
-                                    <span
-                                        class="inline-flex rounded-md px-2 py-1 text-xs whitespace-nowrap"
-                                        :class="
-                                            employee.is_active
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700'
-                                        "
-                                    >
-                                        {{ employee.is_active ? 'Ativo' : 'Inativo' }}
-                                    </span>
+                                    {{ department.created_at || '—' }}
                                 </td>
 
                                 <td class="px-4 py-3 text-right align-top">
-                                    <div class="flex justify-end gap-2">
-                                        <Can permission="employees.update">
-                                            <Link
-                                                :href="`/employees/${employee.id}/times`"
-                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
-                                            >
-                                                <Clock3 class="h-4 w-4" />
-                                                <span class="hidden sm:inline">Horários</span>
-                                            </Link>
-                                        </Can>
-
-                                        <Can permission="employees.update">
-                                            <Link
-                                                :href="`/employees/${employee.id}/edit`"
-                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
-                                            >
-                                                <Pencil class="h-4 w-4" />
-                                                <span class="hidden sm:inline">Editar</span>
-                                            </Link>
-                                        </Can>
-                                    </div>
+                                    <Can permission="departments.update">
+                                        <Link
+                                            :href="`/departments/${department.id}/edit`"
+                                            class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                                        >
+                                            <Pencil class="h-4 w-4" />
+                                            <span class="hidden sm:inline">Editar</span>
+                                        </Link>
+                                    </Can>
                                 </td>
                             </tr>
 
-                            <tr v-if="employees.data.length === 0">
+                            <tr v-if="departments.data.length === 0">
                                 <td colspan="5" class="px-4 py-8 text-center text-muted-foreground">
-                                    Nenhum funcionário encontrado.
+                                    Nenhum departamento encontrado.
                                 </td>
                             </tr>
                         </tbody>
@@ -240,7 +191,7 @@ const exportParams = computed(() => {
 
             <div class="flex flex-wrap gap-2">
                 <Link
-                    v-for="link in employees.links"
+                    v-for="link in departments.links"
                     :key="link.label"
                     :href="link.url || '#'"
                     v-html="link.label"

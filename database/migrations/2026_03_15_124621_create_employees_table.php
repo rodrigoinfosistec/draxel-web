@@ -19,6 +19,11 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
+            $table->foreignId('department_id')
+                ->nullable()
+                ->constrained()
+                ->nullOnDelete();
+
             $table->foreignId('position_id')
                 ->nullable()
                 ->constrained()

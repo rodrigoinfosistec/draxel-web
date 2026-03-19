@@ -330,6 +330,42 @@ return [
         ],
     ],
 
+    'departments' => [
+
+        'name' => 'Departamentos',
+        'description' => 'Gestão de departamentos',
+        'is_core' => true,
+
+        'permissions' => [
+
+            'viewAny' => [
+                'name' => 'Ver lista de departamentos',
+                'description' => 'Permite visualizar a lista de departamentos do tenant',
+            ],
+
+            'view' => [
+                'name' => 'Ver departamento',
+                'description' => 'Permite visualizar os dados de um departamento',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar departamento',
+                'description' => 'Permite cadastrar novos departamentos',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar departamento',
+                'description' => 'Permite editar departamentos',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir departamento',
+                'description' => 'Permite excluir departamentos',
+            ],
+
+        ],
+    ],
+
     'positions' => [
 
         'name' => 'Cargos de funcionário',
