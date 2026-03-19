@@ -43,6 +43,11 @@ class DatabaseSeeder extends Seeder
              * Cargos de funcionários
              */
             PositionSeeder::class,
+
+            /**
+             * Base Construlaje
+             */
+            ConstrulajeSeeder::class,
         ]);
 
         /**
