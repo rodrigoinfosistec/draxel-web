@@ -137,8 +137,11 @@ class ClockRecordImportService
             abort_unless($import->tenant_id === $user->tenant_id, 404);
             abort_unless($import->company_id === session('current_company_id'), 404);
             abort_unless($item->clock_record_import_id === $import->id, 404);
-            abort_unless($import->status !== ClockRecordImportStatus::Launched, 422, 'A importação já foi lançada.');
             abort_unless($item->status === ClockRecordImportItemStatus::Invalid, 422, 'Apenas itens divergentes podem ser desconsiderados.');
+
+            if ($item->launched_clock_record_id) {
+                $this->deleteLinkedClockRecord($item, $import);
+            }
 
             $item->update([
                 'status' => ClockRecordImportItemStatus::Ignored,
@@ -162,7 +165,6 @@ class ClockRecordImportService
             abort_unless($import->tenant_id === $user->tenant_id, 404);
             abort_unless($import->company_id === session('current_company_id'), 404);
             abort_unless($item->clock_record_import_id === $import->id, 404);
-            abort_unless($import->status !== ClockRecordImportStatus::Launched, 422, 'A importação já foi lançada.');
             abort_unless($item->status === ClockRecordImportItemStatus::Invalid, 422, 'Apenas itens divergentes podem ser corrigidos.');
             abort_unless($item->divergence_reason === 'Funcionário não encontrado.', 422, 'Este item não permite vinculação manual de funcionário.');
             abort_unless($item->recorded_at !== null, 422, 'O item não possui data/hora válida para vinculação.');
@@ -175,9 +177,13 @@ class ClockRecordImportService
 
             abort_unless($employee, 422, 'Funcionário inválido para a empresa atual.');
 
+            $newStatus = $this->isLaunched($import)
+                ? ClockRecordImportItemStatus::Launched
+                : ClockRecordImportItemStatus::Resolved;
+
             $item->update([
                 'employee_id' => $employeeId,
-                'status' => ClockRecordImportItemStatus::Resolved,
+                'status' => $newStatus,
                 'record_hash' => $this->makeRecordHash(
                     tenantId: $import->tenant_id,
                     companyId: $import->company_id,
@@ -185,8 +191,12 @@ class ClockRecordImportService
                     recordedAt: $item->recorded_at,
                 ),
                 'divergence_reason' => null,
-                'launched_clock_record_id' => null,
+                'launched_clock_record_id' => $item->launched_clock_record_id,
             ]);
+
+            if ($this->isLaunched($import)) {
+                $this->syncClockRecordForItem($import, $item, $user);
+            }
 
             $this->recalculateImport($import);
 
@@ -204,7 +214,6 @@ class ClockRecordImportService
         return DB::transaction(function () use ($import, $employeeId, $date, $times, $user) {
             abort_unless($import->tenant_id === $user->tenant_id, 404);
             abort_unless($import->company_id === session('current_company_id'), 404);
-            abort_unless($import->status !== ClockRecordImportStatus::Launched, 422, 'A importação já foi lançada.');
 
             $employee = DB::table('employees')
                 ->where('id', $employeeId)
@@ -231,6 +240,12 @@ class ClockRecordImportService
                 ]);
             }
 
+            if ($normalizedTimes->count() % 2 !== 0) {
+                throw ValidationException::withMessages([
+                    'times' => 'Informe uma quantidade par de horários para o dia.',
+                ]);
+            }
+
             $existingItems = ClockRecordImportItem::query()
                 ->where('clock_record_import_id', $import->id)
                 ->where('employee_id', $employeeId)
@@ -240,28 +255,25 @@ class ClockRecordImportService
                     ClockRecordImportItemStatus::Invalid,
                     ClockRecordImportItemStatus::Resolved,
                     ClockRecordImportItemStatus::Ignored,
+                    ClockRecordImportItemStatus::Launched,
                 ])
                 ->orderBy('recorded_at')
                 ->orderBy('id')
-                ->get();
+                ->get()
+                ->values();
 
             if ($existingItems->isEmpty()) {
                 throw ValidationException::withMessages([
-                    'times' => 'Não há grupo disponível para ajuste nesta data.',
+                    'times' => 'Não há registros para ajuste nesta data.',
                 ]);
             }
-
-            $reusableItems = $existingItems
-                ->whereNotIn('status', [
-                    ClockRecordImportItemStatus::Launched,
-                ])
-                ->values();
 
             $this->applyTimeAdjustments(
                 import: $import,
                 employeeId: $employeeId,
                 dateTimes: $normalizedTimes,
-                existingItems: $reusableItems,
+                existingItems: $existingItems,
+                user: $user,
             );
 
             $this->recalculateImport($import);
@@ -335,8 +347,10 @@ class ClockRecordImportService
         int $employeeId,
         Collection $dateTimes,
         Collection $existingItems,
+        User $user,
     ): void {
         $existingItems = $existingItems->values();
+        $launched = $this->isLaunched($import);
 
         foreach ($dateTimes as $index => $dateTime) {
             $item = $existingItems->get($index);
@@ -345,7 +359,9 @@ class ClockRecordImportService
                 $item->update([
                     'employee_id' => $employeeId,
                     'recorded_at' => $dateTime,
-                    'status' => ClockRecordImportItemStatus::Resolved,
+                    'status' => $launched
+                        ? ClockRecordImportItemStatus::Launched
+                        : ClockRecordImportItemStatus::Resolved,
                     'record_hash' => $this->makeRecordHash(
                         tenantId: $import->tenant_id,
                         companyId: $import->company_id,
@@ -353,20 +369,25 @@ class ClockRecordImportService
                         recordedAt: $dateTime,
                     ),
                     'divergence_reason' => null,
-                    'launched_clock_record_id' => null,
                 ]);
+
+                if ($launched) {
+                    $this->syncClockRecordForItem($import, $item, $user);
+                }
 
                 continue;
             }
 
-            ClockRecordImportItem::query()->create([
+            $newItem = ClockRecordImportItem::query()->create([
                 'clock_record_import_id' => $import->id,
                 'line_number' => 0,
                 'raw_line' => 'Ajuste manual de horário',
                 'employee_code' => null,
                 'employee_id' => $employeeId,
                 'recorded_at' => $dateTime,
-                'status' => ClockRecordImportItemStatus::Resolved,
+                'status' => $launched
+                    ? ClockRecordImportItemStatus::Launched
+                    : ClockRecordImportItemStatus::Resolved,
                 'record_hash' => $this->makeRecordHash(
                     tenantId: $import->tenant_id,
                     companyId: $import->company_id,
@@ -378,12 +399,20 @@ class ClockRecordImportService
                     'manual_adjustment' => true,
                 ],
             ]);
+
+            if ($launched) {
+                $this->syncClockRecordForItem($import, $newItem, $user);
+            }
         }
 
         if ($existingItems->count() > $dateTimes->count()) {
             $existingItems
                 ->slice($dateTimes->count())
-                ->each(function (ClockRecordImportItem $item) {
+                ->each(function (ClockRecordImportItem $item) use ($import) {
+                    if ($item->launched_clock_record_id) {
+                        $this->deleteLinkedClockRecord($item, $import);
+                    }
+
                     $item->update([
                         'status' => ClockRecordImportItemStatus::Ignored,
                         'divergence_reason' => 'Item removido em ajuste manual de horários.',
@@ -393,6 +422,69 @@ class ClockRecordImportService
         }
     }
 
+    protected function syncClockRecordForItem(
+        ClockRecordImport $import,
+        ClockRecordImportItem $item,
+        User $user,
+    ): void {
+        if (! $item->employee_id || ! $item->recorded_at || ! $item->record_hash) {
+            return;
+        }
+
+        $clockRecord = $item->launched_clock_record_id
+            ? ClockRecord::query()
+                ->where('id', $item->launched_clock_record_id)
+                ->where('tenant_id', $import->tenant_id)
+                ->where('company_id', $import->company_id)
+                ->first()
+            : null;
+
+        if ($clockRecord) {
+            $clockRecord->update([
+                'employee_id' => $item->employee_id,
+                'tenant_clock_device_id' => $import->tenant_clock_device_id,
+                'source_type' => ClockRecordSourceType::File,
+                'source_hash' => $item->record_hash,
+                'recorded_at' => $item->recorded_at,
+                'updated_by' => $user->id,
+            ]);
+
+            return;
+        }
+
+        $clockRecord = ClockRecord::query()->firstOrCreate(
+            [
+                'tenant_id' => $import->tenant_id,
+                'source_hash' => $item->record_hash,
+            ],
+            [
+                'company_id' => $import->company_id,
+                'employee_id' => $item->employee_id,
+                'tenant_clock_device_id' => $import->tenant_clock_device_id,
+                'source_type' => ClockRecordSourceType::File,
+                'recorded_at' => $item->recorded_at,
+                'notes' => null,
+                'created_by' => $user->id,
+                'updated_by' => $user->id,
+            ],
+        );
+
+        $item->update([
+            'launched_clock_record_id' => $clockRecord->id,
+        ]);
+    }
+
+    protected function deleteLinkedClockRecord(
+        ClockRecordImportItem $item,
+        ClockRecordImport $import,
+    ): void {
+        ClockRecord::query()
+            ->where('id', $item->launched_clock_record_id)
+            ->where('tenant_id', $import->tenant_id)
+            ->where('company_id', $import->company_id)
+            ->delete();
+    }
+
     protected function recalculateImport(ClockRecordImport $import): void
     {
         $this->clearAutoOddDivergences($import);
@@ -400,10 +492,11 @@ class ClockRecordImportService
 
         $import->load('items');
 
-        $launchableItems = $import->items
+        $activeItems = $import->items
             ->whereIn('status', [
                 ClockRecordImportItemStatus::Valid,
                 ClockRecordImportItemStatus::Resolved,
+                ClockRecordImportItemStatus::Launched,
             ])
             ->count();
 
@@ -413,15 +506,16 @@ class ClockRecordImportService
 
         $status = match (true) {
             $import->items->isEmpty() => ClockRecordImportStatus::Failed,
-            $launchableItems === 0 => ClockRecordImportStatus::Failed,
             $invalidItems > 0 => ClockRecordImportStatus::AwaitingReview,
+            $this->isLaunched($import) => ClockRecordImportStatus::Launched,
+            $activeItems === 0 => ClockRecordImportStatus::Failed,
             default => ClockRecordImportStatus::ReadyToLaunch,
         };
 
         $import->update([
             'status' => $status,
             'total_items' => $import->items->count(),
-            'valid_items' => $launchableItems,
+            'valid_items' => $activeItems,
             'invalid_items' => $invalidItems,
             'processed_at' => now(),
         ]);
@@ -499,5 +593,10 @@ class ClockRecordImportService
             ->where('company_id', $companyId)
             ->where($identifierColumn, $employeeCode)
             ->value('id');
+    }
+
+    protected function isLaunched(ClockRecordImport $import): bool
+    {
+        return $import->status === ClockRecordImportStatus::Launched || filled($import->launched_at);
     }
 }

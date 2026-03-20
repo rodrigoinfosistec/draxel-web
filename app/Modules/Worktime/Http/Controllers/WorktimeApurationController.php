@@ -4,8 +4,8 @@ namespace App\Modules\Worktime\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
-use App\Support\CompanyContext;
 use App\Modules\Worktime\Services\WorktimeApurationService;
+use App\Support\CompanyContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -98,13 +98,14 @@ class WorktimeApurationController extends Controller
             fputcsv($handle, [
                 'Funcionário',
                 'Data',
-                'Jornada prevista (min)',
-                'Trabalhado (min)',
-                'Atraso (min)',
-                'Saída antecipada (min)',
-                'Extra (min)',
-                'Ausência (min)',
+                'Jornada prevista',
+                'Trabalhado',
+                'Atraso',
+                'Saída antecipada',
+                'Extra',
+                'Ausência',
                 'Registros',
+                'Horários',
                 'Status',
                 'Observações',
             ], ';');
@@ -113,14 +114,15 @@ class WorktimeApurationController extends Controller
                 fputcsv($handle, [
                     $day['employee_name'],
                     $day['date'],
-                    $day['expected_minutes'],
-                    $day['worked_minutes'],
-                    $day['delay_minutes'],
-                    $day['early_exit_minutes'],
-                    $day['overtime_minutes'],
-                    $day['absence_minutes'],
+                    $day['expected_hours'],
+                    $day['worked_hours'],
+                    $day['delay_hours'],
+                    $day['early_exit_hours'],
+                    $day['overtime_hours'],
+                    $day['absence_hours'],
                     $day['records_count'],
-                    $day['status'],
+                    $day['record_times'] ?? '',
+                    $day['status_label'],
                     $day['notes'],
                 ], ';');
             }
@@ -155,8 +157,8 @@ class WorktimeApurationController extends Controller
         );
 
         $pdf = Pdf::setOption([
-                'isPhpEnabled' => false,
-            ])
+            'isPhpEnabled' => false,
+        ])
             ->loadView('pdf.worktime-apurations-report', [
                 'days' => $apuration['flat_days'],
                 'filters' => [

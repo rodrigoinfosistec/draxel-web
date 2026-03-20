@@ -17,13 +17,21 @@ type DayItem = {
     date: string
     date_label: string
     expected_minutes: number
+    expected_hours: string
     worked_minutes: number
+    worked_hours: string
     delay_minutes: number
+    delay_hours: string
     early_exit_minutes: number
+    early_exit_hours: string
     overtime_minutes: number
+    overtime_hours: string
     absence_minutes: number
+    absence_hours: string
     records_count: number
+    record_times: string[]
     status: string
+    status_label: string
     notes: string[]
 }
 
@@ -32,13 +40,20 @@ type EmployeeItem = {
     name: string
     summary: {
         expected_minutes: number
+        expected_hours: string
         worked_minutes: number
+        worked_hours: string
         delay_minutes: number
+        delay_hours: string
         early_exit_minutes: number
+        early_exit_hours: string
         overtime_minutes: number
+        overtime_hours: string
         absence_minutes: number
+        absence_hours: string
         inconsistent_days: number
         worked_days: number
+        warning_days: number
     }
     days: DayItem[]
 }
@@ -56,12 +71,19 @@ const props = defineProps<{
             employees_count: number
             days_count: number
             expected_minutes: number
+            expected_hours: string
             worked_minutes: number
+            worked_hours: string
             delay_minutes: number
+            delay_hours: string
             early_exit_minutes: number
+            early_exit_hours: string
             overtime_minutes: number
+            overtime_hours: string
             absence_minutes: number
+            absence_hours: string
             inconsistent_days: number
+            warning_days: number
         }
     }
 }>()
@@ -117,6 +139,26 @@ function toggleEmployee(employeeId: number) {
 
     employeeIds.value.push(employeeId)
 }
+
+function statusClass(status: string) {
+    if (status === 'inconsistent') {
+        return 'bg-red-100 text-red-700 ring-1 ring-inset ring-red-200'
+    }
+
+    if (status === 'absence') {
+        return 'bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-200'
+    }
+
+    if (status === 'warning') {
+        return 'bg-blue-100 text-blue-700 ring-1 ring-inset ring-blue-200'
+    }
+
+    if (status === 'neutral') {
+        return 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200'
+    }
+
+    return 'bg-green-100 text-green-700 ring-1 ring-inset ring-green-200'
+}
 </script>
 
 <template>
@@ -124,9 +166,7 @@ function toggleEmployee(employeeId: number) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <div
-                class="relative overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5"
-            >
+            <div class="relative overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5">
                 <div
                     class="absolute inset-0"
                     style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
@@ -211,7 +251,7 @@ function toggleEmployee(employeeId: number) {
                 </form>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
                     <div class="text-sm text-muted-foreground">Funcionários</div>
                     <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.employees_count }}</div>
@@ -223,8 +263,13 @@ function toggleEmployee(employeeId: number) {
                 </div>
 
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Minutos trabalhados</div>
-                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.worked_minutes }}</div>
+                    <div class="text-sm text-muted-foreground">Previsto</div>
+                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.expected_hours }}</div>
+                </div>
+
+                <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
+                    <div class="text-sm text-muted-foreground">Trabalhado</div>
+                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.worked_hours }}</div>
                 </div>
 
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
@@ -241,20 +286,22 @@ function toggleEmployee(employeeId: number) {
                 >
                     <div class="border-b px-4 py-4">
                         <div class="text-base font-semibold">{{ employee.name }}</div>
-                        <div class="mt-2 grid gap-3 md:grid-cols-4 xl:grid-cols-8 text-sm">
-                            <div><span class="text-muted-foreground">Previsto:</span> {{ employee.summary.expected_minutes }}</div>
-                            <div><span class="text-muted-foreground">Trabalhado:</span> {{ employee.summary.worked_minutes }}</div>
-                            <div><span class="text-muted-foreground">Atraso:</span> {{ employee.summary.delay_minutes }}</div>
-                            <div><span class="text-muted-foreground">Saída antecipada:</span> {{ employee.summary.early_exit_minutes }}</div>
-                            <div><span class="text-muted-foreground">Extra:</span> {{ employee.summary.overtime_minutes }}</div>
-                            <div><span class="text-muted-foreground">Ausência:</span> {{ employee.summary.absence_minutes }}</div>
+
+                        <div class="mt-3 grid gap-3 text-sm md:grid-cols-3 xl:grid-cols-5">
+                            <div><span class="text-muted-foreground">Previsto:</span> {{ employee.summary.expected_hours }}</div>
+                            <div><span class="text-muted-foreground">Trabalhado:</span> {{ employee.summary.worked_hours }}</div>
+                            <div><span class="text-muted-foreground">Atraso:</span> {{ employee.summary.delay_hours }}</div>
+                            <div><span class="text-muted-foreground">Saída antecipada:</span> {{ employee.summary.early_exit_hours }}</div>
+                            <div><span class="text-muted-foreground">Extra:</span> {{ employee.summary.overtime_hours }}</div>
+                            <div><span class="text-muted-foreground">Ausência:</span> {{ employee.summary.absence_hours }}</div>
                             <div><span class="text-muted-foreground">Dias trabalhados:</span> {{ employee.summary.worked_days }}</div>
                             <div><span class="text-muted-foreground">Inconsistentes:</span> {{ employee.summary.inconsistent_days }}</div>
+                            <div><span class="text-muted-foreground">Atenção:</span> {{ employee.summary.warning_days }}</div>
                         </div>
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="min-w-[1100px] w-full text-sm">
+                        <table class="min-w-[1380px] w-full text-sm">
                             <thead class="bg-muted/50">
                                 <tr>
                                     <th class="px-4 py-3 text-left">Data</th>
@@ -265,6 +312,7 @@ function toggleEmployee(employeeId: number) {
                                     <th class="px-4 py-3 text-left">Extra</th>
                                     <th class="px-4 py-3 text-left">Ausência</th>
                                     <th class="px-4 py-3 text-left">Registros</th>
+                                    <th class="px-4 py-3 text-left">Horários</th>
                                     <th class="px-4 py-3 text-left">Status</th>
                                     <th class="px-4 py-3 text-left">Observações</th>
                                 </tr>
@@ -274,30 +322,46 @@ function toggleEmployee(employeeId: number) {
                                 <tr
                                     v-for="day in employee.days"
                                     :key="`${employee.id}-${day.date}`"
-                                    class="border-t"
+                                    class="border-t align-top"
+                                    :class="{
+                                        'bg-red-50/40': day.status === 'inconsistent',
+                                    }"
                                 >
                                     <td class="px-4 py-3">{{ day.date_label }}</td>
-                                    <td class="px-4 py-3">{{ day.expected_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.worked_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.delay_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.early_exit_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.overtime_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.absence_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.records_count }}</td>
+                                    <td class="px-4 py-3">{{ day.expected_hours }}</td>
+                                    <td class="px-4 py-3">{{ day.worked_hours }}</td>
+                                    <td class="px-4 py-3">{{ day.delay_hours }}</td>
+                                    <td class="px-4 py-3">{{ day.early_exit_hours }}</td>
+                                    <td class="px-4 py-3">{{ day.overtime_hours }}</td>
+                                    <td class="px-4 py-3">{{ day.absence_hours }}</td>
                                     <td class="px-4 py-3">
                                         <span
-                                            class="inline-flex rounded-md px-2 py-1 text-xs"
-                                            :class="
-                                                day.status === 'inconsistent'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : day.status === 'absence'
-                                                        ? 'bg-amber-100 text-amber-700'
-                                                        : day.status === 'neutral'
-                                                            ? 'bg-slate-100 text-slate-700'
-                                                            : 'bg-green-100 text-green-700'
-                                            "
+                                            class="inline-flex rounded-md px-2 py-1 text-xs font-medium"
+                                            :class="day.status === 'inconsistent'
+                                                ? 'bg-red-100 text-red-700'
+                                                : 'bg-zinc-100 text-zinc-700'"
                                         >
-                                            {{ day.status }}
+                                            {{ day.records_count }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div v-if="day.record_times?.length" class="flex flex-wrap gap-1">
+                                            <span
+                                                v-for="time in day.record_times"
+                                                :key="time"
+                                                class="inline-flex rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-700"
+                                            >
+                                                {{ time }}
+                                            </span>
+                                        </div>
+                                        <span v-else>—</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span
+                                            class="inline-flex rounded-md px-2 py-1 text-xs font-medium"
+                                            :class="statusClass(day.status)"
+                                        >
+                                            {{ day.status_label }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3">
@@ -305,7 +369,10 @@ function toggleEmployee(employeeId: number) {
                                             <div
                                                 v-for="note in day.notes"
                                                 :key="note"
-                                                class="text-xs text-muted-foreground"
+                                                class="rounded-md px-2 py-1 text-xs"
+                                                :class="day.status === 'inconsistent'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-muted text-muted-foreground'"
                                             >
                                                 {{ note }}
                                             </div>

@@ -35,6 +35,7 @@
                 <th>Extra</th>
                 <th>Ausência</th>
                 <th>Registros</th>
+                <th>Horários</th>
                 <th>Status</th>
                 <th>Observações</th>
             </tr>
@@ -44,19 +45,20 @@
                 <tr>
                     <td>{{ $day['employee_name'] }}</td>
                     <td>{{ $day['date'] }}</td>
-                    <td>{{ $day['expected_minutes'] }}</td>
-                    <td>{{ $day['worked_minutes'] }}</td>
-                    <td>{{ $day['delay_minutes'] }}</td>
-                    <td>{{ $day['early_exit_minutes'] }}</td>
-                    <td>{{ $day['overtime_minutes'] }}</td>
-                    <td>{{ $day['absence_minutes'] }}</td>
+                    <td>{{ $day['expected_hours'] }}</td>
+                    <td>{{ $day['worked_hours'] }}</td>
+                    <td>{{ $day['delay_hours'] }}</td>
+                    <td>{{ $day['early_exit_hours'] }}</td>
+                    <td>{{ $day['overtime_hours'] }}</td>
+                    <td>{{ $day['absence_hours'] }}</td>
                     <td>{{ $day['records_count'] }}</td>
-                    <td>{{ $day['status'] }}</td>
+                    <td>{{ $day['record_times'] ?: '—' }}</td>
+                    <td>{{ $day['status_label'] }}</td>
                     <td>{{ $day['notes'] ?: '—' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="11">Nenhuma apuração encontrada.</td>
+                    <td colspan="12">Nenhuma apuração encontrada.</td>
                 </tr>
             @endforelse
         </tbody>

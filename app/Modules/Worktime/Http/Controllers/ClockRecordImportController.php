@@ -27,7 +27,7 @@ class ClockRecordImportController extends Controller
     }
 
     public function index(Request $request): Response
-{
+    {
         abort_unless($request->user()->hasPermission('worktime.viewAnyClockRecordImport'), 403);
 
         $search = trim((string) $request->string('search')->value());
@@ -243,7 +243,7 @@ class ClockRecordImportController extends Controller
 
                 return $employeeKey . '|' . $dateKey;
             })
-            ->map(function ($items, $groupKey) use ($clockRecordImport) {
+            ->map(function ($items, $groupKey) {
                 [$employeeName, $dateLabel] = explode('|', $groupKey);
 
                 $firstItemWithEmployeeAndDate = $items->first(fn ($item) => $item->employee_id && $item->recorded_at);
@@ -258,8 +258,7 @@ class ClockRecordImportController extends Controller
                         ->sortBy('recorded_at')
                         ->map(fn ($item) => $item->recorded_at->format('H:i'))
                         ->values(),
-                    'can_adjust_times' => $clockRecordImport->status?->value !== 'launched'
-                        && filled($firstItemWithEmployeeAndDate?->employee_id)
+                    'can_adjust_times' => filled($firstItemWithEmployeeAndDate?->employee_id)
                         && filled($firstItemWithEmployeeAndDate?->recorded_at),
                     'items' => $items->map(fn ($item) => [
                         'id' => $item->id,
