@@ -258,6 +258,11 @@ return [
                 'description' => 'Permite enviar arquivos para importação de registros de ponto',
             ],
 
+            'updateClockRecordImport' => [
+                'name' => 'Atualizar importação de ponto',
+                'description' => 'Permite revisar, ajustar e desconsiderar itens de uma importação de registros de ponto',
+            ],
+
             'launchClockRecordImport' => [
                 'name' => 'Lançar importação de ponto',
                 'description' => 'Permite lançar os registros validados da importação para os registros de ponto',

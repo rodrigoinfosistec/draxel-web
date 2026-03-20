@@ -5,6 +5,7 @@ namespace App\Modules\Worktime\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Worktime\Http\Requests\StoreClockRecordImportRequest;
 use App\Modules\Worktime\Models\ClockRecordImport;
+use App\Modules\Worktime\Models\ClockRecordImportItem;
 use App\Modules\Worktime\Models\TenantClockDevice;
 use App\Modules\Worktime\Services\ClockRecordImportService;
 use App\Support\Audit\Audit;
@@ -13,6 +14,7 @@ use App\Support\Flash;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -25,13 +27,25 @@ class ClockRecordImportController extends Controller
     }
 
     public function index(Request $request): Response
-    {
+{
         abort_unless($request->user()->hasPermission('worktime.viewAnyClockRecordImport'), 403);
+
+        $search = trim((string) $request->string('search')->value());
 
         $imports = ClockRecordImport::query()
             ->with('tenantClockDevice.clockDevice')
             ->where('tenant_id', $request->user()->tenant_id)
             ->where('company_id', session('current_company_id'))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery
+                        ->where('original_filename', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhereHas('tenantClockDevice.clockDevice', function ($deviceQuery) use ($search) {
+                            $deviceQuery->where('name', 'like', "%{$search}%");
+                        });
+                });
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString()
@@ -49,6 +63,9 @@ class ClockRecordImportController extends Controller
 
         return Inertia::render('worktime/clock-record-imports/Index', [
             'imports' => $imports,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 
@@ -120,8 +137,8 @@ class ClockRecordImportController extends Controller
             ]);
 
         $pdf = Pdf::setOption([
-                'isPhpEnabled' => false,
-            ])
+            'isPhpEnabled' => false,
+        ])
             ->loadView('pdf.clock-record-imports-report', [
                 'imports' => $imports,
                 'generatedAt' => now()->format('d/m/Y H:i:s'),
@@ -205,6 +222,19 @@ class ClockRecordImportController extends Controller
 
         $clockRecordImport->load(['items.employee', 'tenantClockDevice.clockDevice']);
 
+        $employees = DB::table('employees')
+            ->where('tenant_id', $clockRecordImport->tenant_id)
+            ->where('company_id', $clockRecordImport->company_id)
+            ->orderBy('name')
+            ->get(['id', 'name', 'registration'])
+            ->map(fn ($employee) => [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'registration' => $employee->registration,
+                'label' => trim($employee->name . ' - ' . $employee->registration),
+            ])
+            ->values();
+
         $groups = $clockRecordImport->items
             ->sortBy('recorded_at')
             ->groupBy(function ($item) {
@@ -213,12 +243,24 @@ class ClockRecordImportController extends Controller
 
                 return $employeeKey . '|' . $dateKey;
             })
-            ->map(function ($items, $groupKey) {
+            ->map(function ($items, $groupKey) use ($clockRecordImport) {
                 [$employeeName, $dateLabel] = explode('|', $groupKey);
+
+                $firstItemWithEmployeeAndDate = $items->first(fn ($item) => $item->employee_id && $item->recorded_at);
 
                 return [
                     'employee_name' => $employeeName,
                     'date_label' => $dateLabel,
+                    'employee_id' => $firstItemWithEmployeeAndDate?->employee_id,
+                    'date_key' => $firstItemWithEmployeeAndDate?->recorded_at?->format('Y-m-d'),
+                    'times' => $items
+                        ->filter(fn ($item) => $item->recorded_at)
+                        ->sortBy('recorded_at')
+                        ->map(fn ($item) => $item->recorded_at->format('H:i'))
+                        ->values(),
+                    'can_adjust_times' => $clockRecordImport->status?->value !== 'launched'
+                        && filled($firstItemWithEmployeeAndDate?->employee_id)
+                        && filled($firstItemWithEmployeeAndDate?->recorded_at),
                     'items' => $items->map(fn ($item) => [
                         'id' => $item->id,
                         'line_number' => $item->line_number,
@@ -230,6 +272,9 @@ class ClockRecordImportController extends Controller
                         'status_label' => $item->status?->label(),
                         'divergence_reason' => $item->divergence_reason,
                         'raw_line' => $item->raw_line,
+                        'can_ignore' => $item->status?->value === 'invalid',
+                        'can_resolve_employee' => $item->status?->value === 'invalid'
+                            && $item->divergence_reason === 'Funcionário não encontrado.',
                     ])->values(),
                 ];
             })
@@ -248,7 +293,106 @@ class ClockRecordImportController extends Controller
                 'can_launch' => $clockRecordImport->status?->value === 'ready_to_launch',
             ],
             'groups' => $groups,
+            'employees' => $employees,
         ]);
+    }
+
+    public function ignoreItem(
+        Request $request,
+        ClockRecordImport $clockRecordImport,
+        ClockRecordImportItem $clockRecordImportItem,
+    ): RedirectResponse {
+        abort_unless($request->user()->hasPermission('worktime.updateClockRecordImport'), 403);
+        abort_unless(
+            $clockRecordImport->tenant_id === $request->user()->tenant_id
+            && $clockRecordImport->company_id === session('current_company_id'),
+            404
+        );
+
+        $clockRecordImport = $this->service->ignoreItem(
+            import: $clockRecordImport,
+            item: $clockRecordImportItem,
+            user: $request->user(),
+        );
+
+        Audit::event('worktime.clock-record-import-items.ignored', $clockRecordImport, [
+            'clock_record_import_id' => $clockRecordImport->id,
+            'clock_record_import_item_id' => $clockRecordImportItem->id,
+        ]);
+
+        return redirect()
+            ->route('worktime.clock-record-imports.show', $clockRecordImport)
+            ->with('alert', Flash::success('Item desconsiderado', 'O item foi desconsiderado e a importação foi recalculada.'));
+    }
+
+    public function resolveEmployee(
+        Request $request,
+        ClockRecordImport $clockRecordImport,
+        ClockRecordImportItem $clockRecordImportItem,
+    ): RedirectResponse {
+        abort_unless($request->user()->hasPermission('worktime.updateClockRecordImport'), 403);
+        abort_unless(
+            $clockRecordImport->tenant_id === $request->user()->tenant_id
+            && $clockRecordImport->company_id === session('current_company_id'),
+            404
+        );
+
+        $validated = $request->validate([
+            'employee_id' => ['required', 'integer'],
+        ]);
+
+        $clockRecordImport = $this->service->resolveEmployeeForItem(
+            import: $clockRecordImport,
+            item: $clockRecordImportItem,
+            employeeId: (int) $validated['employee_id'],
+            user: $request->user(),
+        );
+
+        Audit::event('worktime.clock-record-import-items.employee-resolved', $clockRecordImport, [
+            'clock_record_import_id' => $clockRecordImport->id,
+            'clock_record_import_item_id' => $clockRecordImportItem->id,
+            'employee_id' => (int) $validated['employee_id'],
+        ]);
+
+        return redirect()
+            ->route('worktime.clock-record-imports.show', $clockRecordImport)
+            ->with('alert', Flash::success('Funcionário vinculado', 'O item foi corrigido e a importação foi recalculada.'));
+    }
+
+    public function adjustTimes(Request $request, ClockRecordImport $clockRecordImport): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermission('worktime.updateClockRecordImport'), 403);
+        abort_unless(
+            $clockRecordImport->tenant_id === $request->user()->tenant_id
+            && $clockRecordImport->company_id === session('current_company_id'),
+            404
+        );
+
+        $validated = $request->validate([
+            'employee_id' => ['required', 'integer'],
+            'date' => ['required', 'date_format:Y-m-d'],
+            'times' => ['required', 'array', 'min:1'],
+            'times.*' => ['required', 'date_format:H:i'],
+        ]);
+
+        $clockRecordImport = $this->service->adjustGroupTimes(
+            import: $clockRecordImport,
+            employeeId: (int) $validated['employee_id'],
+            date: $validated['date'],
+            times: $validated['times'],
+            user: $request->user(),
+        );
+
+        Audit::event('worktime.clock-record-import-groups.times-adjusted', $clockRecordImport, [
+            'clock_record_import_id' => $clockRecordImport->id,
+            'employee_id' => (int) $validated['employee_id'],
+            'date' => $validated['date'],
+            'times' => $validated['times'],
+        ]);
+
+        return redirect()
+            ->route('worktime.clock-record-imports.show', $clockRecordImport)
+            ->with('alert', Flash::success('Horários ajustados', 'Os horários do dia foram ajustados e a importação foi recalculada.'));
     }
 
     public function launch(Request $request, ClockRecordImport $clockRecordImport): RedirectResponse

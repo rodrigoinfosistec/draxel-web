@@ -45,6 +45,9 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
             Route::post('/', [ClockRecordImportController::class, 'store'])->name('store');
             Route::get('/{clockRecordImport}', [ClockRecordImportController::class, 'show'])->name('show');
             Route::post('/{clockRecordImport}/launch', [ClockRecordImportController::class, 'launch'])->name('launch');
+            Route::post('/{clockRecordImport}/items/{clockRecordImportItem}/ignore', [ClockRecordImportController::class, 'ignoreItem'])->name('items.ignore');
+            Route::post('/{clockRecordImport}/items/{clockRecordImportItem}/resolve-employee', [ClockRecordImportController::class, 'resolveEmployee'])->name('items.resolve-employee');
+            Route::post('/{clockRecordImport}/adjust-times', [ClockRecordImportController::class, 'adjustTimes'])->name('adjust-times');
 
             Route::prefix('export')->name('export.')->group(function () {
                 Route::get('/csv', [ClockRecordImportController::class, 'exportCsv'])->name('csv');

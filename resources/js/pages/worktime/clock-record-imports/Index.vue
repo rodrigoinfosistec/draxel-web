@@ -4,8 +4,9 @@ import Heading from '@/components/Heading.vue'
 import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
-import { Head, Link } from '@inertiajs/vue3'
-import { Download, FileClock, FileText } from 'lucide-vue-next'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { Download, FileClock, FileText, Search, X } from 'lucide-vue-next'
+import { ref } from 'vue'
 
 type ImportItem = {
     id: number
@@ -25,18 +26,75 @@ type PaginationLink = {
     active: boolean
 }
 
-defineProps<{
+const props = defineProps<{
     imports: {
         data: ImportItem[]
         links: PaginationLink[]
     }
+    filters: {
+        search: string
+    }
 }>()
+
+const search = ref(props.filters.search ?? '')
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Ponto', href: '/worktime' },
     { title: 'Importações', href: '/worktime/clock-record-imports' },
 ]
+
+const submitSearch = () => {
+    router.get(
+        '/worktime/clock-record-imports',
+        {
+            search: search.value || undefined,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    )
+}
+
+const clearSearch = () => {
+    search.value = ''
+
+    router.get(
+        '/worktime/clock-record-imports',
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    )
+}
+
+const statusClass = (status: string) => {
+    if (status === 'ready_to_launch') {
+        return 'bg-sky-100 text-sky-700 ring-sky-200'
+    }
+
+    if (status === 'awaiting_review') {
+        return 'bg-amber-100 text-amber-700 ring-amber-200'
+    }
+
+    if (status === 'launched') {
+        return 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+    }
+
+    if (status === 'processing') {
+        return 'bg-violet-100 text-violet-700 ring-violet-200'
+    }
+
+    if (status === 'failed') {
+        return 'bg-red-100 text-red-700 ring-red-200'
+    }
+
+    return 'bg-zinc-100 text-zinc-700 ring-zinc-200'
+}
 </script>
 
 <template>
@@ -85,9 +143,40 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
             </div>
 
+            <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
+                <form class="flex flex-col gap-3 sm:flex-row" @submit.prevent="submitSearch">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Buscar por arquivo, device ou status..."
+                            class="w-full rounded-lg border bg-background px-10 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-ring"
+                        />
+                    </div>
+
+                    <div class="flex gap-2">
+                        <Button type="submit" variant="outline">
+                            Buscar
+                        </Button>
+
+                        <Button
+                            v-if="filters.search"
+                            type="button"
+                            variant="outline"
+                            @click="clearSearch"
+                        >
+                            <X class="mr-2 h-4 w-4" />
+                            Limpar
+                        </Button>
+                    </div>
+                </form>
+            </div>
+
             <div class="rounded-xl border bg-card/50 shadow-sm">
                 <div class="overflow-x-auto">
-                    <table class="min-w-[760px] w-full text-sm">
+                    <table class="min-w-[860px] w-full text-sm">
                         <thead class="bg-muted/50">
                             <tr>
                                 <th class="px-4 py-3 text-left">Arquivo</th>
@@ -101,14 +190,44 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                         <tbody>
                             <tr v-for="item in imports.data" :key="item.id" class="border-t">
-                                <td class="px-4 py-3">{{ item.original_filename }}</td>
-                                <td class="px-4 py-3">{{ item.device_name || '—' }}</td>
-                                <td class="px-4 py-3">{{ item.status_label }}</td>
                                 <td class="px-4 py-3">
-                                    {{ item.valid_items }}/{{ item.total_items }} válidos
-                                    <span v-if="item.invalid_items > 0"> • {{ item.invalid_items }} divergentes</span>
+                                    <div class="font-medium text-foreground">
+                                        {{ item.original_filename }}
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3">{{ item.created_at || '—' }}</td>
+
+                                <td class="px-4 py-3">
+                                    {{ item.device_name || '—' }}
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <span
+                                        class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset"
+                                        :class="statusClass(item.status)"
+                                    >
+                                        {{ item.status_label }}
+                                    </span>
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-foreground">
+                                            {{ item.valid_items }}/{{ item.total_items }} válidos
+                                        </span>
+
+                                        <span
+                                            v-if="item.invalid_items > 0"
+                                            class="text-xs font-medium text-red-600"
+                                        >
+                                            {{ item.invalid_items }} divergentes
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    {{ item.created_at || '—' }}
+                                </td>
+
                                 <td class="px-4 py-3 text-right">
                                     <Link
                                         :href="`/worktime/clock-record-imports/${item.id}`"

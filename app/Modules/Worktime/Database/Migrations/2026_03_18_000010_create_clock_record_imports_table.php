@@ -28,7 +28,7 @@ return new class extends Migration
 
             $table->string('original_filename');
             $table->string('stored_path');
-            $table->string('file_hash')->unique();
+            $table->string('file_hash');
 
             $table->unsignedInteger('total_items')->default(0);
             $table->unsignedInteger('valid_items')->default(0);
@@ -47,6 +47,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['tenant_id', 'company_id']);
+            $table->unique(['tenant_id', 'company_id', 'file_hash']);
             $table->index(['status']);
         });
     }

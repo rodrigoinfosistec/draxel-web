@@ -23,7 +23,7 @@ return new class extends Migration
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->string('event', 40);
+            $table->string('event', 100);
 
             $table->string('subject_type', 180)->nullable();
             $table->string('subject_id', 64)->nullable();
