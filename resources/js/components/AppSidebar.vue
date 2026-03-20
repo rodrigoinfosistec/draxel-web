@@ -18,6 +18,7 @@ import type { NavItem } from '@/types'
 import { Link, usePage } from '@inertiajs/vue3'
 import {
     AlarmClock,
+    BookUser,
     BriefcaseBusiness,
     Building2,
     CalendarDays,
@@ -50,6 +51,16 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+
+    ...(can('contacts.viewAny')
+        ? [
+            {
+                title: 'Agenda',
+                href: '/contacts',
+                icon: BookUser,
+            },
+        ]
+        : []),
 
     ...(can('employees.viewAny')
         ? [

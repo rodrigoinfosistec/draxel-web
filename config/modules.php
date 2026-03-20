@@ -58,7 +58,7 @@ return [
 
             'viewAny' => [
                 'name' => 'Ver lista de funções',
-                'description' => 'Permite visualizar todas as funções do tenant',
+                'description' => 'Permite visualizar todas as funções do grupo',
             ],
 
             'view' => [
@@ -340,7 +340,7 @@ return [
 
             'viewAny' => [
                 'name' => 'Ver lista de departamentos',
-                'description' => 'Permite visualizar a lista de departamentos do tenant',
+                'description' => 'Permite visualizar a lista de departamentos do grupo',
             ],
 
             'view' => [
@@ -376,7 +376,7 @@ return [
 
             'viewAny' => [
                 'name' => 'Ver lista de cargos',
-                'description' => 'Permite visualizar a lista de cargos do tenant',
+                'description' => 'Permite visualizar a lista de cargos do grupo',
             ],
 
             'view' => [
@@ -452,7 +452,7 @@ return [
 
             'viewAny' => [
                 'name' => 'Ver lista de feriados',
-                'description' => 'Permite visualizar a lista de feriados do tenant',
+                'description' => 'Permite visualizar a lista de feriados do grupo',
             ],
 
             'view' => [
@@ -475,6 +475,41 @@ return [
                 'description' => 'Permite excluir feriados',
             ],
 
+        ],
+    ],
+
+    'contacts' => [
+
+        'name' => 'Agenda',
+        'description' => 'Gestão de contatos do grupo',
+        'is_core' => true,
+
+        'permissions' => [
+
+            'viewAny' => [
+                'name' => 'Ver lista de contatos',
+                'description' => 'Permite visualizar a lista de contatos do grupo',
+            ],
+
+            'view' => [
+                'name' => 'Ver contato',
+                'description' => 'Permite visualizar os dados de um contato',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar contato',
+                'description' => 'Permite cadastrar novos contatos',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar contato',
+                'description' => 'Permite editar contatos',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir contato',
+                'description' => 'Permite excluir contatos',
+            ],
         ],
     ],
 
