@@ -64,6 +64,8 @@ const adjustModalDateLabel = ref('')
 const adjustModalDateKey = ref<string | null>(null)
 const adjustModalTimes = ref<string[]>([])
 
+const showOnlyInconsistencies = ref(false)
+
 const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     {
         title: 'Dashboard',
@@ -78,6 +80,22 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
         href: `/worktime/clock-record-imports/${props.import.id}`,
     },
 ])
+
+const groupHasInconsistency = (group: ImportItemGroup) => {
+    return group.items.some(item => item.status === 'invalid')
+}
+
+const filteredGroups = computed(() => {
+    if (!showOnlyInconsistencies.value) {
+        return props.groups
+    }
+
+    return props.groups.filter(group => groupHasInconsistency(group))
+})
+
+const inconsistentGroupsCount = computed(() => {
+    return props.groups.filter(group => groupHasInconsistency(group)).length
+})
 
 const launch = () => {
     if (!props.import.can_launch) return
@@ -230,24 +248,66 @@ const statusBadgeClass = (status: string | null) => {
                 </div>
             </div>
 
-            <div
-                v-if="props.groups.length === 0"
-                class="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500"
-            >
-                Nenhum item encontrado nesta importação.
+            <div class="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+                <div class="text-sm text-zinc-600">
+                    <span class="font-medium text-zinc-800">Grupos com inconsistência:</span>
+                    {{ inconsistentGroupsCount }}
+                </div>
+
+                <label class="inline-flex cursor-pointer items-center gap-3">
+                    <span class="text-sm font-medium text-zinc-700">
+                        Mostrar apenas inconsistências
+                    </span>
+
+                    <button
+                        type="button"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition"
+                        :class="showOnlyInconsistencies ? 'bg-red-600' : 'bg-zinc-300'"
+                        @click="showOnlyInconsistencies = !showOnlyInconsistencies"
+                    >
+                        <span
+                            class="inline-block h-5 w-5 transform rounded-full bg-white transition"
+                            :class="showOnlyInconsistencies ? 'translate-x-5' : 'translate-x-1'"
+                        />
+                    </button>
+                </label>
             </div>
 
             <div
-                v-for="group in props.groups"
+                v-if="filteredGroups.length === 0"
+                class="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500"
+            >
+                {{
+                    showOnlyInconsistencies
+                        ? 'Nenhum bloco com inconsistência encontrado nesta importação.'
+                        : 'Nenhum item encontrado nesta importação.'
+                }}
+            </div>
+
+            <div
+                v-for="group in filteredGroups"
                 :key="`${group.employee_name}-${group.date_label}`"
                 class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
             >
-                <div class="border-b border-zinc-200 bg-zinc-50 px-5 py-4">
+                <div
+                    class="border-b px-5 py-4"
+                    :class="groupHasInconsistency(group) ? 'border-red-200 bg-red-50/60' : 'border-zinc-200 bg-zinc-50'"
+                >
                     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-zinc-900">
-                                {{ group.employee_name }}
-                            </h2>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base font-semibold text-zinc-900">
+                                    {{ group.employee_name }}
+                                </h2>
+
+                                <span
+                                    v-if="groupHasInconsistency(group)"
+                                    class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200"
+                                >
+                                    Com inconsistência
+                                </span>
+                            </div>
+
                             <p class="text-sm text-zinc-500">
                                 {{ group.date_label }}
                             </p>
@@ -290,6 +350,7 @@ const statusBadgeClass = (status: string | null) => {
                                 v-for="item in group.items"
                                 :key="item.id"
                                 class="align-top"
+                                :class="item.status === 'invalid' ? 'bg-red-50/40' : ''"
                             >
                                 <td class="px-4 py-3 text-sm text-zinc-700">
                                     {{ item.line_number }}
