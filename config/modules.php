@@ -297,6 +297,21 @@ return [
                 'name' => 'Cadastrar movimento de banco de horas',
                 'description' => 'Permite registrar créditos e débitos no banco de horas',
             ],
+
+            'updateBankHourEntry' => [
+                'name' => 'Atualizar movimento de banco de horas',
+                'description' => 'Permite editar lançamentos manuais do banco de horas',
+            ],
+
+            'exportBankHour' => [
+                'name' => 'Exportar banco de horas',
+                'description' => 'Permite exportar relatórios e listagens do banco de horas',
+            ],
+
+            'exportBankHour' => [
+                'name' => 'Exportar banco de horas',
+                'description' => 'Permite exportar relatórios e listagens do banco de horas',
+            ],
         ],
     ],
 

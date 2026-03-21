@@ -86,6 +86,70 @@ class BankHourService
         });
     }
 
+    public function registerManualEntry(
+        int $tenantId,
+        int $companyId,
+        int $employeeId,
+        string $entryType,
+        string $hours,
+        string $occurredOn,
+        ?string $description = null,
+        ?User $user = null,
+    ): BankHourEntry {
+        $minutes = $this->hoursToSignedMinutes($hours, $entryType);
+
+        return $this->registerEntry(
+            tenantId: $tenantId,
+            companyId: $companyId,
+            employeeId: $employeeId,
+            entryType: BankHourEntryType::from($entryType),
+            minutes: $minutes,
+            occurredOn: $occurredOn,
+            description: $description,
+            metadata: [
+                'manual_entry' => true,
+            ],
+            source: null,
+            user: $user,
+        );
+    }
+
+    public function updateManualEntry(
+        BankHourEntry $entry,
+        string $entryType,
+        string $hours,
+        string $occurredOn,
+        ?string $description = null,
+    ): BankHourEntry {
+        if (! in_array($entry->entry_type?->value, [
+            BankHourEntryType::ManualCredit->value,
+            BankHourEntryType::ManualDebit->value,
+        ], true)) {
+            throw new InvalidArgumentException('Apenas lançamentos manuais podem ser editados.');
+        }
+
+        $newMinutes = $this->hoursToSignedMinutes($hours, $entryType);
+        $oldMinutes = (int) $entry->minutes;
+        $delta = $newMinutes - $oldMinutes;
+
+        return DB::transaction(function () use ($entry, $entryType, $newMinutes, $delta, $occurredOn, $description) {
+            $entry->update([
+                'entry_type' => BankHourEntryType::from($entryType),
+                'minutes' => $newMinutes,
+                'occurred_on' => $occurredOn,
+                'description' => $description,
+            ]);
+
+            if ($delta !== 0) {
+                $entry->account()->update([
+                    'current_balance_minutes' => DB::raw('current_balance_minutes + (' . $delta . ')'),
+                ]);
+            }
+
+            return $entry->fresh(['employee', 'account']);
+        });
+    }
+
     public function rebuildAccountBalance(BankHourAccount $account): BankHourAccount
     {
         $balance = BankHourEntry::query()
@@ -111,5 +175,32 @@ class BankHourService
             . str_pad((string) $hours, 2, '0', STR_PAD_LEFT)
             . ':'
             . str_pad((string) $remainingMinutes, 2, '0', STR_PAD_LEFT);
+    }
+
+    public function absoluteMinutesToHours(int $minutes): string
+    {
+        $minutes = abs($minutes);
+
+        $hours = intdiv($minutes, 60);
+        $remainingMinutes = $minutes % 60;
+
+        return str_pad((string) $hours, 2, '0', STR_PAD_LEFT)
+            . ':'
+            . str_pad((string) $remainingMinutes, 2, '0', STR_PAD_LEFT);
+    }
+
+    protected function hoursToSignedMinutes(string $hours, string $entryType): int
+    {
+        [$h, $m] = explode(':', $hours);
+
+        $minutes = ((int) $h * 60) + (int) $m;
+
+        if ($minutes <= 0) {
+            throw new InvalidArgumentException('A quantidade de horas deve ser maior que zero.');
+        }
+
+        return $entryType === BankHourEntryType::ManualDebit->value
+            ? -$minutes
+            : $minutes;
     }
 }

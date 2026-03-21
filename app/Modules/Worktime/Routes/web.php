@@ -67,6 +67,15 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
 
         Route::prefix('bank-hours')->name('bank-hours.')->group(function () {
             Route::get('/', [BankHourController::class, 'index'])->name('index');
+            Route::get('/create', [BankHourController::class, 'create'])->name('create');
+            Route::post('/', [BankHourController::class, 'store'])->name('store');
+            Route::get('/{bankHourEntry}/edit', [BankHourController::class, 'edit'])->name('edit');
+            Route::put('/{bankHourEntry}', [BankHourController::class, 'update'])->name('update');
+
+            Route::prefix('export')->name('export.')->group(function () {
+                Route::get('/csv', [BankHourController::class, 'exportCsv'])->name('csv');
+                Route::get('/pdf', [BankHourController::class, 'exportPdf'])->name('pdf');
+            });
         });
     });
 });

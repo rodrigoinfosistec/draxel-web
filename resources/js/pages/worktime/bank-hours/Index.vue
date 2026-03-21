@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import Can from '@/components/Can.vue'
 import Heading from '@/components/Heading.vue'
 import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
-import { Head, router } from '@inertiajs/vue3'
-import { WalletCards } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { Download, FileText, Pencil, Plus, WalletCards } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 type EmployeeOption = {
     id: number
@@ -20,6 +21,7 @@ type EntryItem = {
     minutes: number
     minutes_label: string
     description: string | null
+    can_edit: boolean
 }
 
 type AccountItem = {
@@ -65,6 +67,24 @@ function submitSearch() {
     )
 }
 
+const exportParams = computed(() => {
+    const params = new URLSearchParams()
+
+    params.set('start_date', startDate.value)
+    params.set('end_date', endDate.value)
+
+    if (employeeId.value) {
+        params.set('employee_id', String(employeeId.value))
+    }
+
+    const query = params.toString()
+
+    return {
+        csv: `/worktime/bank-hours/export/csv?${query}`,
+        pdf: `/worktime/bank-hours/export/pdf?${query}`,
+    }
+})
+
 function balanceClass(balance: number) {
     if (balance < 0) {
         return 'text-red-600'
@@ -101,12 +121,41 @@ function entryClass(minutes: number) {
                     style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
                 />
 
-                <div class="relative">
+                <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
                         title="Banco de horas"
                         description="Consulte saldos e movimentos de créditos e débitos por funcionário."
                         :icon="WalletCards"
                     />
+
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <Can permission="worktime.exportBankHour">
+                            <Button as-child variant="outline" class="w-full sm:w-auto">
+                                <a :href="exportParams.csv">
+                                    <Download class="mr-2 h-4 w-4" />
+                                    Exportar CSV
+                                </a>
+                            </Button>
+                        </Can>
+
+                        <Can permission="worktime.exportBankHour">
+                            <Button as-child variant="outline" class="w-full sm:w-auto">
+                                <a :href="exportParams.pdf">
+                                    <FileText class="mr-2 h-4 w-4" />
+                                    Exportar PDF
+                                </a>
+                            </Button>
+                        </Can>
+
+                        <Can permission="worktime.createBankHourEntry">
+                            <Link href="/worktime/bank-hours/create" class="w-full sm:w-auto">
+                                <Button class="w-full sm:w-auto">
+                                    <Plus class="mr-2 h-4 w-4" />
+                                    Novo lançamento
+                                </Button>
+                            </Link>
+                        </Can>
+                    </div>
                 </div>
             </div>
 
@@ -173,13 +222,14 @@ function entryClass(minutes: number) {
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="min-w-[760px] w-full text-sm">
+                        <table class="min-w-[860px] w-full text-sm">
                             <thead class="bg-muted/50">
                                 <tr>
                                     <th class="px-4 py-3 text-left">Data</th>
                                     <th class="px-4 py-3 text-left">Tipo</th>
                                     <th class="px-4 py-3 text-left">Movimento</th>
                                     <th class="px-4 py-3 text-left">Descrição</th>
+                                    <th class="px-4 py-3 text-right">Ações</th>
                                 </tr>
                             </thead>
 
@@ -200,10 +250,22 @@ function entryClass(minutes: number) {
                                         </span>
                                     </td>
                                     <td class="px-4 py-3">{{ entry.description || '—' }}</td>
+                                    <td class="px-4 py-3 text-right">
+                                        <Can permission="worktime.updateBankHourEntry">
+                                            <Link
+                                                v-if="entry.can_edit"
+                                                :href="`/worktime/bank-hours/${entry.id}/edit`"
+                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition hover:bg-muted"
+                                            >
+                                                <Pencil class="h-4 w-4" />
+                                                Editar
+                                            </Link>
+                                        </Can>
+                                    </td>
                                 </tr>
 
                                 <tr v-if="account.entries.length === 0">
-                                    <td colspan="4" class="px-4 py-6 text-center text-muted-foreground">
+                                    <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">
                                         Nenhum movimento encontrado no período.
                                     </td>
                                 </tr>
