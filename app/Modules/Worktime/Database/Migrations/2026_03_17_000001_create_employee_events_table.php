@@ -42,6 +42,7 @@ return new class extends Migration
 
             $table->timestamps();
 
+            $table->unique(['employee_id', 'event_type', 'starts_at', 'ends_at']);
             $table->index(['tenant_id', 'company_id']);
             $table->index(['employee_id']);
             $table->index(['event_type']);

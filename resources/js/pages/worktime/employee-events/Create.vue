@@ -10,7 +10,7 @@ import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, CalendarClock } from 'lucide-vue-next'
 
-type Option = {
+type EmployeeOption = {
     id: number
     name: string
 }
@@ -21,7 +21,7 @@ type EventTypeOption = {
 }
 
 defineProps<{
-    employees: Option[]
+    employees: EmployeeOption[]
     eventTypes: EventTypeOption[]
 }>()
 
@@ -46,8 +46,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const form = useForm({
     employee_id: '' as number | '',
-    input_mode: 'schedule_day',
     event_type: '',
+    input_mode: 'schedule_day' as 'schedule_day' | 'custom_period',
     date: '',
     starts_at: '',
     ends_at: '',
@@ -97,7 +97,7 @@ function submit() {
                     <div>
                         <h2 class="text-sm font-semibold tracking-tight">Dados do evento</h2>
                         <p class="text-sm text-muted-foreground">
-                            Escolha entre usar a jornada padrão do dia ou informar um período livre.
+                            Escolha entre usar a jornada prevista do funcionário no dia ou informar um período livre.
                         </p>
                     </div>
 
@@ -144,18 +144,32 @@ function submit() {
                             <Label>Modo do período</Label>
 
                             <div class="grid gap-3 md:grid-cols-2">
-                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border bg-background px-4 py-3">
-                                    <input v-model="form.input_mode" type="radio" value="schedule_day" class="mt-1 h-4 w-4">
+                                <label
+                                    class="flex cursor-pointer items-start gap-3 rounded-xl border bg-background px-4 py-3"
+                                >
+                                    <input
+                                        v-model="form.input_mode"
+                                        type="radio"
+                                        value="schedule_day"
+                                        class="mt-1 h-4 w-4"
+                                    >
                                     <div>
-                                        <div class="text-sm font-medium">Jornada padrão do dia</div>
+                                        <div class="text-sm font-medium">Jornada prevista do funcionário no dia</div>
                                         <div class="text-xs text-muted-foreground">
-                                            O sistema monta o período com base na jornada esperada do dia.
+                                            O sistema monta o período com base na jornada configurada do funcionário.
                                         </div>
                                     </div>
                                 </label>
 
-                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border bg-background px-4 py-3">
-                                    <input v-model="form.input_mode" type="radio" value="custom_period" class="mt-1 h-4 w-4">
+                                <label
+                                    class="flex cursor-pointer items-start gap-3 rounded-xl border bg-background px-4 py-3"
+                                >
+                                    <input
+                                        v-model="form.input_mode"
+                                        type="radio"
+                                        value="custom_period"
+                                        class="mt-1 h-4 w-4"
+                                    >
                                     <div>
                                         <div class="text-sm font-medium">Período livre</div>
                                         <div class="text-xs text-muted-foreground">

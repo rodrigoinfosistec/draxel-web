@@ -2,7 +2,6 @@
 
 namespace App\Modules\Worktime\Services;
 
-use App\Models\CompanyDefaultTime;
 use App\Models\User;
 use App\Modules\Worktime\Enums\BankHourEntryType;
 use App\Modules\Worktime\Models\BankHourEntry;
@@ -180,32 +179,41 @@ class EmployeeEventBankHourSyncService
             return 0;
         }
 
+        if ($event->starts_at->greaterThanOrEqualTo($event->ends_at)) {
+            return 0;
+        }
+
         if ($event->starts_at->toDateString() !== $event->ends_at->toDateString()) {
             return max(0, $event->starts_at->diffInMinutes($event->ends_at));
         }
 
         $weekdayKey = strtolower($event->starts_at->englishDayOfWeek);
 
-        $defaultTime = CompanyDefaultTime::query()
+        $employeeTime = DB::table('employee_times')
             ->where('tenant_id', $event->tenant_id)
             ->where('company_id', $event->company_id)
-            ->get()
-            ->first(fn (CompanyDefaultTime $time) => $time->weekday->value === $weekdayKey);
+            ->where('employee_id', $event->employee_id)
+            ->where('weekday', $weekdayKey)
+            ->first([
+                'start_time',
+                'end_time',
+                'break_duration',
+            ]);
 
-        if (! $defaultTime || ! $defaultTime->start_time || ! $defaultTime->end_time) {
-            return max(0, $event->starts_at->diffInMinutes($event->ends_at));
+        if (! $employeeTime || ! $employeeTime->start_time || ! $employeeTime->end_time) {
+            return 0;
         }
 
-        $expectedStart = Carbon::parse($event->starts_at->format('Y-m-d') . ' ' . $defaultTime->start_time);
-        $expectedEnd = Carbon::parse($event->starts_at->format('Y-m-d') . ' ' . $defaultTime->end_time);
-        $breakMinutes = $this->timeToMinutes($defaultTime->break_duration);
+        $expectedStart = Carbon::parse($event->starts_at->format('Y-m-d') . ' ' . $employeeTime->start_time);
+        $expectedEnd = Carbon::parse($event->starts_at->format('Y-m-d') . ' ' . $employeeTime->end_time);
+        $breakMinutes = $this->timeToMinutes($employeeTime->break_duration);
 
         $fullDayMinutes = max(0, $expectedStart->diffInMinutes($expectedEnd) - $breakMinutes);
 
-        if (
-            $event->starts_at->format('H:i:s') === $expectedStart->format('H:i:s')
-            && $event->ends_at->format('H:i:s') === $expectedEnd->format('H:i:s')
-        ) {
+        $matchesFullExpectedDay = $event->starts_at->format('H:i:s') === $expectedStart->format('H:i:s')
+            && $event->ends_at->format('H:i:s') === $expectedEnd->format('H:i:s');
+
+        if ($matchesFullExpectedDay) {
             return $fullDayMinutes;
         }
 

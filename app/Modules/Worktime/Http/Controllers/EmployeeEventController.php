@@ -3,7 +3,6 @@
 namespace App\Modules\Worktime\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\CompanyDefaultTime;
 use App\Models\Employee;
 use App\Modules\Worktime\Enums\EmployeeEventType;
 use App\Modules\Worktime\Http\Requests\StoreEmployeeEventRequest;
@@ -16,6 +15,7 @@ use App\Support\Flash;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -41,9 +41,11 @@ class EmployeeEventController extends Controller
             ->where('company_id', $companyId)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
-                    $subQuery->whereHas('employee', function ($employeeQuery) use ($search) {
-                        $employeeQuery->where('name', 'ilike', "%{$search}%");
-                    })->orWhere('notes', 'ilike', "%{$search}%")
+                    $subQuery
+                        ->whereHas('employee', function ($employeeQuery) use ($search) {
+                            $employeeQuery->where('name', 'ilike', "%{$search}%");
+                        })
+                        ->orWhere('notes', 'ilike', "%{$search}%")
                         ->orWhere('event_type', 'ilike', "%{$search}%");
                 });
             })
@@ -83,9 +85,11 @@ class EmployeeEventController extends Controller
             ->where('company_id', $companyId)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
-                    $subQuery->whereHas('employee', function ($employeeQuery) use ($search) {
-                        $employeeQuery->where('name', 'ilike', "%{$search}%");
-                    })->orWhere('notes', 'ilike', "%{$search}%")
+                    $subQuery
+                        ->whereHas('employee', function ($employeeQuery) use ($search) {
+                            $employeeQuery->where('name', 'ilike', "%{$search}%");
+                        })
+                        ->orWhere('notes', 'ilike', "%{$search}%")
                         ->orWhere('event_type', 'ilike', "%{$search}%");
                 });
             })
@@ -137,9 +141,11 @@ class EmployeeEventController extends Controller
             ->where('company_id', $companyId)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
-                    $subQuery->whereHas('employee', function ($employeeQuery) use ($search) {
-                        $employeeQuery->where('name', 'ilike', "%{$search}%");
-                    })->orWhere('notes', 'ilike', "%{$search}%")
+                    $subQuery
+                        ->whereHas('employee', function ($employeeQuery) use ($search) {
+                            $employeeQuery->where('name', 'ilike', "%{$search}%");
+                        })
+                        ->orWhere('notes', 'ilike', "%{$search}%")
                         ->orWhere('event_type', 'ilike', "%{$search}%");
                 });
             })
@@ -329,21 +335,25 @@ class EmployeeEventController extends Controller
 
         $weekdayKey = strtolower($employeeEvent->starts_at->englishDayOfWeek);
 
-        $defaultTime = CompanyDefaultTime::query()
+        $employeeTime = DB::table('employee_times')
             ->where('tenant_id', $employeeEvent->tenant_id)
             ->where('company_id', $employeeEvent->company_id)
-            ->get()
-            ->first(fn (CompanyDefaultTime $time) => $time->weekday->value === $weekdayKey);
+            ->where('employee_id', $employeeEvent->employee_id)
+            ->where('weekday', $weekdayKey)
+            ->first([
+                'start_time',
+                'end_time',
+            ]);
 
-        if (! $defaultTime || ! $defaultTime->start_time || ! $defaultTime->end_time) {
+        if (! $employeeTime || ! $employeeTime->start_time || ! $employeeTime->end_time) {
             return 'custom_period';
         }
 
-        $expectedStart = $employeeEvent->starts_at->format('H:i:s') === $defaultTime->start_time . ':00'
-            || $employeeEvent->starts_at->format('H:i:s') === $defaultTime->start_time;
+        $expectedStart = $employeeEvent->starts_at->format('H:i:s') === $employeeTime->start_time
+            || $employeeEvent->starts_at->format('H:i:s') === $employeeTime->start_time . ':00';
 
-        $expectedEnd = $employeeEvent->ends_at->format('H:i:s') === $defaultTime->end_time . ':00'
-            || $employeeEvent->ends_at->format('H:i:s') === $defaultTime->end_time;
+        $expectedEnd = $employeeEvent->ends_at->format('H:i:s') === $employeeTime->end_time
+            || $employeeEvent->ends_at->format('H:i:s') === $employeeTime->end_time . ':00';
 
         return $expectedStart && $expectedEnd
             ? 'schedule_day'
