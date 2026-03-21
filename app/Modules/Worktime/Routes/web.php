@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Worktime\Http\Controllers\BankHourController;
 use App\Modules\Worktime\Http\Controllers\ClockRecordController;
 use App\Modules\Worktime\Http\Controllers\ClockRecordImportController;
 use App\Modules\Worktime\Http\Controllers\EmployeeEventController;
@@ -62,6 +63,10 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
                 Route::get('/csv', [WorktimeApurationController::class, 'exportCsv'])->name('csv');
                 Route::get('/pdf', [WorktimeApurationController::class, 'exportPdf'])->name('pdf');
             });
+        });
+
+        Route::prefix('bank-hours')->name('bank-hours.')->group(function () {
+            Route::get('/', [BankHourController::class, 'index'])->name('index');
         });
     });
 });

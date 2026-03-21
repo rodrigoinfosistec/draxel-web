@@ -47,6 +47,14 @@ class WorktimeDashboardController extends Controller
                     'action_label' => 'Acessar apuração',
                     'icon' => 'calculator',
                 ],
+                [
+                    'title' => 'Banco de horas',
+                    'description' => 'Consulte saldos e movimentos de créditos e débitos por funcionário.',
+                    'href' => '/worktime/bank-hours',
+                    'permission' => 'worktime.viewAnyBankHour',
+                    'action_label' => 'Acessar banco de horas',
+                    'icon' => 'wallet-cards',
+                ],
             ],
         ]);
     }

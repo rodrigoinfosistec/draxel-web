@@ -282,6 +282,21 @@ return [
                 'name' => 'Exportar apurações de ponto',
                 'description' => 'Permite exportar relatórios e listagens da apuração de ponto',
             ],
+
+            'viewAnyBankHour' => [
+                'name' => 'Ver banco de horas',
+                'description' => 'Permite visualizar saldos e movimentos do banco de horas',
+            ],
+
+            'viewBankHour' => [
+                'name' => 'Ver detalhe do banco de horas',
+                'description' => 'Permite visualizar os detalhes do banco de horas por funcionário',
+            ],
+
+            'createBankHourEntry' => [
+                'name' => 'Cadastrar movimento de banco de horas',
+                'description' => 'Permite registrar créditos e débitos no banco de horas',
+            ],
         ],
     ],
 
