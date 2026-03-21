@@ -3,8 +3,8 @@
 namespace App\Modules\Worktime\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\CompanyDefaultTime;
 use App\Models\Employee;
-use App\Modules\Worktime\Enums\EmployeeEventTimeMode;
 use App\Modules\Worktime\Enums\EmployeeEventType;
 use App\Modules\Worktime\Http\Requests\StoreEmployeeEventRequest;
 use App\Modules\Worktime\Http\Requests\UpdateEmployeeEventRequest;
@@ -33,15 +33,20 @@ class EmployeeEventController extends Controller
 
         $tenantId = $request->user()->tenant_id;
         $companyId = session('current_company_id');
-        $search = $request->string('search')->toString();
+        $search = trim((string) $request->string('search')->value());
 
         $events = EmployeeEvent::query()
             ->with('employee:id,name')
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
-            ->when($search, fn ($query) => $query->whereHas('employee', function ($subQuery) use ($search) {
-                $subQuery->where('name', 'ilike', "%{$search}%");
-            }))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->whereHas('employee', function ($employeeQuery) use ($search) {
+                        $employeeQuery->where('name', 'ilike', "%{$search}%");
+                    })->orWhere('notes', 'ilike', "%{$search}%")
+                        ->orWhere('event_type', 'ilike', "%{$search}%");
+                });
+            })
             ->latest('starts_at')
             ->paginate(10)
             ->withQueryString()
@@ -50,8 +55,6 @@ class EmployeeEventController extends Controller
                 'employee_name' => $event->employee?->name,
                 'event_type' => $event->event_type?->value,
                 'event_type_label' => $event->event_type?->label(),
-                'time_mode' => $event->time_mode?->value,
-                'time_mode_label' => $event->time_mode === EmployeeEventTimeMode::Partial ? 'Parcial' : 'Diário',
                 'starts_at' => $event->starts_at?->format('d/m/Y H:i'),
                 'ends_at' => $event->ends_at?->format('d/m/Y H:i'),
                 'notes' => $event->notes,
@@ -71,16 +74,21 @@ class EmployeeEventController extends Controller
 
         $tenantId = $request->user()->tenant_id;
         $companyId = session('current_company_id');
-        $search = $request->string('search')->toString();
+        $search = trim((string) $request->string('search')->value());
         $filename = 'employee-events-' . now()->format('Y-m-d_H-i-s') . '.csv';
 
         $events = EmployeeEvent::query()
             ->with('employee:id,name')
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
-            ->when($search, fn ($query) => $query->whereHas('employee', function ($subQuery) use ($search) {
-                $subQuery->where('name', 'ilike', "%{$search}%");
-            }))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->whereHas('employee', function ($employeeQuery) use ($search) {
+                        $employeeQuery->where('name', 'ilike', "%{$search}%");
+                    })->orWhere('notes', 'ilike', "%{$search}%")
+                        ->orWhere('event_type', 'ilike', "%{$search}%");
+                });
+            })
             ->latest('starts_at')
             ->get();
 
@@ -91,7 +99,6 @@ class EmployeeEventController extends Controller
                 'ID',
                 'Funcionário',
                 'Tipo',
-                'Modo',
                 'Início',
                 'Fim',
                 'Observações',
@@ -103,7 +110,6 @@ class EmployeeEventController extends Controller
                     $event->id,
                     $event->employee?->name,
                     $event->event_type?->label(),
-                    $event->time_mode === EmployeeEventTimeMode::Partial ? 'Parcial' : 'Diário',
                     $event->starts_at?->format('d/m/Y H:i:s'),
                     $event->ends_at?->format('d/m/Y H:i:s'),
                     $event->notes,
@@ -123,22 +129,26 @@ class EmployeeEventController extends Controller
 
         $tenantId = $request->user()->tenant_id;
         $companyId = session('current_company_id');
-        $search = $request->string('search')->toString();
+        $search = trim((string) $request->string('search')->value());
 
         $events = EmployeeEvent::query()
             ->with('employee:id,name')
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
-            ->when($search, fn ($query) => $query->whereHas('employee', function ($subQuery) use ($search) {
-                $subQuery->where('name', 'ilike', "%{$search}%");
-            }))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->whereHas('employee', function ($employeeQuery) use ($search) {
+                        $employeeQuery->where('name', 'ilike', "%{$search}%");
+                    })->orWhere('notes', 'ilike', "%{$search}%")
+                        ->orWhere('event_type', 'ilike', "%{$search}%");
+                });
+            })
             ->latest('starts_at')
             ->get()
             ->map(fn (EmployeeEvent $event) => [
                 'id' => $event->id,
                 'employee_name' => $event->employee?->name,
                 'event_type' => $event->event_type?->label(),
-                'time_mode' => $event->time_mode === EmployeeEventTimeMode::Partial ? 'Parcial' : 'Diário',
                 'starts_at' => $event->starts_at?->format('d/m/Y H:i:s'),
                 'ends_at' => $event->ends_at?->format('d/m/Y H:i:s'),
                 'notes' => $event->notes,
@@ -202,7 +212,6 @@ class EmployeeEventController extends Controller
         Audit::event('worktime.employee-events.created', $employeeEvent, [
             'employee_id' => $employeeEvent->employee_id,
             'event_type' => $employeeEvent->event_type?->value,
-            'time_mode' => $employeeEvent->time_mode?->value,
             'starts_at' => $employeeEvent->starts_at?->format('Y-m-d H:i:s'),
             'ends_at' => $employeeEvent->ends_at?->format('Y-m-d H:i:s'),
             'notes' => $employeeEvent->notes,
@@ -224,10 +233,10 @@ class EmployeeEventController extends Controller
                     'id' => $employeeEvent->id,
                     'employee_id' => $employeeEvent->employee_id,
                     'event_type' => $employeeEvent->event_type?->value,
-                    'is_partial' => $employeeEvent->time_mode === EmployeeEventTimeMode::Partial,
+                    'input_mode' => $this->resolveInputMode($employeeEvent),
                     'date' => $employeeEvent->starts_at?->format('Y-m-d'),
-                    'starts_at' => $employeeEvent->starts_at?->format('H:i'),
-                    'ends_at' => $employeeEvent->ends_at?->format('H:i'),
+                    'starts_at' => $employeeEvent->starts_at?->format('Y-m-d\TH:i'),
+                    'ends_at' => $employeeEvent->ends_at?->format('Y-m-d\TH:i'),
                     'notes' => $employeeEvent->notes,
                 ],
             ]
@@ -239,7 +248,6 @@ class EmployeeEventController extends Controller
         $before = [
             'employee_id' => $employeeEvent->employee_id,
             'event_type' => $employeeEvent->event_type?->value,
-            'time_mode' => $employeeEvent->time_mode?->value,
             'starts_at' => $employeeEvent->starts_at?->format('Y-m-d H:i:s'),
             'ends_at' => $employeeEvent->ends_at?->format('Y-m-d H:i:s'),
             'notes' => $employeeEvent->notes,
@@ -256,7 +264,6 @@ class EmployeeEventController extends Controller
             'after' => [
                 'employee_id' => $employeeEvent->employee_id,
                 'event_type' => $employeeEvent->event_type?->value,
-                'time_mode' => $employeeEvent->time_mode?->value,
                 'starts_at' => $employeeEvent->starts_at?->format('Y-m-d H:i:s'),
                 'ends_at' => $employeeEvent->ends_at?->format('Y-m-d H:i:s'),
                 'notes' => $employeeEvent->notes,
@@ -275,7 +282,6 @@ class EmployeeEventController extends Controller
         $snapshot = [
             'employee_id' => $employeeEvent->employee_id,
             'event_type' => $employeeEvent->event_type?->value,
-            'time_mode' => $employeeEvent->time_mode?->value,
             'starts_at' => $employeeEvent->starts_at?->format('Y-m-d H:i:s'),
             'ends_at' => $employeeEvent->ends_at?->format('Y-m-d H:i:s'),
             'notes' => $employeeEvent->notes,
@@ -283,7 +289,7 @@ class EmployeeEventController extends Controller
 
         Audit::event('worktime.employee-events.deleted', $employeeEvent, $snapshot);
 
-        $employeeEvent->delete();
+        $this->service->delete($employeeEvent);
 
         return redirect()
             ->route('worktime.employee-events.index')
@@ -307,8 +313,40 @@ class EmployeeEventController extends Controller
 
         return [
             'employees' => $employees,
-            'dayEventTypes' => EmployeeEventType::dayOptions(),
-            'partialEventTypes' => EmployeeEventType::partialOptions(),
+            'eventTypes' => EmployeeEventType::formOptions(),
         ];
+    }
+
+    protected function resolveInputMode(EmployeeEvent $employeeEvent): string
+    {
+        if (! $employeeEvent->starts_at || ! $employeeEvent->ends_at) {
+            return 'custom_period';
+        }
+
+        if ($employeeEvent->starts_at->toDateString() !== $employeeEvent->ends_at->toDateString()) {
+            return 'custom_period';
+        }
+
+        $weekdayKey = strtolower($employeeEvent->starts_at->englishDayOfWeek);
+
+        $defaultTime = CompanyDefaultTime::query()
+            ->where('tenant_id', $employeeEvent->tenant_id)
+            ->where('company_id', $employeeEvent->company_id)
+            ->get()
+            ->first(fn (CompanyDefaultTime $time) => $time->weekday->value === $weekdayKey);
+
+        if (! $defaultTime || ! $defaultTime->start_time || ! $defaultTime->end_time) {
+            return 'custom_period';
+        }
+
+        $expectedStart = $employeeEvent->starts_at->format('H:i:s') === $defaultTime->start_time . ':00'
+            || $employeeEvent->starts_at->format('H:i:s') === $defaultTime->start_time;
+
+        $expectedEnd = $employeeEvent->ends_at->format('H:i:s') === $defaultTime->end_time . ':00'
+            || $employeeEvent->ends_at->format('H:i:s') === $defaultTime->end_time;
+
+        return $expectedStart && $expectedEnd
+            ? 'schedule_day'
+            : 'custom_period';
     }
 }

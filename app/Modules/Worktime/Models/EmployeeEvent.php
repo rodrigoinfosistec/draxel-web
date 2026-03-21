@@ -4,7 +4,6 @@ namespace App\Modules\Worktime\Models;
 
 use App\Models\Employee;
 use App\Models\User;
-use App\Modules\Worktime\Enums\EmployeeEventTimeMode;
 use App\Modules\Worktime\Enums\EmployeeEventType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +17,6 @@ class EmployeeEvent extends Model
         'company_id',
         'employee_id',
         'event_type',
-        'time_mode',
         'starts_at',
         'ends_at',
         'notes',
@@ -28,7 +26,6 @@ class EmployeeEvent extends Model
 
     protected $casts = [
         'event_type' => EmployeeEventType::class,
-        'time_mode' => EmployeeEventTimeMode::class,
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
     ];

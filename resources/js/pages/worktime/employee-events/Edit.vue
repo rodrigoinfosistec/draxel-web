@@ -10,7 +10,6 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, CalendarClock } from 'lucide-vue-next'
-import { computed, watch } from 'vue'
 
 type Option = {
     id: number
@@ -20,25 +19,21 @@ type Option = {
 type EventTypeOption = {
     value: string
     label: string
-    time_mode: string
-}
-
-type EventFormData = {
-    id: number
-    employee_id: number
-    event_type: string
-    is_partial: boolean
-    date: string
-    starts_at: string
-    ends_at: string
-    notes: string | null
 }
 
 const props = defineProps<{
-    event: EventFormData
     employees: Option[]
-    dayEventTypes: EventTypeOption[]
-    partialEventTypes: EventTypeOption[]
+    eventTypes: EventTypeOption[]
+    event: {
+        id: number
+        employee_id: number | ''
+        event_type: string
+        input_mode: 'schedule_day' | 'custom_period'
+        date: string
+        starts_at: string
+        ends_at: string
+        notes: string | null
+    }
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,26 +57,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const form = useForm({
     employee_id: props.event.employee_id,
-    is_partial: props.event.is_partial,
     event_type: props.event.event_type,
+    input_mode: props.event.input_mode,
     date: props.event.date,
-    starts_at: props.event.is_partial ? props.event.starts_at : '',
-    ends_at: props.event.is_partial ? props.event.ends_at : '',
+    starts_at: props.event.starts_at,
+    ends_at: props.event.ends_at,
     notes: props.event.notes ?? '',
 })
-
-const eventTypes = computed(() =>
-    form.is_partial ? props.partialEventTypes : props.dayEventTypes,
-)
-
-watch(
-    () => form.is_partial,
-    () => {
-        form.event_type = ''
-        form.starts_at = ''
-        form.ends_at = ''
-    },
-)
 
 function submit() {
     form.put(`/worktime/employee-events/${props.event.id}`)
@@ -120,7 +102,7 @@ async function destroy() {
                 <div class="relative flex items-start justify-between gap-4">
                     <Heading
                         title="Editar evento"
-                        description="Atualize os dados do evento."
+                        description="Atualize os dados do evento do funcionário."
                         :icon="CalendarClock"
                     />
 
@@ -142,7 +124,7 @@ async function destroy() {
                     <div>
                         <h2 class="text-sm font-semibold tracking-tight">Dados do evento</h2>
                         <p class="text-sm text-muted-foreground">
-                            Atualize as informações do evento do funcionário.
+                            Atualize o tipo, funcionário e período do evento.
                         </p>
                     </div>
 
@@ -166,36 +148,6 @@ async function destroy() {
                             <InputError :message="form.errors.employee_id" />
                         </div>
 
-                        <div class="flex items-end">
-                            <label
-                                class="flex w-full cursor-pointer items-center justify-between gap-4 rounded-xl border bg-background px-4 py-3"
-                            >
-                                <div class="space-y-1">
-                                    <div class="text-sm font-medium">Evento parcial</div>
-                                    <div class="text-xs text-muted-foreground">
-                                        Marque para lançar um evento com horário inicial e final.
-                                    </div>
-                                </div>
-
-                                <div class="relative inline-flex items-center">
-                                    <input
-                                        v-model="form.is_partial"
-                                        type="checkbox"
-                                        class="peer sr-only"
-                                    />
-
-                                    <div
-                                        class="h-6 w-11 rounded-full bg-muted transition peer-checked:bg-green-600"
-                                    />
-
-                                    <div
-                                        class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"
-                                    />
-                                </div>
-                            </label>
-                            <InputError :message="form.errors.is_partial" />
-                        </div>
-
                         <div class="grid gap-2">
                             <Label for="event_type">Tipo</Label>
                             <select
@@ -215,7 +167,49 @@ async function destroy() {
                             <InputError :message="form.errors.event_type" />
                         </div>
 
-                        <div class="grid gap-2">
+                        <div class="grid gap-2 md:col-span-2">
+                            <Label>Modo do período</Label>
+
+                            <div class="grid gap-3 md:grid-cols-2">
+                                <label
+                                    class="flex cursor-pointer items-start gap-3 rounded-xl border bg-background px-4 py-3"
+                                >
+                                    <input
+                                        v-model="form.input_mode"
+                                        type="radio"
+                                        value="schedule_day"
+                                        class="mt-1 h-4 w-4"
+                                    >
+                                    <div>
+                                        <div class="text-sm font-medium">Jornada padrão do dia</div>
+                                        <div class="text-xs text-muted-foreground">
+                                            O sistema monta o período com base na jornada esperada do dia.
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label
+                                    class="flex cursor-pointer items-start gap-3 rounded-xl border bg-background px-4 py-3"
+                                >
+                                    <input
+                                        v-model="form.input_mode"
+                                        type="radio"
+                                        value="custom_period"
+                                        class="mt-1 h-4 w-4"
+                                    >
+                                    <div>
+                                        <div class="text-sm font-medium">Período livre</div>
+                                        <div class="text-xs text-muted-foreground">
+                                            Informe data e hora inicial e final livremente.
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <InputError :message="form.errors.input_mode" />
+                        </div>
+
+                        <div v-if="form.input_mode === 'schedule_day'" class="grid gap-2">
                             <Label for="date">Data</Label>
                             <Input
                                 id="date"
@@ -225,25 +219,27 @@ async function destroy() {
                             <InputError :message="form.errors.date" />
                         </div>
 
-                        <div v-if="form.is_partial" class="grid gap-2">
-                            <Label for="starts_at">Hora inicial</Label>
-                            <Input
-                                id="starts_at"
-                                v-model="form.starts_at"
-                                type="time"
-                            />
-                            <InputError :message="form.errors.starts_at" />
-                        </div>
+                        <template v-if="form.input_mode === 'custom_period'">
+                            <div class="grid gap-2">
+                                <Label for="starts_at">Data/hora inicial</Label>
+                                <Input
+                                    id="starts_at"
+                                    v-model="form.starts_at"
+                                    type="datetime-local"
+                                />
+                                <InputError :message="form.errors.starts_at" />
+                            </div>
 
-                        <div v-if="form.is_partial" class="grid gap-2">
-                            <Label for="ends_at">Hora final</Label>
-                            <Input
-                                id="ends_at"
-                                v-model="form.ends_at"
-                                type="time"
-                            />
-                            <InputError :message="form.errors.ends_at" />
-                        </div>
+                            <div class="grid gap-2">
+                                <Label for="ends_at">Data/hora final</Label>
+                                <Input
+                                    id="ends_at"
+                                    v-model="form.ends_at"
+                                    type="datetime-local"
+                                />
+                                <InputError :message="form.errors.ends_at" />
+                            </div>
+                        </template>
                     </div>
 
                     <div class="grid gap-2">

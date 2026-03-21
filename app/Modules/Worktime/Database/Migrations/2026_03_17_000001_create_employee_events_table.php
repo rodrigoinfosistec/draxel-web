@@ -24,7 +24,6 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->string('event_type');
-            $table->string('time_mode');
 
             $table->dateTime('starts_at');
             $table->dateTime('ends_at');
@@ -46,7 +45,6 @@ return new class extends Migration
             $table->index(['tenant_id', 'company_id']);
             $table->index(['employee_id']);
             $table->index(['event_type']);
-            $table->index(['time_mode']);
             $table->index(['starts_at']);
             $table->index(['ends_at']);
         });
