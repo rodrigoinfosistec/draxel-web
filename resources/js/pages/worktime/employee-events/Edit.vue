@@ -11,7 +11,7 @@ import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, CalendarClock } from 'lucide-vue-next'
 
-type Option = {
+type EmployeeOption = {
     id: number
     name: string
 }
@@ -22,7 +22,7 @@ type EventTypeOption = {
 }
 
 const props = defineProps<{
-    employees: Option[]
+    employees: EmployeeOption[]
     eventTypes: EventTypeOption[]
     event: {
         id: number
