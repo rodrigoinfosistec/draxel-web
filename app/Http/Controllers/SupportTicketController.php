@@ -11,6 +11,7 @@ use App\Models\SupportTicketMessage;
 use App\Notifications\SupportTicketUpdatedNotification;
 use App\Support\Audit\Audit;
 use App\Support\CompanyContext;
+use App\Support\Flash;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -120,7 +121,12 @@ class SupportTicketController extends Controller
             new SupportTicketUpdatedNotification($ticket, 'created')
         );
 
-        return redirect()->route('support-tickets.show', $ticket);
+        return redirect()
+            ->route('support-tickets.show', $ticket)
+            ->with('alert', Flash::success(
+                'Chamado aberto',
+                'O chamado foi aberto com sucesso.'
+            ));
     }
 
     public function show(SupportTicket $supportTicket): Response
@@ -204,7 +210,12 @@ class SupportTicketController extends Controller
             );
         }
 
-        return redirect()->route('support-tickets.show', $supportTicket);
+        return redirect()
+            ->route('support-tickets.show', $supportTicket)
+            ->with('alert', Flash::success(
+                'Resposta enviada',
+                'A resposta foi registrada com sucesso.'
+            ));
     }
 
     public function updateStatus(UpdateSupportTicketStatusRequest $request, SupportTicket $supportTicket): RedirectResponse
@@ -228,7 +239,12 @@ class SupportTicketController extends Controller
             new SupportTicketUpdatedNotification($supportTicket, 'status_changed')
         );
 
-        return redirect()->route('support-tickets.show', $supportTicket);
+        return redirect()
+            ->route('support-tickets.show', $supportTicket)
+            ->with('alert', Flash::success(
+                'Status atualizado',
+                'O status do chamado foi atualizado com sucesso.'
+            ));
     }
 
     public function exportCsv(Request $request): StreamedResponse

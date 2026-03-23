@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCompanyHourBankRequest;
 use App\Models\CompanyDefaultTime;
 use App\Support\Audit\Audit;
 use App\Support\CompanyContext;
+use App\Support\Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -86,7 +87,12 @@ class ParametersController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Horários padrão atualizados com sucesso.');
+        return redirect()
+            ->route('parameters.index')
+            ->with('alert', Flash::success(
+                'Horários padrão atualizados',
+                'Os horários padrão da empresa foram atualizados com sucesso.'
+            ));
     }
 
     public function updateCompanyHourBank(UpdateCompanyHourBankRequest $request): RedirectResponse
@@ -119,6 +125,11 @@ class ParametersController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Banco de horas atualizado com sucesso.');
+        return redirect()
+            ->route('parameters.index')
+            ->with('alert', Flash::success(
+                'Banco de horas atualizado',
+                'As configurações do banco de horas foram atualizadas com sucesso.'
+            ));
     }
 }

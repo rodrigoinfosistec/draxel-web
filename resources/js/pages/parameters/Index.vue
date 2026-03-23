@@ -165,9 +165,9 @@ function applyDefaultDay(index: number) {
                 >
                     <section class="space-y-6">
                         <div>
-                            <h2 class="text-sm font-semibold tracking-tight">Horários padrão da empresa</h2>
+                            <h2 class="text-sm font-semibold tracking-tight">Horários padrão</h2>
                             <p class="text-sm text-muted-foreground">
-                                Defina os horários padrão de funcionamento da empresa em contexto.
+                                Defina os horários padrão por dia da semana para a empresa em contexto.
                             </p>
                         </div>
 
@@ -177,11 +177,11 @@ function applyDefaultDay(index: number) {
                                 :key="time.weekday"
                                 class="rounded-xl border bg-background p-4"
                             >
-                                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                     <div>
-                                        <h3 class="font-medium">{{ time.weekday_label }}</h3>
-                                        <p class="text-sm text-muted-foreground">
-                                            Configure início, fim e intervalo padrão do dia.
+                                        <h3 class="text-sm font-semibold">{{ time.weekday_label }}</h3>
+                                        <p class="text-xs text-muted-foreground">
+                                            Configure os horários padrão deste dia.
                                         </p>
                                     </div>
 
@@ -201,7 +201,7 @@ function applyDefaultDay(index: number) {
                                             size="sm"
                                             @click="setDayOff(index)"
                                         >
-                                            Marcar folga
+                                            Folga
                                         </Button>
                                     </div>
                                 </div>
@@ -332,7 +332,7 @@ function applyDefaultDay(index: number) {
 
                         <Can permission="parameters.update">
                             <Button :disabled="hourBankForm.processing" class="sm:min-w-[180px]">
-                                {{ hourBankForm.processing ? 'Salvando...' : 'Salvar banco de horas' }}
+                                {{ hourBankForm.processing ? 'Salvando...' : 'Salvar configurações' }}
                             </Button>
                         </Can>
                     </div>
