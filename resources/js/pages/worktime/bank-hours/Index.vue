@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Download, FileText, Pencil, Plus, WalletCards } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Download, FileText, Pencil, Plus, WalletCards } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 type EmployeeOption = {
@@ -51,6 +51,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 const employeeId = ref<number | ''>(props.filters.employee_id ?? '')
 const startDate = ref(props.filters.start_date)
 const endDate = ref(props.filters.end_date)
+
+const expandedAccounts = ref<number[]>([])
 
 function submitSearch() {
     router.get(
@@ -107,6 +109,19 @@ function entryClass(minutes: number) {
     }
 
     return 'bg-zinc-100 text-zinc-700'
+}
+
+function isExpanded(accountId: number) {
+    return expandedAccounts.value.includes(accountId)
+}
+
+function toggleAccount(accountId: number) {
+    if (isExpanded(accountId)) {
+        expandedAccounts.value = expandedAccounts.value.filter(id => id !== accountId)
+        return
+    }
+
+    expandedAccounts.value.push(accountId)
 }
 </script>
 
@@ -206,22 +221,37 @@ function entryClass(minutes: number) {
                     :key="account.id"
                     class="rounded-xl border bg-card/50 shadow-sm"
                 >
-                    <div class="border-b px-4 py-4">
-                        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            <div class="text-base font-semibold">
-                                {{ account.employee_name || 'Funcionário' }}
-                            </div>
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 border-b px-4 py-4 text-left transition hover:bg-muted/40"
+                        @click="toggleAccount(account.id)"
+                    >
+                        <div class="flex min-w-0 items-center gap-3">
+                            <component
+                                :is="isExpanded(account.id) ? ChevronDown : ChevronRight"
+                                class="h-5 w-5 shrink-0 text-muted-foreground"
+                            />
 
-                            <div class="text-sm">
-                                <span class="text-muted-foreground">Saldo atual:</span>
-                                <span class="ml-2 text-lg font-semibold" :class="balanceClass(account.current_balance_minutes)">
-                                    {{ account.current_balance_label }}
-                                </span>
+                            <div class="min-w-0">
+                                <div class="text-base font-semibold">
+                                    {{ account.employee_name || 'Funcionário' }}
+                                </div>
+
+                                <div class="text-xs text-muted-foreground">
+                                    {{ account.entries.length }} movimentação(ões)
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="overflow-x-auto">
+                        <div class="text-sm">
+                            <span class="text-muted-foreground">Saldo atual:</span>
+                            <span class="ml-2 text-lg font-semibold" :class="balanceClass(account.current_balance_minutes)">
+                                {{ account.current_balance_label }}
+                            </span>
+                        </div>
+                    </button>
+
+                    <div v-if="isExpanded(account.id)" class="overflow-x-auto">
                         <table class="min-w-[860px] w-full text-sm">
                             <thead class="bg-muted/50">
                                 <tr>
