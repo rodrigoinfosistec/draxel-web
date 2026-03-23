@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import Heading from '@/components/Heading.vue'
+import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { dashboard } from '@/routes'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
+import { ArrowLeft, FileSearch } from 'lucide-vue-next'
 import { computed, reactive, ref } from 'vue'
 
 type EmployeeOption = {
@@ -204,47 +207,60 @@ const statusBadgeClass = (status: string | null) => {
     <Head :title="`Importação #${props.import.id}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6 p-6">
-            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div class="space-y-2">
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-2xl font-semibold text-zinc-900">
-                            Importação #{{ props.import.id }}
-                        </h1>
+        <div class="flex flex-col gap-6 p-4 sm:p-6">
+            <div class="relative overflow-hidden rounded-2xl border bg-card/40 p-5 shadow-sm backdrop-blur-[1px] sm:p-6">
+                <div
+                    class="absolute inset-0"
+                    style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
+                />
 
-                        <span
-                            class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
-                            :class="statusBadgeClass(props.import.status)"
-                        >
-                            {{ props.import.status_label ?? 'Sem status' }}
-                        </span>
-                    </div>
+                <div class="relative flex items-start justify-between gap-4">
+                    <Heading
+                        :title="`Importação #${props.import.id}`"
+                        description="Analise os registros importados, trate as inconsistências e ajuste os horários quando necessário."
+                        :icon="FileSearch"
+                    />
 
-                    <div class="space-y-1 text-sm text-zinc-600">
-                        <p><span class="font-medium text-zinc-800">Arquivo:</span> {{ props.import.original_filename }}</p>
-                        <p><span class="font-medium text-zinc-800">Device:</span> {{ props.import.device_name ?? '—' }}</p>
-                        <p><span class="font-medium text-zinc-800">Total de itens:</span> {{ props.import.total_items }}</p>
-                        <p><span class="font-medium text-zinc-800">Itens válidos:</span> {{ props.import.valid_items }}</p>
-                        <p><span class="font-medium text-zinc-800">Itens divergentes:</span> {{ props.import.invalid_items }}</p>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-3">
                     <Link
                         href="/worktime/clock-record-imports"
-                        class="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
                     >
-                        Voltar
+                        <ArrowLeft class="h-4 w-4" />
+                        <span>Voltar</span>
                     </Link>
+                </div>
+            </div>
 
-                    <button
-                        v-if="props.import.can_launch"
-                        type="button"
-                        class="inline-flex items-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-                        @click="launch"
-                    >
-                        Lançar importação
-                    </button>
+            <div class="rounded-xl border bg-card/50 p-5 shadow-sm">
+                <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
+                                :class="statusBadgeClass(props.import.status)"
+                            >
+                                {{ props.import.status_label ?? 'Sem status' }}
+                            </span>
+                        </div>
+
+                        <div class="space-y-1 text-sm text-zinc-600">
+                            <p><span class="font-medium text-zinc-800">Arquivo:</span> {{ props.import.original_filename }}</p>
+                            <p><span class="font-medium text-zinc-800">Device:</span> {{ props.import.device_name ?? '—' }}</p>
+                            <p><span class="font-medium text-zinc-800">Total de itens:</span> {{ props.import.total_items }}</p>
+                            <p><span class="font-medium text-zinc-800">Itens válidos:</span> {{ props.import.valid_items }}</p>
+                            <p><span class="font-medium text-zinc-800">Itens divergentes:</span> {{ props.import.invalid_items }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        <Button
+                            v-if="props.import.can_launch"
+                            type="button"
+                            @click="launch"
+                        >
+                            Lançar importação
+                        </Button>
+                    </div>
                 </div>
             </div>
 

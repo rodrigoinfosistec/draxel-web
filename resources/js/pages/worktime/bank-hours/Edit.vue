@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
-import { WalletCards } from 'lucide-vue-next'
+import { ArrowLeft, WalletCards } from 'lucide-vue-next'
 
 type EntryTypeOption = {
     value: string
@@ -54,12 +54,20 @@ function submit() {
                     style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
                 />
 
-                <div class="relative">
+                <div class="relative flex items-start justify-between gap-4">
                     <Heading
                         title="Editar lançamento de banco de horas"
                         :description="`Ajuste o lançamento manual de ${props.entry.employee_name ?? 'funcionário'}.`"
                         :icon="WalletCards"
                     />
+
+                    <Link
+                        href="/worktime/bank-hours"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                    >
+                        <ArrowLeft class="h-4 w-4" />
+                        <span>Voltar</span>
+                    </Link>
                 </div>
             </div>
 
