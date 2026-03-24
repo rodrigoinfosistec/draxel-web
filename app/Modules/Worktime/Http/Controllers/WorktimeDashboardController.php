@@ -18,6 +18,22 @@ class WorktimeDashboardController extends Controller
 
         $cards = [
             [
+                'title' => 'Eventos de funcionários',
+                'description' => 'Gerencie férias, folgas, suspensões, declarações e abonos.',
+                'href' => '/worktime/employee-events',
+                'permission' => 'worktime.viewAny',
+                'action_label' => 'Acessar eventos',
+                'icon' => 'calendar-clock',
+            ],
+            [
+                'title' => 'Registros de ponto',
+                'description' => 'Cadastre, ajuste e trate os registros manuais de ponto.',
+                'href' => '/worktime/clock-records',
+                'permission' => 'worktime.viewAnyClockRecord',
+                'action_label' => 'Acessar registros',
+                'icon' => 'clock-3',
+            ],
+            [
                 'title' => 'Importações',
                 'description' => 'Envie arquivos TXT, revise divergências e lance os registros.',
                 'href' => '/worktime/clock-record-imports',
@@ -34,20 +50,12 @@ class WorktimeDashboardController extends Controller
                 'icon' => 'calculator',
             ],
             [
-                'title' => 'Registros de ponto',
-                'description' => 'Cadastre, ajuste e trate os registros manuais de ponto.',
-                'href' => '/worktime/clock-records',
-                'permission' => 'worktime.viewAnyClockRecord',
-                'action_label' => 'Acessar registros',
-                'icon' => 'clock-3',
-            ],
-            [
-                'title' => 'Eventos de funcionários',
-                'description' => 'Gerencie férias, folgas, suspensões, declarações e abonos.',
-                'href' => '/worktime/employee-events',
-                'permission' => 'worktime.viewAny',
-                'action_label' => 'Acessar eventos',
-                'icon' => 'calendar-clock',
+                'title' => 'Fechamentos',
+                'description' => 'Crie snapshots, revise ajustes e consolide períodos do banco de horas.',
+                'href' => '/worktime/hour-bank-snapshots',
+                'permission' => 'worktime.viewAnyHourBankSnapshot',
+                'action_label' => 'Acessar fechamentos',
+                'icon' => 'archive',
             ],
         ];
 

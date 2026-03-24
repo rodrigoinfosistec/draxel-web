@@ -4,6 +4,7 @@ use App\Modules\Worktime\Http\Controllers\BankHourController;
 use App\Modules\Worktime\Http\Controllers\ClockRecordController;
 use App\Modules\Worktime\Http\Controllers\ClockRecordImportController;
 use App\Modules\Worktime\Http\Controllers\EmployeeEventController;
+use App\Modules\Worktime\Http\Controllers\HourBankSnapshotController;
 use App\Modules\Worktime\Http\Controllers\WorktimeApurationController;
 use App\Modules\Worktime\Http\Controllers\WorktimeDashboardController;
 use Illuminate\Support\Facades\Route;
@@ -75,6 +76,31 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
             Route::prefix('export')->name('export.')->group(function () {
                 Route::get('/csv', [BankHourController::class, 'exportCsv'])->name('csv');
                 Route::get('/pdf', [BankHourController::class, 'exportPdf'])->name('pdf');
+            });
+        });
+
+        Route::prefix('hour-bank-snapshots')->name('hour-bank-snapshots.')->group(function () {
+            Route::get('/', [HourBankSnapshotController::class, 'index'])->name('index');
+            Route::get('/create', [HourBankSnapshotController::class, 'create'])->name('create');
+            Route::post('/', [HourBankSnapshotController::class, 'store'])->name('store');
+            Route::get('/{hourBankSnapshot}', [HourBankSnapshotController::class, 'show'])->name('show');
+            Route::delete('/{hourBankSnapshot}', [HourBankSnapshotController::class, 'destroy'])->name('destroy');
+
+            Route::post('/{hourBankSnapshot}/employees', [HourBankSnapshotController::class, 'addEmployees'])->name('employees.store');
+            Route::delete('/{hourBankSnapshot}/employees/{hourBankSnapshotEmployee}', [HourBankSnapshotController::class, 'removeEmployee'])->name('employees.destroy');
+
+            Route::post('/{hourBankSnapshot}/consolidate', [HourBankSnapshotController::class, 'consolidate'])->name('consolidate');
+            Route::post('/{hourBankSnapshot}/reverse', [HourBankSnapshotController::class, 'reverse'])->name('reverse');
+
+            Route::prefix('export')->name('export.')->group(function () {
+                Route::get('/csv', [HourBankSnapshotController::class, 'exportCsv'])->name('csv');
+                Route::get('/pdf', [HourBankSnapshotController::class, 'exportPdf'])->name('pdf');
+            });
+
+            Route::prefix('reports')->name('reports.')->group(function () {
+                Route::get('/{hourBankSnapshot}/general-preview', [HourBankSnapshotController::class, 'exportGeneralPreview'])->name('general-preview');
+                Route::get('/{hourBankSnapshot}/general-consolidated', [HourBankSnapshotController::class, 'exportGeneralConsolidated'])->name('general-consolidated');
+                Route::get('/{hourBankSnapshot}/employees/{hourBankSnapshotEmployee}', [HourBankSnapshotController::class, 'exportEmployeeReport'])->name('employee');
             });
         });
     });

@@ -6,6 +6,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
 import {
+    Archive,
     ArrowRight,
     Calculator,
     CalendarClock,
@@ -58,6 +59,10 @@ function resolveIcon(icon: string) {
 
     if (icon === 'wallet-cards') {
         return WalletCards
+    }
+
+    if (icon === 'archive') {
+        return Archive
     }
 
     return LayoutGrid

@@ -308,9 +308,44 @@ return [
                 'description' => 'Permite exportar relatórios e listagens do banco de horas',
             ],
 
-            'exportBankHour' => [
-                'name' => 'Exportar banco de horas',
-                'description' => 'Permite exportar relatórios e listagens do banco de horas',
+            'viewAnyHourBankSnapshot' => [
+                'name' => 'Ver lista de fechamentos de banco de horas',
+                'description' => 'Permite visualizar a lista de fechamentos de banco de horas',
+            ],
+
+            'viewHourBankSnapshot' => [
+                'name' => 'Ver fechamento de banco de horas',
+                'description' => 'Permite visualizar os detalhes de um fechamento de banco de horas',
+            ],
+
+            'createHourBankSnapshot' => [
+                'name' => 'Cadastrar fechamento de banco de horas',
+                'description' => 'Permite criar novos fechamentos de banco de horas',
+            ],
+
+            'updateHourBankSnapshot' => [
+                'name' => 'Atualizar fechamento de banco de horas',
+                'description' => 'Permite incluir funcionários, recapturar dados e ajustar fechamentos de banco de horas',
+            ],
+
+            'consolidateHourBankSnapshot' => [
+                'name' => 'Consolidar fechamento de banco de horas',
+                'description' => 'Permite consolidar fechamentos de banco de horas e gerar efeito histórico operacional',
+            ],
+
+            'reverseHourBankSnapshot' => [
+                'name' => 'Reverter fechamento de banco de horas',
+                'description' => 'Permite reverter fechamentos consolidados de banco de horas mediante controle administrativo',
+            ],
+
+            'exportHourBankSnapshot' => [
+                'name' => 'Exportar fechamento de banco de horas',
+                'description' => 'Permite exportar relatórios individuais e gerais dos fechamentos de banco de horas',
+            ],
+
+            'deleteHourBankSnapshot' => [
+                'name' => 'Excluir fechamento de banco de horas',
+                'description' => 'Permite excluir fechamentos de banco de horas que ainda não foram consolidados',
             ],
         ],
     ],
