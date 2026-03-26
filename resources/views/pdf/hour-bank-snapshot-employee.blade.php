@@ -4,188 +4,292 @@
 <head>
     <meta charset="UTF-8">
     <title>Relatório individual de fechamento</title>
+    @include('pdf.partials.report-styles')
     <style>
-        @page {
-            size: A4 portrait;
-            margin: 14mm 12mm 16mm 12mm;
+        .signature-box {
+            margin-top: 28px;
+            border: 1px solid #374151;
+            padding: 12px 14px 18px 14px;
         }
 
-        body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
-            color: #111827;
-            margin: 0;
+        .signature-law {
+            font-size: 9px;
+            line-height: 1.45;
+            color: #374151;
+            margin-bottom: 34px;
         }
 
-        .header {
-            margin-bottom: 14px;
-            border-bottom: 1px solid #d1d5db;
-            padding-bottom: 10px;
-        }
-
-        .title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-
-        .subtitle {
-            font-size: 11px;
-            color: #4b5563;
-            margin-bottom: 2px;
-        }
-
-        .meta {
-            margin-top: 8px;
-            font-size: 10px;
-        }
-
-        .meta strong {
-            color: #111827;
-        }
-
-        table {
+        .signature-grid {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
         }
 
-        th,
-        td {
-            border: 1px solid #d1d5db;
-            padding: 5px;
+        .signature-grid td {
+            border: 0;
             vertical-align: top;
-            word-wrap: break-word;
+            padding: 0;
         }
 
-        th {
-            background: #f3f4f6;
-            font-size: 9px;
-            text-transform: uppercase;
+        .signature-left {
+            width: 44%;
+            padding-right: 24px;
         }
 
-        td {
-            font-size: 9px;
+        .signature-right {
+            width: 56%;
+            text-align: center;
         }
 
-        .totals td {
-            font-weight: bold;
-            background: #f9fafb;
-        }
-
-        .signature {
-            margin-top: 40px;
-            width: 100%;
-        }
-
-        .signature-line {
-            margin-top: 45px;
-            border-top: 1px solid #111827;
+        .signature-line-left {
             width: 280px;
-            padding-top: 6px;
+            border-top: 1px solid #374151;
+            height: 1px;
+            margin-top: 40px;
+            margin-bottom: 6px;
+        }
+
+        .signature-line-right {
+            width: 380px;
+            border-top: 1px solid #374151;
+            height: 1px;
+            margin: 40px auto 6px 80px;
+        }
+
+        .signature-label {
             font-size: 10px;
-            text-align: center;
+            font-style: italic;
+            color: #374151;
         }
 
-        .muted {
+        .signature-name {
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .signature-recognition {
+            font-size: 10px;
+            font-style: italic;
+            color: #374151;
+            margin-top: 4px;
+        }
+
+        .text-danger {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .text-info {
+            color: #92400e;
+        }
+
+        .text-muted {
             color: #6b7280;
-        }
-
-        .right {
-            text-align: right;
-        }
-
-        .center {
-            text-align: center;
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <div class="title">Relatório individual de fechamento</div>
-        <div class="subtitle">{{ $snapshot->name }}</div>
-        <div class="subtitle">
-            Período: {{ $snapshot->period_start->format('d/m/Y') }} a {{ $snapshot->period_end->format('d/m/Y') }}
-        </div>
+    @php
+        if (!function_exists('pdf_format_minutes')) {
+            function pdf_format_minutes(int $minutes): string
+            {
+                $negative = $minutes < 0;
+                $absoluteMinutes = abs($minutes);
 
-        <div class="meta">
-            <div><strong>Funcionário:</strong> {{ $employee->employee_name }}</div>
-            <div><strong>Matrícula:</strong> {{ $employee->employee_registration ?: '—' }}</div>
-            <div><strong>Status do fechamento:</strong> {{ $snapshot->status->label() }}</div>
-        </div>
-    </div>
+                $hours = intdiv($absoluteMinutes, 60);
+                $remainingMinutes = $absoluteMinutes % 60;
 
-    <table>
+                $formatted = sprintf('%02d:%02d', $hours, $remainingMinutes);
+
+                return $negative ? '-' . $formatted : $formatted;
+            }
+        }
+
+        if (!function_exists('pdf_normalize_weekday_label')) {
+            function pdf_normalize_weekday_label(?string $weekdayLabel): string
+            {
+                $value = mb_strtoupper(trim((string) $weekdayLabel));
+
+                return match ($value) {
+                    'SEG' => 'SEG',
+                    'TER' => 'TER',
+                    'QUA' => 'QUA',
+                    'QUI' => 'QUI',
+                    'SEX' => 'SEX',
+                    'SÁ', 'SAB', 'SÁB' => 'SÁB',
+                    'DOM' => 'DOM',
+                    default => $value,
+                };
+            }
+        }
+
+        if (!function_exists('pdf_build_expected_schedule')) {
+            function pdf_build_expected_schedule($day): string
+            {
+                $parts = [];
+
+                if ($day->expected_start_time && $day->expected_end_time) {
+                    $parts[] = substr($day->expected_start_time, 0, 5) . ' - ' . substr($day->expected_end_time, 0, 5);
+                }
+
+                if ($day->expected_break_duration) {
+                    $parts[] = 'Int. ' . substr($day->expected_break_duration, 0, 5);
+                }
+
+                return count($parts) ? implode(' | ', $parts) : '—';
+            }
+        }
+
+        if (!function_exists('pdf_build_records_label')) {
+            function pdf_build_records_label($day, string $expectedSchedule): string
+            {
+                $records = collect($day->records ?? [])
+                    ->filter()
+                    ->values();
+
+                if ($records->isNotEmpty()) {
+                    return $records->implode(' | ');
+                }
+
+                if (filled($day->notes)) {
+                    return $day->notes;
+                }
+
+                if ($expectedSchedule === '—') {
+                    return 'DSR';
+                }
+
+                if ((bool) $day->has_divergence) {
+                    return 'Ausência';
+                }
+
+                return '—';
+            }
+        }
+
+        if (!function_exists('pdf_build_records_class')) {
+            function pdf_build_records_class($day, string $expectedSchedule): string
+            {
+                $records = collect($day->records ?? [])
+                    ->filter()
+                    ->values();
+
+                if ($records->isNotEmpty()) {
+                    return '';
+                }
+
+                if (filled($day->notes)) {
+                    return 'text-info';
+                }
+
+                if ($expectedSchedule === '—') {
+                    return 'text-muted';
+                }
+
+                if ((bool) $day->has_divergence) {
+                    return 'text-danger';
+                }
+
+                return 'text-muted';
+            }
+        }
+    @endphp
+
+    @include('pdf.partials.report-header', [
+        'title' => 'Relatório individual de fechamento',
+        'subtitle' => 'Demonstrativo individual do fechamento de banco de horas',
+        'generatedAt' => $generatedAt,
+        'tenantName' => $tenantName ?? 'Tenant',
+        'companyName' => $companyName ?? 'Empresa',
+    ])
+
+    @include('pdf.partials.report-filters', [
+        'items' => [
+            'Fechamento' => $snapshot->id . ' - ' . $snapshot->name,
+            'Período' => $snapshot->period_start->format('d/m/Y') . ' a ' . $snapshot->period_end->format('d/m/Y'),
+            'Funcionário' => $employee->employee_name,
+            'Matrícula' => $employee->employee_registration ?: '—',
+        ],
+    ])
+
+    <table class="report-table">
         <thead>
             <tr>
-                <th style="width: 9%;">Data</th>
-                <th style="width: 6%;">Dia</th>
+                <th style="width: 10%;">Data</th>
+                <th style="width: 7%;">Dia</th>
                 <th style="width: 20%;">Jornada esperada</th>
-                <th style="width: 20%;">Registros</th>
-                <th style="width: 9%;">Justificadas</th>
-                <th style="width: 8%;">Atrasos</th>
-                <th style="width: 8%;">Extras</th>
-                <th style="width: 8%;">Faltas</th>
-                <th style="width: 8%;">Suspensões</th>
-                <th style="width: 8%;">Saldo</th>
+                <th style="width: 23%;">Registros</th>
+                <th style="width: 10%;">Justificadas</th>
+                <th style="width: 10%;">Atrasos</th>
+                <th style="width: 10%;">Extras</th>
+                <th style="width: 10%;">Suspensões</th>
+                <th style="width: 10%;">Saldo</th>
             </tr>
         </thead>
-
         <tbody>
-            @foreach ($days as $day)
+            @forelse ($days as $day)
+                @php
+                    $expectedSchedule = pdf_build_expected_schedule($day);
+                    $recordsLabel = pdf_build_records_label($day, $expectedSchedule);
+                    $recordsClass = pdf_build_records_class($day, $expectedSchedule);
+                @endphp
+
                 <tr>
-                    <td>{{ $day->work_date?->format('d/m/Y') }}</td>
-                    <td class="center">{{ $day->weekday_label }}</td>
-                    <td>
-                        @php
-                            $scheduleParts = [];
-
-                            if ($day->expected_start_time && $day->expected_end_time) {
-                                $scheduleParts[] =
-                                    substr($day->expected_start_time, 0, 5) .
-                                    ' - ' .
-                                    substr($day->expected_end_time, 0, 5);
-                            }
-
-                            if ($day->expected_break_duration) {
-                                $scheduleParts[] = 'Int. ' . substr($day->expected_break_duration, 0, 5);
-                            }
-                        @endphp
-
-                        {{ count($scheduleParts) ? implode(' | ', $scheduleParts) : '—' }}
-                    </td>
-                    <td>{{ collect($day->records ?? [])->implode(' | ') ?: '—' }}</td>
-                    <td class="right">{{ $day->justified_minutes }}</td>
-                    <td class="right">{{ $day->late_minutes }}</td>
-                    <td class="right">{{ $day->extra_minutes }}</td>
-                    <td class="right">{{ $day->absence_minutes }}</td>
-                    <td class="right">{{ $day->suspension_minutes }}</td>
-                    <td class="right">{{ $day->balance_minutes }}</td>
+                    <td>{{ $day->work_date?->format('d/m/Y') ?? '—' }}</td>
+                    <td class="text-center">{{ pdf_normalize_weekday_label($day->weekday_label) }}</td>
+                    <td>{{ $expectedSchedule }}</td>
+                    <td class="{{ $recordsClass }}">{{ $recordsLabel }}</td>
+                    <td class="text-right">{{ pdf_format_minutes((int) $day->justified_minutes) }}</td>
+                    <td class="text-right">{{ pdf_format_minutes((int) $day->late_minutes) }}</td>
+                    <td class="text-right">{{ pdf_format_minutes((int) $day->extra_minutes) }}</td>
+                    <td class="text-right">{{ pdf_format_minutes((int) $day->suspension_minutes) }}</td>
+                    <td class="text-right">{{ pdf_format_minutes((int) $day->balance_minutes) }}</td>
                 </tr>
-            @endforeach
-
-            <tr class="totals">
-                <td colspan="4" class="right">Totais</td>
-                <td class="right">{{ $employee->justified_minutes }}</td>
-                <td class="right">{{ $employee->late_minutes }}</td>
-                <td class="right">{{ $employee->extra_minutes }}</td>
-                <td class="right">{{ $employee->absence_minutes }}</td>
-                <td class="right">{{ $employee->suspension_minutes }}</td>
-                <td class="right">{{ $employee->final_balance_minutes }}</td>
-            </tr>
+            @empty
+                <tr>
+                    <td colspan="9">Nenhum dia encontrado para este fechamento.</td>
+                </tr>
+            @endforelse
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" class="text-right"><strong>Totais</strong></td>
+                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->justified_minutes) }}</strong>
+                </td>
+                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->late_minutes) }}</strong></td>
+                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->extra_minutes) }}</strong></td>
+                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->suspension_minutes) }}</strong>
+                </td>
+                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->balance_minutes) }}</strong></td>
+            </tr>
+        </tfoot>
     </table>
 
-    <div class="signature">
-        <div class="muted">
-            Declaro estar ciente das informações consolidadas neste período.
+    <div class="signature-box">
+        <div class="signature-law">
+            De conformidade com a port. MTb Nº 3.626 de 13 de Novembro de 1991 Art 13, este Cartão de Ponto substitui,
+            para todos os efeitos legais, o quadro de Horário de Trabalho, inclusive o de menores.
         </div>
 
-        <div class="signature-line">
-            Assinatura do funcionário
-        </div>
+        <table class="signature-grid">
+            <tr>
+                <td class="signature-left">
+                    <div class="signature-line-left"></div>
+                    <div class="signature-label">Local e Data</div>
+                </td>
+                <td class="signature-right">
+                    <div class="signature-line-right"></div>
+                    <div class="signature-recognition">Reconheço a exatidão destas informações e dou fé,</div>
+                    <div class="signature-name">{{ $employee->employee_name }}</div>
+                </td>
+            </tr>
+        </table>
     </div>
+
+    @include('pdf.partials.report-footer')
 </body>
 
 </html>

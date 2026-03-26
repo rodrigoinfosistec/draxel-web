@@ -2,6 +2,7 @@
 
 namespace App\Modules\Worktime\Http\Requests;
 
+use App\Modules\Worktime\Enums\EmployeeEventType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,15 +19,7 @@ class UpdateEmployeeEventRequest extends FormRequest
             'employee_id' => ['required', 'integer'],
             'event_type' => [
                 'required',
-                Rule::in([
-                    'medical_certificate',
-                    'day_off',
-                    'suspension',
-                    'vacation',
-                    'leave',
-                    'compensation',
-                    'declaration',
-                ]),
+                Rule::in(EmployeeEventType::values()),
             ],
             'input_mode' => ['required', Rule::in(['schedule_day', 'custom_period'])],
             'date' => ['nullable', 'date', Rule::requiredIf(fn () => $this->input('input_mode') === 'schedule_day')],

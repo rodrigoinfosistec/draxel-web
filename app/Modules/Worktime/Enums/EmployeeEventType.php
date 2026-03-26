@@ -11,6 +11,7 @@ enum EmployeeEventType: string
     case Leave = 'leave';
     case Compensation = 'compensation';
     case Declaration = 'declaration';
+    case Absence = 'absence';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum EmployeeEventType: string
             self::Leave => 'Licença',
             self::Compensation => 'Compensação',
             self::Declaration => 'Declaração',
+            self::Absence => 'Falta',
         };
     }
 
@@ -36,8 +38,34 @@ enum EmployeeEventType: string
         );
     }
 
+    public static function values(): array
+    {
+        return array_map(
+            fn (self $type) => $type->value,
+            self::cases(),
+        );
+    }
+
     public function movesBankHourImmediately(): bool
     {
         return $this === self::Compensation;
+    }
+
+    public function suppressesSchedule(): bool
+    {
+        return in_array($this, [
+            self::MedicalCertificate,
+            self::DayOff,
+            self::Suspension,
+            self::Vacation,
+            self::Leave,
+            self::Declaration,
+            self::Absence,
+        ], true);
+    }
+
+    public function requiresScheduleDayMode(): bool
+    {
+        return $this === self::Absence;
     }
 }

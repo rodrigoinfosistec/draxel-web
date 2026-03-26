@@ -47,7 +47,7 @@ class EmployeeEventService
             'event_type' => $eventType,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'notes' => $data['notes'] ?? null,
+            'notes' => $this->normalizeNotes($data['notes'] ?? null),
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
@@ -87,7 +87,7 @@ class EmployeeEventService
             'event_type' => $eventType,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'notes' => $data['notes'] ?? null,
+            'notes' => $this->normalizeNotes($data['notes'] ?? null),
             'updated_by' => $user->id,
         ]);
 
@@ -114,6 +114,12 @@ class EmployeeEventService
         ?string $startsAt = null,
         ?string $endsAt = null,
     ): array {
+        if ($eventType->requiresScheduleDayMode() && $inputMode !== 'schedule_day') {
+            throw ValidationException::withMessages([
+                'input_mode' => 'O evento de falta deve usar a jornada prevista do dia.',
+            ]);
+        }
+
         if ($inputMode === 'custom_period') {
             if (! $startsAt || ! $endsAt) {
                 throw ValidationException::withMessages([
@@ -157,7 +163,9 @@ class EmployeeEventService
             throw ValidationException::withMessages([
                 'date' => $eventType === EmployeeEventType::Compensation
                     ? 'Dia sem jornada prevista para este funcionário. Use período livre ou configure a jornada do funcionário antes de compensar.'
-                    : 'Dia sem jornada prevista para este funcionário. Use período livre ou configure a jornada do funcionário.',
+                    : ($eventType === EmployeeEventType::Absence
+                        ? 'A falta exige um dia com jornada prevista para este funcionário.'
+                        : 'Dia sem jornada prevista para este funcionário. Use período livre ou configure a jornada do funcionário.'),
             ]);
         }
 
@@ -197,5 +205,12 @@ class EmployeeEventService
                 'event_type' => 'Já existe um evento idêntico para este funcionário no mesmo período.',
             ]);
         }
+    }
+
+    protected function normalizeNotes(?string $notes): ?string
+    {
+        $notes = trim((string) $notes);
+
+        return $notes !== '' ? $notes : null;
     }
 }

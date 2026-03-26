@@ -239,7 +239,9 @@ class EmployeeEventController extends Controller
                     'id' => $employeeEvent->id,
                     'employee_id' => $employeeEvent->employee_id,
                     'event_type' => $employeeEvent->event_type?->value,
-                    'input_mode' => $this->resolveInputMode($employeeEvent),
+                    'input_mode' => $employeeEvent->event_type === EmployeeEventType::Absence
+                        ? 'schedule_day'
+                        : $this->resolveInputMode($employeeEvent),
                     'date' => $employeeEvent->starts_at?->format('Y-m-d'),
                     'starts_at' => $employeeEvent->starts_at?->format('Y-m-d\TH:i'),
                     'ends_at' => $employeeEvent->ends_at?->format('Y-m-d\TH:i'),

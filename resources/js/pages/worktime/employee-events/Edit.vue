@@ -10,6 +10,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, CalendarClock } from 'lucide-vue-next'
+import { computed, watch } from 'vue'
 
 type EmployeeOption = {
     id: number
@@ -64,6 +65,21 @@ const form = useForm({
     ends_at: props.event.ends_at,
     notes: props.event.notes ?? '',
 })
+
+const isAbsenceEvent = computed(() => form.event_type === 'absence')
+const showCustomPeriod = computed(() => form.input_mode === 'custom_period' && !isAbsenceEvent.value)
+
+watch(
+    () => form.event_type,
+    (value) => {
+        if (value === 'absence') {
+            form.input_mode = 'schedule_day'
+            form.starts_at = ''
+            form.ends_at = ''
+        }
+    },
+    { immediate: true }
+)
 
 function submit() {
     form.put(`/worktime/employee-events/${props.event.id}`)
@@ -128,6 +144,10 @@ async function destroy() {
                         </p>
                     </div>
 
+                    <div v-if="isAbsenceEvent" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        A falta representa ausência integral em um dia com jornada prevista. Por isso, este tipo usa sempre a jornada do dia.
+                    </div>
+
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="grid gap-2">
                             <Label for="employee_id">Funcionário</Label>
@@ -189,13 +209,15 @@ async function destroy() {
                                 </label>
 
                                 <label
-                                    class="flex cursor-pointer items-start gap-3 rounded-xl border bg-background px-4 py-3"
+                                    class="flex items-start gap-3 rounded-xl border bg-background px-4 py-3"
+                                    :class="isAbsenceEvent ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
                                 >
                                     <input
                                         v-model="form.input_mode"
                                         type="radio"
                                         value="custom_period"
                                         class="mt-1 h-4 w-4"
+                                        :disabled="isAbsenceEvent"
                                     >
                                     <div>
                                         <div class="text-sm font-medium">Período livre</div>
@@ -219,7 +241,7 @@ async function destroy() {
                             <InputError :message="form.errors.date" />
                         </div>
 
-                        <template v-if="form.input_mode === 'custom_period'">
+                        <template v-if="showCustomPeriod">
                             <div class="grid gap-2">
                                 <Label for="starts_at">Data/hora inicial</Label>
                                 <Input

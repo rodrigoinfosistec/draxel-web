@@ -23,12 +23,12 @@ type SnapshotDay = {
     weekday_label: string
     expected_schedule: string
     records_label: string
-    justified_minutes: number
-    late_minutes: number
-    extra_minutes: number
-    absence_minutes: number
-    suspension_minutes: number
-    balance_minutes: number
+    records_variant: 'default' | 'info' | 'muted' | 'danger'
+    justified_minutes: string
+    late_minutes: string
+    extra_minutes: string
+    suspension_minutes: string
+    balance_minutes: string
     has_divergence: boolean
     divergence_reason: string | null
     notes: string | null
@@ -39,12 +39,11 @@ type SnapshotEmployee = {
     employee_id: number
     employee_name: string
     employee_registration: string | null
-    justified_minutes: number
-    late_minutes: number
-    extra_minutes: number
-    absence_minutes: number
-    suspension_minutes: number
-    balance_minutes: number
+    justified_minutes: string
+    late_minutes: string
+    extra_minutes: string
+    suspension_minutes: string
+    balance_minutes: string
     has_divergence: boolean
     divergence_summary: string | null
     can_generate_individual_report: boolean
@@ -161,6 +160,22 @@ function consolidate() {
 
 function reverseSnapshot() {
     reverseForm.post(`/worktime/hour-bank-snapshots/${props.snapshot.id}/reverse`)
+}
+
+function recordsCellClass(variant: SnapshotDay['records_variant']) {
+    if (variant === 'danger') {
+        return 'font-medium text-red-600'
+    }
+
+    if (variant === 'info') {
+        return 'text-amber-700'
+    }
+
+    if (variant === 'muted') {
+        return 'text-muted-foreground'
+    }
+
+    return ''
 }
 </script>
 
@@ -359,7 +374,6 @@ function reverseSnapshot() {
                                 <div>Justificadas: {{ employee.justified_minutes }}</div>
                                 <div>Atrasos: {{ employee.late_minutes }}</div>
                                 <div>Extras: {{ employee.extra_minutes }}</div>
-                                <div>Faltas: {{ employee.absence_minutes }}</div>
                                 <div>Suspensões: {{ employee.suspension_minutes }}</div>
                                 <div class="font-semibold">Saldo: {{ employee.balance_minutes }}</div>
                             </div>
@@ -409,7 +423,6 @@ function reverseSnapshot() {
                                     <th class="px-4 py-3 text-left">Justificadas</th>
                                     <th class="px-4 py-3 text-left">Atrasos</th>
                                     <th class="px-4 py-3 text-left">Extras</th>
-                                    <th class="px-4 py-3 text-left">Faltas</th>
                                     <th class="px-4 py-3 text-left">Suspensões</th>
                                     <th class="px-4 py-3 text-left">Saldo</th>
                                 </tr>
@@ -423,12 +436,13 @@ function reverseSnapshot() {
                                 >
                                     <td class="px-4 py-3">{{ day.work_date }}</td>
                                     <td class="px-4 py-3">{{ day.weekday_label }}</td>
-                                    <td class="px-4 py-3">{{ day.expected_schedule || '—' }}</td>
-                                    <td class="px-4 py-3">{{ day.records_label || '—' }}</td>
+                                    <td class="px-4 py-3">{{ day.expected_schedule }}</td>
+                                    <td class="px-4 py-3" :class="recordsCellClass(day.records_variant)">
+                                        {{ day.records_label }}
+                                    </td>
                                     <td class="px-4 py-3">{{ day.justified_minutes }}</td>
                                     <td class="px-4 py-3">{{ day.late_minutes }}</td>
                                     <td class="px-4 py-3">{{ day.extra_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.absence_minutes }}</td>
                                     <td class="px-4 py-3">{{ day.suspension_minutes }}</td>
                                     <td class="px-4 py-3">{{ day.balance_minutes }}</td>
                                 </tr>
@@ -438,7 +452,6 @@ function reverseSnapshot() {
                                     <td class="px-4 py-3">{{ employee.justified_minutes }}</td>
                                     <td class="px-4 py-3">{{ employee.late_minutes }}</td>
                                     <td class="px-4 py-3">{{ employee.extra_minutes }}</td>
-                                    <td class="px-4 py-3">{{ employee.absence_minutes }}</td>
                                     <td class="px-4 py-3">{{ employee.suspension_minutes }}</td>
                                     <td class="px-4 py-3">{{ employee.balance_minutes }}</td>
                                 </tr>

@@ -138,44 +138,61 @@ class HourBankSnapshotController extends Controller
             ],
             'employees' => $hourBankSnapshot->employees
                 ->sortBy('employee_name')
-                ->map(fn (HourBankSnapshotEmployee $snapshotEmployee) => [
-                    'id' => $snapshotEmployee->id,
-                    'employee_id' => $snapshotEmployee->employee_id,
-                    'employee_name' => $snapshotEmployee->employee_name,
-                    'employee_registration' => $snapshotEmployee->employee_registration,
-                    'justified_minutes' => $snapshotEmployee->justified_minutes,
-                    'late_minutes' => $snapshotEmployee->late_minutes,
-                    'extra_minutes' => $snapshotEmployee->extra_minutes,
-                    'absence_minutes' => $snapshotEmployee->absence_minutes,
-                    'suspension_minutes' => $snapshotEmployee->suspension_minutes,
-                    'balance_minutes' => $snapshotEmployee->balance_minutes,
-                    'has_divergence' => $snapshotEmployee->has_divergence,
-                    'divergence_summary' => $snapshotEmployee->divergence_summary,
-                    'can_generate_individual_report' => ! $snapshotEmployee->has_divergence,
-                    'days' => $snapshotEmployee->days
-                        ->sortBy('work_date')
-                        ->map(fn ($day) => [
-                            'id' => $day->id,
-                            'work_date' => $day->work_date?->format('d/m/Y'),
-                            'weekday_label' => $day->weekday_label,
-                            'expected_schedule' => $this->buildExpectedScheduleLabel(
-                                startTime: $day->expected_start_time,
-                                endTime: $day->expected_end_time,
-                                breakDuration: $day->expected_break_duration,
-                            ),
-                            'records_label' => collect($day->records ?? [])->implode(' | '),
-                            'justified_minutes' => $day->justified_minutes,
-                            'late_minutes' => $day->late_minutes,
-                            'extra_minutes' => $day->extra_minutes,
-                            'absence_minutes' => $day->absence_minutes,
-                            'suspension_minutes' => $day->suspension_minutes,
-                            'balance_minutes' => $day->balance_minutes,
-                            'has_divergence' => $day->has_divergence,
-                            'divergence_reason' => $day->divergence_reason,
-                            'notes' => $day->notes,
-                        ])
-                        ->values(),
-                ])
+                ->map(function (HourBankSnapshotEmployee $snapshotEmployee) {
+                    return [
+                        'id' => $snapshotEmployee->id,
+                        'employee_id' => $snapshotEmployee->employee_id,
+                        'employee_name' => $snapshotEmployee->employee_name,
+                        'employee_registration' => $snapshotEmployee->employee_registration,
+                        'justified_minutes' => $this->formatMinutes((int) $snapshotEmployee->justified_minutes),
+                        'late_minutes' => $this->formatMinutes((int) $snapshotEmployee->late_minutes),
+                        'extra_minutes' => $this->formatMinutes((int) $snapshotEmployee->extra_minutes),
+                        'suspension_minutes' => $this->formatMinutes((int) $snapshotEmployee->suspension_minutes),
+                        'balance_minutes' => $this->formatMinutes((int) $snapshotEmployee->balance_minutes),
+                        'has_divergence' => $snapshotEmployee->has_divergence,
+                        'divergence_summary' => $snapshotEmployee->divergence_summary,
+                        'can_generate_individual_report' => ! $snapshotEmployee->has_divergence,
+                        'days' => $snapshotEmployee->days
+                            ->sortBy('work_date')
+                            ->map(function ($day) {
+                                $expectedSchedule = $this->buildExpectedScheduleLabel(
+                                    startTime: $day->expected_start_time,
+                                    endTime: $day->expected_end_time,
+                                    breakDuration: $day->expected_break_duration,
+                                );
+
+                                $records = collect($day->records ?? [])->filter()->values()->all();
+
+                                return [
+                                    'id' => $day->id,
+                                    'work_date' => $day->work_date?->format('d/m/Y'),
+                                    'weekday_label' => $this->normalizeWeekdayLabel((string) $day->weekday_label),
+                                    'expected_schedule' => $expectedSchedule,
+                                    'records_label' => $this->buildRecordsLabel(
+                                        records: $records,
+                                        notes: $day->notes,
+                                        expectedSchedule: $expectedSchedule,
+                                        hasDivergence: (bool) $day->has_divergence,
+                                    ),
+                                    'records_variant' => $this->buildRecordsVariant(
+                                        records: $records,
+                                        notes: $day->notes,
+                                        expectedSchedule: $expectedSchedule,
+                                        hasDivergence: (bool) $day->has_divergence,
+                                    ),
+                                    'justified_minutes' => $this->formatMinutes((int) $day->justified_minutes),
+                                    'late_minutes' => $this->formatMinutes((int) $day->late_minutes),
+                                    'extra_minutes' => $this->formatMinutes((int) $day->extra_minutes),
+                                    'suspension_minutes' => $this->formatMinutes((int) $day->suspension_minutes),
+                                    'balance_minutes' => $this->formatMinutes((int) $day->balance_minutes),
+                                    'has_divergence' => $day->has_divergence,
+                                    'divergence_reason' => $day->divergence_reason,
+                                    'notes' => $day->notes,
+                                ];
+                            })
+                            ->values(),
+                    ];
+                })
                 ->values(),
             'availableEmployees' => $availableEmployees,
         ]);
@@ -372,18 +389,41 @@ class HourBankSnapshotController extends Controller
                 'reversed_at' => $snapshot->reversed_at?->format('d/m/Y H:i:s'),
             ]);
 
-        $pdf = Pdf::setOption(['isPhpEnabled' => false])
+        $pdf = Pdf::setOption([
+                'isPhpEnabled' => false,
+            ])
             ->loadView('pdf.hour-bank-snapshots-report', [
                 'snapshots' => $snapshots,
                 'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
                 'companyName' => CompanyContext::current()?->name ?? 'Empresa',
             ])
             ->setPaper('a4', 'landscape');
 
-        return response($pdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="hour-bank-snapshots-' . now()->format('Y-m-d_H-i-s') . '.pdf"',
-        ]);
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
+
+        $canvas->page_text(
+            680,
+            560,
+            '{PAGE_NUM}/{PAGE_COUNT}',
+            $font,
+            9,
+            [0.42, 0.45, 0.5]
+        );
+
+        return response(
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="hour-bank-snapshots-' . now()->format('Y-m-d_H-i-s') . '.pdf"',
+            ]
+        );
     }
 
     public function exportGeneralPreview(Request $request, HourBankSnapshot $hourBankSnapshot)
@@ -399,17 +439,42 @@ class HourBankSnapshotController extends Controller
             ]);
         }
 
-        $pdf = Pdf::setOption(['isPhpEnabled' => false])
+        $pdf = Pdf::setOption([
+                'isPhpEnabled' => false,
+            ])
             ->loadView('pdf.hour-bank-snapshot-general-preview', [
                 'snapshot' => $hourBankSnapshot,
                 'employees' => $hourBankSnapshot->employees->sortBy('employee_name')->values(),
+                'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
+                'companyName' => CompanyContext::current()?->name ?? 'Empresa',
             ])
             ->setPaper('a4', 'landscape');
 
-        return response($pdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-general-preview-' . $hourBankSnapshot->id . '.pdf"',
-        ]);
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
+
+        $canvas->page_text(
+            680,
+            560,
+            '{PAGE_NUM}/{PAGE_COUNT}',
+            $font,
+            9,
+            [0.42, 0.45, 0.5]
+        );
+
+        return response(
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-general-preview-' . $hourBankSnapshot->id . '.pdf"',
+            ]
+        );
     }
 
     public function exportGeneralConsolidated(Request $request, HourBankSnapshot $hourBankSnapshot)
@@ -421,17 +486,42 @@ class HourBankSnapshotController extends Controller
 
         $hourBankSnapshot->load('employees');
 
-        $pdf = Pdf::setOption(['isPhpEnabled' => false])
+        $pdf = Pdf::setOption([
+                'isPhpEnabled' => false,
+            ])
             ->loadView('pdf.hour-bank-snapshot-general-consolidated', [
                 'snapshot' => $hourBankSnapshot,
                 'employees' => $hourBankSnapshot->employees->sortBy('employee_name')->values(),
+                'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
+                'companyName' => CompanyContext::current()?->name ?? 'Empresa',
             ])
             ->setPaper('a4', 'landscape');
 
-        return response($pdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-general-consolidated-' . $hourBankSnapshot->id . '.pdf"',
-        ]);
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
+
+        $canvas->page_text(
+            680,
+            560,
+            '{PAGE_NUM}/{PAGE_COUNT}',
+            $font,
+            9,
+            [0.42, 0.45, 0.5]
+        );
+
+        return response(
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-general-consolidated-' . $hourBankSnapshot->id . '.pdf"',
+            ]
+        );
     }
 
     public function exportEmployeeReport(
@@ -451,18 +541,43 @@ class HourBankSnapshotController extends Controller
 
         $hourBankSnapshotEmployee->load('days');
 
-        $pdf = Pdf::setOption(['isPhpEnabled' => false])
+        $pdf = Pdf::setOption([
+                'isPhpEnabled' => false,
+            ])
             ->loadView('pdf.hour-bank-snapshot-employee', [
                 'snapshot' => $hourBankSnapshot,
                 'employee' => $hourBankSnapshotEmployee,
                 'days' => $hourBankSnapshotEmployee->days->sortBy('work_date')->values(),
+                'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
+                'companyName' => CompanyContext::current()?->name ?? 'Empresa',
             ])
             ->setPaper('a4', 'portrait');
 
-        return response($pdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-employee-' . $hourBankSnapshotEmployee->id . '.pdf"',
-        ]);
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
+
+        $canvas->page_text(
+            750,
+            550,
+            '{PAGE_NUM}/{PAGE_COUNT}',
+            $font,
+            9,
+            [0.42, 0.45, 0.5]
+        );
+
+        return response(
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-employee-' . $hourBankSnapshotEmployee->id . '.pdf"',
+            ]
+        );
     }
 
     protected function filteredQuery(Request $request)
@@ -513,8 +628,85 @@ class HourBankSnapshotController extends Controller
         return implode(' | ', $parts);
     }
 
+    protected function buildRecordsLabel(
+        array $records,
+        ?string $notes,
+        string $expectedSchedule,
+        bool $hasDivergence,
+    ): string {
+        if (! empty($records)) {
+            return collect($records)->implode(' | ');
+        }
+
+        if (filled($notes)) {
+            return $notes;
+        }
+
+        if ($expectedSchedule === '—') {
+            return 'DSR';
+        }
+
+        if ($hasDivergence) {
+            return 'Ausência';
+        }
+
+        return '—';
+    }
+
+    protected function buildRecordsVariant(
+        array $records,
+        ?string $notes,
+        string $expectedSchedule,
+        bool $hasDivergence,
+    ): string {
+        if (! empty($records)) {
+            return 'default';
+        }
+
+        if (filled($notes)) {
+            return 'info';
+        }
+
+        if ($expectedSchedule === '—') {
+            return 'muted';
+        }
+
+        if ($hasDivergence) {
+            return 'danger';
+        }
+
+        return 'muted';
+    }
+
+    protected function normalizeWeekdayLabel(string $weekdayLabel): string
+    {
+        return match (mb_strtoupper(trim($weekdayLabel))) {
+            'SEG' => 'SEG',
+            'TER' => 'TER',
+            'QUA' => 'QUA',
+            'QUI' => 'QUI',
+            'SEX' => 'SEX',
+            'SÁ', 'SAB', 'SÁB' => 'SÁB',
+            'DOM' => 'DOM',
+            default => mb_strtoupper(trim($weekdayLabel)),
+        };
+    }
+
     protected function normalizeTimeForLabel(string $time): string
     {
         return substr($time, 0, 5);
+    }
+
+    protected function formatMinutes(int $minutes): string
+    {
+        $negative = $minutes < 0;
+        $absoluteMinutes = abs($minutes);
+
+        $hours = intdiv($absoluteMinutes, 60);
+        $remainingMinutes = $absoluteMinutes % 60;
+
+        $formatted = sprintf('%02d:%02d', $hours, $remainingMinutes);
+
+        return $negative ? '-' . $formatted : $formatted;
     }
 }

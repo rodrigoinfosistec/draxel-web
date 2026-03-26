@@ -5,7 +5,9 @@ namespace App\Modules\Worktime\Services;
 use App\Models\Employee;
 use App\Models\EmployeeTime;
 use App\Models\Holiday;
+use App\Modules\Worktime\Enums\EmployeeEventType;
 use App\Modules\Worktime\Models\ClockRecord;
+use App\Modules\Worktime\Models\EmployeeEvent;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -25,22 +27,23 @@ class HourBankSnapshotDayApurationService
 
         $records = $this->loadRecords($employee, $date);
         $holiday = $this->findHoliday($employee, $date);
+        $events = $this->loadEmployeeEvents($employee, $date);
 
-        $expectedStartTime = $employeeTime?->start_time;
-        $expectedEndTime = $employeeTime?->end_time;
-        $expectedBreakDuration = $employeeTime?->break_duration;
+        $baseExpectedStartTime = $employeeTime?->start_time;
+        $baseExpectedEndTime = $employeeTime?->end_time;
+        $baseExpectedBreakDuration = $employeeTime?->break_duration;
 
-        $expectedMinutes = $this->calculateExpectedMinutes(
-            startTime: $expectedStartTime,
-            endTime: $expectedEndTime,
-            breakDuration: $expectedBreakDuration,
+        $baseExpectedMinutes = $this->calculateExpectedMinutes(
+            startTime: $baseExpectedStartTime,
+            endTime: $baseExpectedEndTime,
+            breakDuration: $baseExpectedBreakDuration,
         );
 
         $workedMinutes = $this->calculateWorkedMinutes($records);
 
-        $hasSchedule = $expectedMinutes > 0;
-        $hasRecords = $records->isNotEmpty();
-        $isHoliday = (bool) $holiday;
+        $expectedStartTime = $baseExpectedStartTime;
+        $expectedEndTime = $baseExpectedEndTime;
+        $expectedBreakDuration = $baseExpectedBreakDuration;
 
         $justifiedMinutes = 0;
         $lateMinutes = 0;
@@ -51,51 +54,141 @@ class HourBankSnapshotDayApurationService
         $divergenceReason = null;
         $notes = null;
 
-        if ($isHoliday) {
-            $justifiedMinutes = $expectedMinutes;
-            $absenceMinutes = 0;
-            $lateMinutes = 0;
-            $notes = 'Feriado' . ($holiday?->name ? ': ' . $holiday->name : '.');
-        } else {
-            if ($hasSchedule && ! $hasRecords) {
-                $absenceMinutes = $expectedMinutes;
+        if ($holiday) {
+            if ($records->isNotEmpty()) {
                 $hasDivergence = true;
-                $divergenceReason = 'Dia com jornada prevista e sem registros.';
+                $divergenceReason = 'Existem registros em um dia de feriado.';
             }
 
-            if (! $hasSchedule && $hasRecords) {
-                $hasDivergence = true;
-                $divergenceReason = 'Existem registros em um dia sem jornada prevista.';
-            }
-
-            if ($hasRecords && $records->count() % 2 !== 0) {
-                $hasDivergence = true;
-                $divergenceReason = 'Quantidade ímpar de registros de ponto no dia.';
-            }
-
-            if ($hasSchedule && $hasRecords && filled($expectedStartTime)) {
-                $firstRecord = $records->first();
-
-                if ($firstRecord > $this->normalizeTime($expectedStartTime)) {
-                    $lateMinutes = $this->diffInMinutes(
-                        startTime: $expectedStartTime,
-                        endTime: $firstRecord,
-                    );
-                }
-            }
-
-            if ($hasSchedule) {
-                if ($workedMinutes > $expectedMinutes) {
-                    $extraMinutes = $workedMinutes - $expectedMinutes;
-                }
-
-                if ($hasRecords && $workedMinutes < $expectedMinutes) {
-                    $absenceMinutes = max($absenceMinutes, $expectedMinutes - $workedMinutes);
-                }
-            }
+            return [
+                'work_date' => $date->format('Y-m-d'),
+                'weekday' => $weekday,
+                'weekday_label' => $weekdayLabel,
+                'expected_start_time' => null,
+                'expected_end_time' => null,
+                'expected_break_duration' => null,
+                'records' => $records->map(fn (string $time) => substr($time, 0, 5))->values()->all(),
+                'justified_minutes' => 0,
+                'late_minutes' => 0,
+                'extra_minutes' => 0,
+                'absence_minutes' => 0,
+                'suspension_minutes' => 0,
+                'balance_minutes' => 0,
+                'has_divergence' => $hasDivergence,
+                'divergence_reason' => $divergenceReason,
+                'notes' => 'Feriado' . ($holiday->name ? ': ' . $holiday->name : '.'),
+            ];
         }
 
-        $balanceMinutes = $workedMinutes + $justifiedMinutes - $expectedMinutes;
+        $fullDayEvent = $this->resolveFullDayEvent(
+            events: $events,
+            date: $date,
+            expectedStartTime: $baseExpectedStartTime,
+            expectedEndTime: $baseExpectedEndTime,
+            expectedMinutes: $baseExpectedMinutes,
+        );
+
+        if ($fullDayEvent) {
+            if ($records->isNotEmpty()) {
+                $hasDivergence = true;
+                $divergenceReason = 'Existem registros em um dia coberto integralmente por evento.';
+            }
+
+            if ($this->isSuspensionEvent($fullDayEvent)) {
+                $suspensionMinutes = $baseExpectedMinutes;
+            }
+
+            return [
+                'work_date' => $date->format('Y-m-d'),
+                'weekday' => $weekday,
+                'weekday_label' => $weekdayLabel,
+                'expected_start_time' => null,
+                'expected_end_time' => null,
+                'expected_break_duration' => null,
+                'records' => $records->map(fn (string $time) => substr($time, 0, 5))->values()->all(),
+                'justified_minutes' => 0,
+                'late_minutes' => 0,
+                'extra_minutes' => 0,
+                'absence_minutes' => 0,
+                'suspension_minutes' => $suspensionMinutes,
+                'balance_minutes' => 0,
+                'has_divergence' => $hasDivergence,
+                'divergence_reason' => $divergenceReason,
+                'notes' => $this->buildEmployeeEventNote($fullDayEvent),
+            ];
+        }
+
+        if ($baseExpectedMinutes <= 0 && $records->isEmpty()) {
+            return [
+                'work_date' => $date->format('Y-m-d'),
+                'weekday' => $weekday,
+                'weekday_label' => $weekdayLabel,
+                'expected_start_time' => null,
+                'expected_end_time' => null,
+                'expected_break_duration' => null,
+                'records' => [],
+                'justified_minutes' => 0,
+                'late_minutes' => 0,
+                'extra_minutes' => 0,
+                'absence_minutes' => 0,
+                'suspension_minutes' => 0,
+                'balance_minutes' => 0,
+                'has_divergence' => false,
+                'divergence_reason' => null,
+                'notes' => null,
+            ];
+        }
+
+        if ($baseExpectedMinutes <= 0 && $records->isNotEmpty()) {
+            return [
+                'work_date' => $date->format('Y-m-d'),
+                'weekday' => $weekday,
+                'weekday_label' => $weekdayLabel,
+                'expected_start_time' => null,
+                'expected_end_time' => null,
+                'expected_break_duration' => null,
+                'records' => $records->map(fn (string $time) => substr($time, 0, 5))->values()->all(),
+                'justified_minutes' => 0,
+                'late_minutes' => 0,
+                'extra_minutes' => 0,
+                'absence_minutes' => 0,
+                'suspension_minutes' => 0,
+                'balance_minutes' => 0,
+                'has_divergence' => true,
+                'divergence_reason' => 'Existem registros em um dia sem jornada prevista.',
+                'notes' => null,
+            ];
+        }
+
+        if ($records->count() % 2 !== 0) {
+            $hasDivergence = true;
+            $divergenceReason = 'Quantidade ímpar de registros de ponto no dia.';
+        }
+
+        $suspensionMinutes = $this->calculatePartialSuspensionMinutes(
+            events: $events,
+            date: $date,
+            expectedStartTime: $baseExpectedStartTime,
+            expectedEndTime: $baseExpectedEndTime,
+            fullDayEventId: $fullDayEvent?->id,
+        );
+
+        $effectiveExpectedMinutes = max(0, $baseExpectedMinutes - $suspensionMinutes);
+
+        if ($records->isEmpty()) {
+            $hasDivergence = true;
+            $divergenceReason = 'Dia com jornada prevista e sem registros.';
+        }
+
+        if ($workedMinutes > $effectiveExpectedMinutes) {
+            $extraMinutes = $workedMinutes - $effectiveExpectedMinutes;
+        }
+
+        if ($workedMinutes < $effectiveExpectedMinutes) {
+            $lateMinutes = $effectiveExpectedMinutes - $workedMinutes;
+        }
+
+        $balanceMinutes = $extraMinutes - $lateMinutes;
 
         return [
             'work_date' => $date->format('Y-m-d'),
@@ -113,7 +206,7 @@ class HourBankSnapshotDayApurationService
             'balance_minutes' => $balanceMinutes,
             'has_divergence' => $hasDivergence,
             'divergence_reason' => $divergenceReason,
-            'notes' => $notes,
+            'notes' => null,
         ];
     }
 
@@ -136,6 +229,150 @@ class HourBankSnapshotDayApurationService
             ->where('tenant_id', $employee->tenant_id)
             ->whereDate('date', $date->toDateString())
             ->first();
+    }
+
+    protected function loadEmployeeEvents(Employee $employee, Carbon $date): Collection
+    {
+        return EmployeeEvent::query()
+            ->where('tenant_id', $employee->tenant_id)
+            ->where('company_id', $employee->company_id)
+            ->where('employee_id', $employee->id)
+            ->where('starts_at', '<=', $date->copy()->endOfDay())
+            ->where('ends_at', '>=', $date->copy()->startOfDay())
+            ->orderBy('starts_at')
+            ->get();
+    }
+
+    protected function resolveFullDayEvent(
+        Collection $events,
+        Carbon $date,
+        ?string $expectedStartTime,
+        ?string $expectedEndTime,
+        int $expectedMinutes,
+    ): ?EmployeeEvent {
+        if ($events->isEmpty()) {
+            return null;
+        }
+
+        return $events->first(function (EmployeeEvent $event) use ($date, $expectedStartTime, $expectedEndTime, $expectedMinutes) {
+            $eventType = $event->event_type;
+
+            if (! $eventType instanceof EmployeeEventType) {
+                return false;
+            }
+
+            if (! $eventType->suppressesSchedule()) {
+                return false;
+            }
+
+            return $this->coversEntireScheduledDay(
+                event: $event,
+                date: $date,
+                expectedStartTime: $expectedStartTime,
+                expectedEndTime: $expectedEndTime,
+                expectedMinutes: $expectedMinutes,
+            );
+        });
+    }
+
+    protected function calculatePartialSuspensionMinutes(
+        Collection $events,
+        Carbon $date,
+        ?string $expectedStartTime,
+        ?string $expectedEndTime,
+        ?int $fullDayEventId = null,
+    ): int {
+        if (! $expectedStartTime || ! $expectedEndTime) {
+            return 0;
+        }
+
+        $scheduleStart = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedStartTime));
+        $scheduleEnd = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedEndTime));
+
+        if ($scheduleEnd->lessThanOrEqualTo($scheduleStart)) {
+            return 0;
+        }
+
+        $minutes = 0;
+
+        foreach ($events as $event) {
+            if ($fullDayEventId && (int) $event->id === (int) $fullDayEventId) {
+                continue;
+            }
+
+            if (! $this->isSuspensionEvent($event)) {
+                continue;
+            }
+
+            $minutes += $this->calculateOverlapMinutes(
+                startA: $scheduleStart,
+                endA: $scheduleEnd,
+                startB: Carbon::parse($event->starts_at),
+                endB: Carbon::parse($event->ends_at),
+            );
+        }
+
+        return min($minutes, $scheduleStart->diffInMinutes($scheduleEnd));
+    }
+
+    protected function coversEntireScheduledDay(
+        EmployeeEvent $event,
+        Carbon $date,
+        ?string $expectedStartTime,
+        ?string $expectedEndTime,
+        int $expectedMinutes,
+    ): bool {
+        if ($expectedMinutes <= 0 || ! $expectedStartTime || ! $expectedEndTime) {
+            return false;
+        }
+
+        $scheduleStart = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedStartTime));
+        $scheduleEnd = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedEndTime));
+
+        if ($scheduleEnd->lessThanOrEqualTo($scheduleStart)) {
+            return false;
+        }
+
+        $overlap = $this->calculateOverlapMinutes(
+            startA: $scheduleStart,
+            endA: $scheduleEnd,
+            startB: Carbon::parse($event->starts_at),
+            endB: Carbon::parse($event->ends_at),
+        );
+
+        return $overlap >= $scheduleStart->diffInMinutes($scheduleEnd);
+    }
+
+    protected function calculateOverlapMinutes(
+        Carbon $startA,
+        Carbon $endA,
+        Carbon $startB,
+        Carbon $endB,
+    ): int {
+        $start = $startA->greaterThan($startB) ? $startA : $startB;
+        $end = $endA->lessThan($endB) ? $endA : $endB;
+
+        if ($end->lessThanOrEqualTo($start)) {
+            return 0;
+        }
+
+        return $start->diffInMinutes($end);
+    }
+
+    protected function isSuspensionEvent(EmployeeEvent $employeeEvent): bool
+    {
+        return $employeeEvent->event_type === EmployeeEventType::Suspension;
+    }
+
+    protected function buildEmployeeEventNote(EmployeeEvent $employeeEvent): string
+    {
+        $label = $employeeEvent->event_type?->label() ?? 'Evento';
+
+        if (filled($employeeEvent->notes)) {
+            return $label . ': ' . trim($employeeEvent->notes);
+        }
+
+        return $label;
     }
 
     protected function calculateExpectedMinutes(
@@ -183,18 +420,6 @@ class HourBankSnapshotDayApurationService
         }
 
         return $minutes;
-    }
-
-    protected function diffInMinutes(string $startTime, string $endTime): int
-    {
-        $start = Carbon::createFromFormat('H:i:s', $this->normalizeTime($startTime));
-        $end = Carbon::createFromFormat('H:i:s', $this->normalizeTime($endTime));
-
-        if ($end->lessThanOrEqualTo($start)) {
-            return 0;
-        }
-
-        return $start->diffInMinutes($end);
     }
 
     protected function timeToMinutes(string $time): int
