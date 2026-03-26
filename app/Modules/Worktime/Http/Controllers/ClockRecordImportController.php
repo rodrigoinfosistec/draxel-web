@@ -59,6 +59,7 @@ class ClockRecordImportController extends Controller
                 'valid_items' => $import->valid_items,
                 'invalid_items' => $import->invalid_items,
                 'created_at' => $import->created_at?->format('d/m/Y H:i'),
+                'can_delete' => $import->status?->value !== 'launched',
             ]);
 
         return Inertia::render('worktime/clock-record-imports/Index', [
@@ -294,6 +295,28 @@ class ClockRecordImportController extends Controller
             'groups' => $groups,
             'employees' => $employees,
         ]);
+    }
+
+    public function destroy(Request $request, ClockRecordImport $clockRecordImport): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermission('worktime.deleteClockRecordImport'), 403);
+        abort_unless(
+            $clockRecordImport->tenant_id === $request->user()->tenant_id
+            && $clockRecordImport->company_id === session('current_company_id'),
+            404
+        );
+
+        Audit::event('worktime.clock-record-imports.deleted', $clockRecordImport, [
+            'clock_record_import_id' => $clockRecordImport->id,
+            'original_filename' => $clockRecordImport->original_filename,
+            'status' => $clockRecordImport->status?->value,
+        ]);
+
+        $this->service->delete($clockRecordImport, $request->user());
+
+        return redirect()
+            ->route('worktime.clock-record-imports.index')
+            ->with('alert', Flash::success('Importação excluída', 'A importação foi excluída com sucesso.'));
     }
 
     public function ignoreItem(

@@ -263,6 +263,11 @@ return [
                 'description' => 'Permite revisar, ajustar e desconsiderar itens de uma importação de registros de ponto',
             ],
 
+            'deleteClockRecordImport' => [
+                'name' => 'Excluir importação de ponto',
+                'description' => 'Permite excluir importações de registros de ponto que ainda não foram lançadas',
+            ],
+
             'launchClockRecordImport' => [
                 'name' => 'Lançar importação de ponto',
                 'description' => 'Permite lançar os registros validados da importação para os registros de ponto',

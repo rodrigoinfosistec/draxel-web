@@ -221,7 +221,7 @@ class ConstrulajeSeeder extends Seeder
                     'company_id' => $companyBrasilia->id,
                     'name' => 'Gustavo Alves dos Santos',
                     'cpf' => '07745740460',
-                    'registration' => '10774',
+                    'registration' => '30774',
                     'department' => 'Comercial',
                     'position' => 'Vendedor',
                     'is_active' => true,

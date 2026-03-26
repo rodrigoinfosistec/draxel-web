@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Download, FileClock, FileText, Search, X } from 'lucide-vue-next'
+import { Download, FileClock, FileText, Search, Trash2, X } from 'lucide-vue-next'
+import Swal from 'sweetalert2'
 import { ref } from 'vue'
 
 type ImportItem = {
@@ -18,6 +19,7 @@ type ImportItem = {
     valid_items: number
     invalid_items: number
     created_at: string | null
+    can_delete: boolean
 }
 
 type PaginationLink = {
@@ -94,6 +96,24 @@ const statusClass = (status: string) => {
     }
 
     return 'bg-zinc-100 text-zinc-700 ring-zinc-200'
+}
+
+async function destroyImport(importId: number) {
+    const result = await Swal.fire({
+        title: 'Excluir importação?',
+        text: 'Essa importação ainda não foi lançada e será removida definitivamente.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) {
+        return
+    }
+
+    router.delete(`/worktime/clock-record-imports/${importId}`)
 }
 </script>
 
@@ -176,7 +196,7 @@ const statusClass = (status: string) => {
 
             <div class="rounded-xl border bg-card/50 shadow-sm">
                 <div class="overflow-x-auto">
-                    <table class="min-w-[860px] w-full text-sm">
+                    <table class="min-w-[920px] w-full text-sm">
                         <thead class="bg-muted/50">
                             <tr>
                                 <th class="px-4 py-3 text-left">Arquivo</th>
@@ -228,13 +248,27 @@ const statusClass = (status: string) => {
                                     {{ item.created_at || '—' }}
                                 </td>
 
-                                <td class="px-4 py-3 text-right">
-                                    <Link
-                                        :href="`/worktime/clock-record-imports/${item.id}`"
-                                        class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition hover:bg-muted"
-                                    >
-                                        Ver
-                                    </Link>
+                                <td class="px-4 py-3">
+                                    <div class="flex justify-end gap-2">
+                                        <Link
+                                            :href="`/worktime/clock-record-imports/${item.id}`"
+                                            class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition hover:bg-muted"
+                                        >
+                                            Ver
+                                        </Link>
+
+                                        <Can permission="worktime.deleteClockRecordImport">
+                                            <Button
+                                                v-if="item.can_delete"
+                                                variant="outline"
+                                                type="button"
+                                                class="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                @click="destroyImport(item.id)"
+                                            >
+                                                <Trash2 class="h-4 w-4" />
+                                            </Button>
+                                        </Can>
+                                    </div>
                                 </td>
                             </tr>
 

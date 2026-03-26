@@ -128,6 +128,34 @@ class ClockRecordImportService
         });
     }
 
+    public function delete(ClockRecordImport $import, User $user): void
+    {
+        DB::transaction(function () use ($import, $user) {
+            abort_unless($import->tenant_id === $user->tenant_id, 404);
+            abort_unless($import->company_id === session('current_company_id'), 404);
+
+            if ($import->status === ClockRecordImportStatus::Launched || filled($import->launched_at)) {
+                throw ValidationException::withMessages([
+                    'import' => 'Importações já lançadas não podem ser excluídas.',
+                ]);
+            }
+
+            $import->loadMissing('items');
+
+            foreach ($import->items as $item) {
+                if ($item->launched_clock_record_id) {
+                    $this->deleteLinkedClockRecord($item, $import);
+                }
+            }
+
+            if (filled($import->stored_path)) {
+                Storage::delete($import->stored_path);
+            }
+
+            $import->delete();
+        });
+    }
+
     public function ignoreItem(
         ClockRecordImport $import,
         ClockRecordImportItem $item,
