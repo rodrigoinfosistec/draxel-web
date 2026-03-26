@@ -459,8 +459,8 @@ class HourBankSnapshotController extends Controller
         $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
 
         $canvas->page_text(
-            680,
-            560,
+            750,
+            550,
             '{PAGE_NUM}/{PAGE_COUNT}',
             $font,
             9,
@@ -506,8 +506,8 @@ class HourBankSnapshotController extends Controller
         $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
 
         $canvas->page_text(
-            680,
-            560,
+            750,
+            550,
             '{PAGE_NUM}/{PAGE_COUNT}',
             $font,
             9,
