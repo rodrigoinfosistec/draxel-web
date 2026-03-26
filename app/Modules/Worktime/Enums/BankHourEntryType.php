@@ -11,6 +11,7 @@ enum BankHourEntryType: string
     case ManualDebit = 'manual_debit';
     case Compensation = 'compensation';
     case Adjustment = 'adjustment';
+    case SnapshotClosure = 'snapshot_closure';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum BankHourEntryType: string
             self::ManualDebit => 'Débito manual',
             self::Compensation => 'Compensação',
             self::Adjustment => 'Ajuste',
+            self::SnapshotClosure => 'Fechamento de saldo',
         };
     }
 }
