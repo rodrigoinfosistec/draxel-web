@@ -3,14 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Relatório de Apuração de Ponto</title>
+    <title>Relatório de apuração de ponto</title>
     @include('pdf.partials.report-styles')
 </head>
 
 <body>
     @include('pdf.partials.report-header', [
-        'title' => 'Relatório de Apuração de Ponto',
-        'subtitle' => 'Apuração diária do período selecionado',
+        'title' => 'Relatório de apuração de ponto',
+        'subtitle' => 'Demonstrativo diário da apuração antes do fechamento',
         'generatedAt' => $generatedAt,
         'tenantName' => $tenantName ?? 'Tenant',
         'companyName' => $companyName ?? 'Empresa',
@@ -18,26 +18,31 @@
 
     @include('pdf.partials.report-filters', [
         'items' => [
-            'Data inicial' => $filters['start_date'] ?? null,
-            'Data final' => $filters['end_date'] ?? null,
+            'Período' =>
+                \Carbon\Carbon::parse($filters['start_date'])->format('d/m/Y') .
+                ' a ' .
+                \Carbon\Carbon::parse($filters['end_date'])->format('d/m/Y'),
+            'Previsto' => $totals['expected_hours'] ?? null,
+            'Trabalhado' => $totals['worked_hours'] ?? null,
+            'Atrasos' => $totals['delay_hours'] ?? null,
+            'Dispensas' => $totals['dispensation_hours'] ?? null,
+            'Extras' => $totals['overtime_hours'] ?? null,
         ],
     ])
 
     <table class="report-table">
         <thead>
             <tr>
-                <th>Funcionário</th>
-                <th>Data</th>
-                <th>Previsto</th>
-                <th>Trabalhado</th>
-                <th>Atraso</th>
-                <th>Saída antecipada</th>
-                <th>Extra</th>
-                <th>Ausência</th>
-                <th>Registros</th>
-                <th>Horários</th>
-                <th>Status</th>
-                <th>Observações</th>
+                <th style="width: 16%;">Funcionário</th>
+                <th style="width: 8%;">Data</th>
+                <th style="width: 10%;">Jornada prevista</th>
+                <th style="width: 9%;">Trabalhado</th>
+                <th style="width: 9%;">Atrasos</th>
+                <th style="width: 9%;">Dispensa</th>
+                <th style="width: 8%;">Extra</th>
+                <th style="width: 7%;">Registros</th>
+                <th style="width: 11%;">Status</th>
+                <th style="width: 23%;">Observações</th>
             </tr>
         </thead>
         <tbody>
@@ -45,20 +50,18 @@
                 <tr>
                     <td>{{ $day['employee_name'] }}</td>
                     <td>{{ $day['date'] }}</td>
-                    <td>{{ $day['expected_hours'] }}</td>
-                    <td>{{ $day['worked_hours'] }}</td>
-                    <td>{{ $day['delay_hours'] }}</td>
-                    <td>{{ $day['early_exit_hours'] }}</td>
-                    <td>{{ $day['overtime_hours'] }}</td>
-                    <td>{{ $day['absence_hours'] }}</td>
-                    <td>{{ $day['records_count'] }}</td>
-                    <td>{{ $day['record_times'] ?: '—' }}</td>
+                    <td class="text-right">{{ $day['expected_hours'] }}</td>
+                    <td class="text-right">{{ $day['worked_hours'] }}</td>
+                    <td class="text-right">{{ $day['delay_hours'] }}</td>
+                    <td class="text-right">{{ $day['dispensation_hours'] }}</td>
+                    <td class="text-right">{{ $day['overtime_hours'] }}</td>
+                    <td class="text-center">{{ $day['records_count'] }}</td>
                     <td>{{ $day['status_label'] }}</td>
                     <td>{{ $day['notes'] ?: '—' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="12">Nenhuma apuração encontrada.</td>
+                    <td colspan="10">Nenhum registro encontrado para o período informado.</td>
                 </tr>
             @endforelse
         </tbody>

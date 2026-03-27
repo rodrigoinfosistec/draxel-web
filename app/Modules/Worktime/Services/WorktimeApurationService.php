@@ -5,6 +5,7 @@ namespace App\Modules\Worktime\Services;
 use App\Models\CompanyDefaultTime;
 use App\Models\Employee;
 use App\Models\Holiday;
+use App\Modules\Worktime\Enums\EmployeeEventType;
 use App\Modules\Worktime\Models\ClockRecord;
 use App\Modules\Worktime\Models\EmployeeEvent;
 use Carbon\Carbon;
@@ -81,9 +82,8 @@ class WorktimeApurationService
                 'expected_minutes' => 0,
                 'worked_minutes' => 0,
                 'delay_minutes' => 0,
-                'early_exit_minutes' => 0,
+                'dispensation_minutes' => 0,
                 'overtime_minutes' => 0,
-                'absence_minutes' => 0,
                 'inconsistent_days' => 0,
                 'worked_days' => 0,
                 'warning_days' => 0,
@@ -92,6 +92,7 @@ class WorktimeApurationService
             foreach (CarbonPeriod::create($start->copy()->startOfDay(), $end->copy()->startOfDay()) as $date) {
                 $dateKey = $date->format('Y-m-d');
                 $weekdayKey = strtolower($date->englishDayOfWeek);
+                $weekdayLabel = $this->resolveWeekdayLabel($date);
 
                 $records = $clockRecords
                     ->get($employee->id . '|' . $dateKey, collect())
@@ -105,7 +106,8 @@ class WorktimeApurationService
                     ->all();
 
                 $events = collect($employeeEvents->get($employee->id, collect()))
-                    ->filter(fn (EmployeeEvent $event) => $this->eventTouchesDay($event, $date));
+                    ->filter(fn (EmployeeEvent $event) => $this->eventTouchesDay($event, $date))
+                    ->values();
 
                 $holiday = $holidays->get($dateKey);
                 $defaultTime = $defaultTimes->get($weekdayKey);
@@ -120,9 +122,8 @@ class WorktimeApurationService
                 $worked = $this->resolveWorkedMinutes($records);
 
                 $delayMinutes = 0;
-                $earlyExitMinutes = 0;
+                $dispensationMinutes = $schedule['dispensation_minutes'];
                 $overtimeMinutes = 0;
-                $absenceMinutes = 0;
                 $notes = collect($schedule['notes']);
 
                 if ($worked['is_inconsistent'] && $worked['inconsistency_reason']) {
@@ -135,9 +136,10 @@ class WorktimeApurationService
 
                     if ($firstRecord && $schedule['expected_start']) {
                         $rawDelay = $schedule['expected_start']->diffInMinutes($firstRecord, false);
-                        $delayMinutes = $rawDelay > $this->delayToleranceMinutes ? $rawDelay : 0;
+                        $entryDelayMinutes = $rawDelay > $this->delayToleranceMinutes ? $rawDelay : 0;
 
-                        if ($delayMinutes > 0) {
+                        if ($entryDelayMinutes > 0) {
+                            $delayMinutes += $entryDelayMinutes;
                             $notes->push('Atraso identificado.');
                         }
                     }
@@ -147,6 +149,7 @@ class WorktimeApurationService
                         $earlyExitMinutes = $rawEarlyExit > $this->earlyExitToleranceMinutes ? $rawEarlyExit : 0;
 
                         if ($earlyExitMinutes > 0) {
+                            $delayMinutes += $earlyExitMinutes;
                             $notes->push('Saída antecipada identificada.');
                         }
                     }
@@ -155,15 +158,30 @@ class WorktimeApurationService
                 if (! $worked['is_inconsistent']) {
                     if ($schedule['expected_minutes'] > 0) {
                         $overtimeMinutes = max(0, $worked['worked_minutes'] - $schedule['expected_minutes']);
-                        $absenceMinutes = max(0, $schedule['expected_minutes'] - $worked['worked_minutes']);
+
+                        $deficitMinutes = max(0, $schedule['expected_minutes'] - $worked['worked_minutes']);
+                        $alreadyCountedAsDelay = min($delayMinutes, $deficitMinutes);
+                        $remainingDeficitMinutes = max(0, $deficitMinutes - $alreadyCountedAsDelay);
+
+                        $delayMinutes += $remainingDeficitMinutes;
 
                         if ($overtimeMinutes > 0) {
                             $notes->push('Horas extras no dia.');
                         }
 
-                        if ($absenceMinutes > 0 && $worked['worked_minutes'] === 0) {
+                        if (
+                            $worked['worked_minutes'] === 0
+                            && $schedule['expected_minutes'] > 0
+                            && $dispensationMinutes === 0
+                            && ! $schedule['has_event']
+                            && ! $schedule['is_holiday']
+                        ) {
                             $notes->push('Ausência no dia.');
-                        } elseif ($absenceMinutes > 0) {
+                        } elseif (
+                            $remainingDeficitMinutes > 0
+                            && $worked['worked_minutes'] > 0
+                            && ! $schedule['has_event']
+                        ) {
                             $notes->push('Déficit de jornada no dia.');
                         }
                     } else {
@@ -180,25 +198,26 @@ class WorktimeApurationService
                     workedMinutes: $worked['worked_minutes'],
                     isInconsistent: $worked['is_inconsistent'],
                     delayMinutes: $delayMinutes,
-                    earlyExitMinutes: $earlyExitMinutes,
+                    dispensationMinutes: $dispensationMinutes,
                     overtimeMinutes: $overtimeMinutes,
+                    hasEvent: $schedule['has_event'],
+                    isHoliday: $schedule['is_holiday'],
                 );
 
                 $day = [
                     'date' => $dateKey,
                     'date_label' => $date->format('d/m/Y'),
+                    'weekday_label' => $weekdayLabel,
                     'expected_minutes' => $schedule['expected_minutes'],
                     'expected_hours' => $this->formatMinutes($schedule['expected_minutes']),
                     'worked_minutes' => $worked['worked_minutes'],
                     'worked_hours' => $this->formatMinutes($worked['worked_minutes']),
                     'delay_minutes' => $delayMinutes,
                     'delay_hours' => $this->formatMinutes($delayMinutes),
-                    'early_exit_minutes' => $earlyExitMinutes,
-                    'early_exit_hours' => $this->formatMinutes($earlyExitMinutes),
+                    'dispensation_minutes' => $dispensationMinutes,
+                    'dispensation_hours' => $this->formatMinutes($dispensationMinutes),
                     'overtime_minutes' => $overtimeMinutes,
                     'overtime_hours' => $this->formatMinutes($overtimeMinutes),
-                    'absence_minutes' => $absenceMinutes,
-                    'absence_hours' => $this->formatMinutes($absenceMinutes),
                     'records_count' => $records->count(),
                     'record_times' => $recordTimes,
                     'status' => $dayStatus,
@@ -211,15 +230,14 @@ class WorktimeApurationService
                 $summary['expected_minutes'] += $day['expected_minutes'];
                 $summary['worked_minutes'] += $day['worked_minutes'];
                 $summary['delay_minutes'] += $day['delay_minutes'];
-                $summary['early_exit_minutes'] += $day['early_exit_minutes'];
+                $summary['dispensation_minutes'] += $day['dispensation_minutes'];
                 $summary['overtime_minutes'] += $day['overtime_minutes'];
-                $summary['absence_minutes'] += $day['absence_minutes'];
 
                 if ($day['status'] === 'inconsistent') {
                     $summary['inconsistent_days']++;
                 }
 
-                if ($day['status'] === 'warning') {
+                if ($day['status'] === 'warning' || $day['status'] === 'absence') {
                     $summary['warning_days']++;
                 }
 
@@ -230,18 +248,17 @@ class WorktimeApurationService
                 $flatDays[] = [
                     'employee_name' => $employee->name,
                     'date' => $day['date_label'],
+                    'weekday_label' => $day['weekday_label'],
                     'expected_minutes' => $day['expected_minutes'],
                     'expected_hours' => $day['expected_hours'],
                     'worked_minutes' => $day['worked_minutes'],
                     'worked_hours' => $day['worked_hours'],
                     'delay_minutes' => $day['delay_minutes'],
                     'delay_hours' => $day['delay_hours'],
-                    'early_exit_minutes' => $day['early_exit_minutes'],
-                    'early_exit_hours' => $day['early_exit_hours'],
+                    'dispensation_minutes' => $day['dispensation_minutes'],
+                    'dispensation_hours' => $day['dispensation_hours'],
                     'overtime_minutes' => $day['overtime_minutes'],
                     'overtime_hours' => $day['overtime_hours'],
-                    'absence_minutes' => $day['absence_minutes'],
-                    'absence_hours' => $day['absence_hours'],
                     'records_count' => $day['records_count'],
                     'record_times' => implode(' • ', $day['record_times']),
                     'status' => $day['status'],
@@ -260,12 +277,10 @@ class WorktimeApurationService
                     'worked_hours' => $this->formatMinutes($summary['worked_minutes']),
                     'delay_minutes' => $summary['delay_minutes'],
                     'delay_hours' => $this->formatMinutes($summary['delay_minutes']),
-                    'early_exit_minutes' => $summary['early_exit_minutes'],
-                    'early_exit_hours' => $this->formatMinutes($summary['early_exit_minutes']),
+                    'dispensation_minutes' => $summary['dispensation_minutes'],
+                    'dispensation_hours' => $this->formatMinutes($summary['dispensation_minutes']),
                     'overtime_minutes' => $summary['overtime_minutes'],
                     'overtime_hours' => $this->formatMinutes($summary['overtime_minutes']),
-                    'absence_minutes' => $summary['absence_minutes'],
-                    'absence_hours' => $this->formatMinutes($summary['absence_minutes']),
                     'inconsistent_days' => $summary['inconsistent_days'],
                     'worked_days' => $summary['worked_days'],
                     'warning_days' => $summary['warning_days'],
@@ -286,14 +301,12 @@ class WorktimeApurationService
                 'worked_hours' => $this->formatMinutes((int) collect($flatDays)->sum('worked_minutes')),
                 'delay_minutes' => collect($flatDays)->sum('delay_minutes'),
                 'delay_hours' => $this->formatMinutes((int) collect($flatDays)->sum('delay_minutes')),
-                'early_exit_minutes' => collect($flatDays)->sum('early_exit_minutes'),
-                'early_exit_hours' => $this->formatMinutes((int) collect($flatDays)->sum('early_exit_minutes')),
+                'dispensation_minutes' => collect($flatDays)->sum('dispensation_minutes'),
+                'dispensation_hours' => $this->formatMinutes((int) collect($flatDays)->sum('dispensation_minutes')),
                 'overtime_minutes' => collect($flatDays)->sum('overtime_minutes'),
                 'overtime_hours' => $this->formatMinutes((int) collect($flatDays)->sum('overtime_minutes')),
-                'absence_minutes' => collect($flatDays)->sum('absence_minutes'),
-                'absence_hours' => $this->formatMinutes((int) collect($flatDays)->sum('absence_minutes')),
                 'inconsistent_days' => collect($flatDays)->where('status', 'inconsistent')->count(),
-                'warning_days' => collect($flatDays)->where('status', 'warning')->count(),
+                'warning_days' => collect($flatDays)->whereIn('status', ['warning', 'absence'])->count(),
             ],
         ];
     }
@@ -309,7 +322,10 @@ class WorktimeApurationService
                 'expected_start' => null,
                 'expected_end' => null,
                 'expected_minutes' => 0,
-                'notes' => ['Sem jornada prevista.'],
+                'dispensation_minutes' => 0,
+                'has_event' => false,
+                'is_holiday' => false,
+                'notes' => ['DSR'],
             ];
         }
 
@@ -318,7 +334,10 @@ class WorktimeApurationService
                 'expected_start' => null,
                 'expected_end' => null,
                 'expected_minutes' => 0,
-                'notes' => ['Feriado.'],
+                'dispensation_minutes' => 0,
+                'has_event' => false,
+                'is_holiday' => true,
+                'notes' => ['Feriado'],
             ];
         }
 
@@ -326,10 +345,26 @@ class WorktimeApurationService
         $expectedEnd = Carbon::parse($date->format('Y-m-d') . ' ' . $defaultTime->end_time);
         $breakMinutes = $this->timeToMinutes($defaultTime->break_duration);
 
-        $expectedMinutes = max(0, $expectedStart->diffInMinutes($expectedEnd) - $breakMinutes);
+        $baseExpectedMinutes = max(0, $expectedStart->diffInMinutes($expectedEnd) - $breakMinutes);
+        $expectedMinutes = $baseExpectedMinutes;
+        $dispensationMinutes = 0;
         $notes = [];
+        $hasEvent = false;
 
         foreach ($events as $event) {
+            $eventType = $event->event_type;
+
+            if (! $eventType instanceof EmployeeEventType) {
+                continue;
+            }
+
+            if (! $this->eventAffectsExpectedSchedule($eventType)) {
+                continue;
+            }
+
+            $hasEvent = true;
+            $eventLabel = $eventType->label() ?? 'Evento';
+
             $eventStart = $event->starts_at->copy();
             $eventEnd = $event->ends_at->copy();
 
@@ -341,23 +376,39 @@ class WorktimeApurationService
                     'expected_start' => null,
                     'expected_end' => null,
                     'expected_minutes' => 0,
-                    'notes' => ['Evento diário: ' . ($event->event_type?->label() ?? 'Evento')],
+                    'dispensation_minutes' => $eventType === EmployeeEventType::Dispensation ? $baseExpectedMinutes : 0,
+                    'has_event' => true,
+                    'is_holiday' => false,
+                    'notes' => [$eventLabel],
                 ];
             }
 
             $overlapStart = $eventStart->greaterThan($expectedStart) ? $eventStart : $expectedStart;
             $overlapEnd = $eventEnd->lessThan($expectedEnd) ? $eventEnd : $expectedEnd;
 
-            if ($overlapStart->lessThan($overlapEnd)) {
-                $expectedMinutes -= $overlapStart->diffInMinutes($overlapEnd);
-                $notes[] = 'Evento parcial: ' . ($event->event_type?->label() ?? 'Evento');
+            if (! $overlapStart->lessThan($overlapEnd)) {
+                $notes[] = $eventLabel;
+                continue;
             }
+
+            $overlapMinutes = $overlapStart->diffInMinutes($overlapEnd);
+
+            $expectedMinutes -= $overlapMinutes;
+
+            if ($eventType === EmployeeEventType::Dispensation) {
+                $dispensationMinutes += $overlapMinutes;
+            }
+
+            $notes[] = $eventLabel;
         }
 
         return [
             'expected_start' => $expectedStart,
             'expected_end' => $expectedEnd,
             'expected_minutes' => max(0, $expectedMinutes),
+            'dispensation_minutes' => min(max(0, $dispensationMinutes), $baseExpectedMinutes),
+            'has_event' => $hasEvent,
+            'is_holiday' => false,
             'notes' => $notes,
         ];
     }
@@ -421,8 +472,10 @@ class WorktimeApurationService
         int $workedMinutes,
         bool $isInconsistent,
         int $delayMinutes,
-        int $earlyExitMinutes,
+        int $dispensationMinutes,
         int $overtimeMinutes,
+        bool $hasEvent,
+        bool $isHoliday,
     ): string {
         if ($isInconsistent) {
             return 'inconsistent';
@@ -432,11 +485,17 @@ class WorktimeApurationService
             return 'neutral';
         }
 
-        if ($expectedMinutes > 0 && $workedMinutes === 0) {
+        if (
+            $expectedMinutes > 0
+            && $workedMinutes === 0
+            && $dispensationMinutes === 0
+            && ! $hasEvent
+            && ! $isHoliday
+        ) {
             return 'absence';
         }
 
-        if ($delayMinutes > 0 || $earlyExitMinutes > 0 || $overtimeMinutes > 0) {
+        if ($delayMinutes > 0 || $dispensationMinutes > 0 || $overtimeMinutes > 0 || $hasEvent) {
             return 'warning';
         }
 
@@ -455,10 +514,38 @@ class WorktimeApurationService
         };
     }
 
+    protected function resolveWeekdayLabel(Carbon $date): string
+    {
+        return match ((int) $date->dayOfWeek) {
+            Carbon::SUNDAY => 'DOM',
+            Carbon::MONDAY => 'SEG',
+            Carbon::TUESDAY => 'TER',
+            Carbon::WEDNESDAY => 'QUA',
+            Carbon::THURSDAY => 'QUI',
+            Carbon::FRIDAY => 'SEX',
+            Carbon::SATURDAY => 'SÁB',
+            default => '—',
+        };
+    }
+
     protected function eventTouchesDay(EmployeeEvent $event, Carbon $date): bool
     {
         return $event->starts_at->lessThanOrEqualTo($date->copy()->endOfDay())
             && $event->ends_at->greaterThanOrEqualTo($date->copy()->startOfDay());
+    }
+
+    protected function eventAffectsExpectedSchedule(EmployeeEventType $eventType): bool
+    {
+        return in_array($eventType, [
+            EmployeeEventType::MedicalCertificate,
+            EmployeeEventType::DayOff,
+            EmployeeEventType::Suspension,
+            EmployeeEventType::Vacation,
+            EmployeeEventType::Leave,
+            EmployeeEventType::Declaration,
+            EmployeeEventType::Absence,
+            EmployeeEventType::Dispensation,
+        ], true);
     }
 
     protected function timeToMinutes(?string $time): int

@@ -98,12 +98,12 @@ class WorktimeApurationController extends Controller
             fputcsv($handle, [
                 'Funcionário',
                 'Data',
+                'Dia',
                 'Jornada prevista',
                 'Trabalhado',
-                'Atraso',
-                'Saída antecipada',
+                'Atrasos',
+                'Dispensa',
                 'Extra',
-                'Ausência',
                 'Registros',
                 'Horários',
                 'Status',
@@ -114,12 +114,12 @@ class WorktimeApurationController extends Controller
                 fputcsv($handle, [
                     $day['employee_name'],
                     $day['date'],
+                    $day['weekday_label'],
                     $day['expected_hours'],
                     $day['worked_hours'],
                     $day['delay_hours'],
-                    $day['early_exit_hours'],
+                    $day['dispensation_hours'],
                     $day['overtime_hours'],
-                    $day['absence_hours'],
                     $day['records_count'],
                     $day['record_times'] ?? '',
                     $day['status_label'],
@@ -161,6 +161,7 @@ class WorktimeApurationController extends Controller
         ])
             ->loadView('pdf.worktime-apurations-report', [
                 'days' => $apuration['flat_days'],
+                'totals' => $apuration['totals'],
                 'filters' => [
                     'start_date' => $validated['start_date'],
                     'end_date' => $validated['end_date'],
@@ -179,8 +180,8 @@ class WorktimeApurationController extends Controller
         $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
 
         $canvas->page_text(
-            680,
-            560,
+            750,
+            550,
             '{PAGE_NUM}/{PAGE_COUNT}',
             $font,
             9,
