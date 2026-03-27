@@ -57,7 +57,7 @@ const defaultCompanyId = computed(() => page.props.defaultCompanyId ?? null);
                         <select
                             id="company_id"
                             name="company_id"
-                            class="mt-1 block w-full border rounded px-3 py-2"
+                            class="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-xs outline-none transition-colors ring-offset-background focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
                             :default-value="defaultCompanyId"
                             required
                         >
@@ -78,7 +78,7 @@ const defaultCompanyId = computed(() => page.props.defaultCompanyId ?? null);
 
                     <div class="flex items-center gap-4">
                         <Button :disabled="processing">
-                            Save
+                            Salvar
                         </Button>
 
                         <Transition
@@ -89,9 +89,9 @@ const defaultCompanyId = computed(() => page.props.defaultCompanyId ?? null);
                         >
                             <p
                                 v-show="recentlySuccessful"
-                                class="text-sm text-neutral-600"
+                                class="text-sm text-muted-foreground"
                             >
-                                Saved.
+                                Salvo.
                             </p>
                         </Transition>
                     </div>
