@@ -2,11 +2,11 @@
 import Can from '@/components/Can.vue'
 import Heading from '@/components/Heading.vue'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { Download, FileClock, FileText, Search, Trash2, X } from 'lucide-vue-next'
-import Swal from 'sweetalert2'
 import { ref } from 'vue'
 
 type ImportItem = {
@@ -99,17 +99,15 @@ const statusClass = (status: string) => {
 }
 
 async function destroyImport(importId: number) {
-    const result = await Swal.fire({
+    const confirmed = await useConfirm({
         title: 'Excluir importação?',
         text: 'Essa importação ainda não foi lançada e será removida definitivamente.',
-        icon: 'warning',
-        showCancelButton: true,
         confirmButtonText: 'Sim, excluir',
         cancelButtonText: 'Cancelar',
-        reverseButtons: true,
+        icon: 'warning',
     })
 
-    if (!result.isConfirmed) {
+    if (!confirmed) {
         return
     }
 

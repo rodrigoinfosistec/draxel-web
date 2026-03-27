@@ -261,21 +261,31 @@ class ClockRecordImportController extends Controller
                         ->values(),
                     'can_adjust_times' => filled($firstItemWithEmployeeAndDate?->employee_id)
                         && filled($firstItemWithEmployeeAndDate?->recorded_at),
-                    'items' => $items->map(fn ($item) => [
-                        'id' => $item->id,
-                        'line_number' => $item->line_number,
-                        'employee_code' => $item->employee_code,
-                        'employee_name' => $item->employee?->name,
-                        'recorded_at' => $item->recorded_at?->format('d/m/Y H:i'),
-                        'time' => $item->recorded_at?->format('H:i'),
-                        'status' => $item->status?->value,
-                        'status_label' => $item->status?->label(),
-                        'divergence_reason' => $item->divergence_reason,
-                        'raw_line' => $item->raw_line,
-                        'can_ignore' => $item->status?->value === 'invalid',
-                        'can_resolve_employee' => $item->status?->value === 'invalid'
-                            && $item->divergence_reason === 'Funcionário não encontrado.',
-                    ])->values(),
+                    'items' => $items
+                        ->sortBy('recorded_at')
+                        ->map(function ($item) {
+                            $payload = is_array($item->payload) ? $item->payload : [];
+
+                            return [
+                                'id' => $item->id,
+                                'line_number' => $item->line_number,
+                                'line_number_label' => ! empty($payload['manual_adjustment']) ? 'Manual' : (string) $item->line_number,
+                                'employee_code' => $item->employee_code,
+                                'employee_name' => $item->employee?->name,
+                                'recorded_at' => $item->recorded_at?->format('d/m/Y H:i'),
+                                'time' => $item->recorded_at?->format('H:i'),
+                                'status' => $item->status?->value,
+                                'status_label' => $item->status?->label(),
+                                'divergence_reason' => $item->divergence_reason,
+                                'raw_line' => $item->raw_line,
+                                'original_raw_line' => $payload['original_raw_line'] ?? null,
+                                'is_manual_adjustment' => (bool) ($payload['manual_adjustment'] ?? false),
+                                'can_ignore' => $item->status?->value === 'invalid',
+                                'can_resolve_employee' => $item->status?->value === 'invalid'
+                                    && $item->divergence_reason === 'Funcionário não encontrado.',
+                            ];
+                        })
+                        ->values(),
                 ];
             })
             ->values();

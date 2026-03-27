@@ -377,15 +377,152 @@ class ClockRecordImportService
         Collection $existingItems,
         User $user,
     ): void {
-        $existingItems = $existingItems->values();
         $launched = $this->isLaunched($import);
 
-        foreach ($dateTimes as $index => $dateTime) {
-            $item = $existingItems->get($index);
+        $originalItems = $existingItems
+            ->filter(fn (ClockRecordImportItem $item) => ! $this->isManualAdjustmentItem($item))
+            ->sortBy(fn (ClockRecordImportItem $item) => [
+                $item->recorded_at?->format('Y-m-d H:i:s'),
+                $item->id,
+            ])
+            ->values();
 
-            if ($item) {
-                $item->update([
+        $manualItems = $existingItems
+            ->filter(fn (ClockRecordImportItem $item) => $this->isManualAdjustmentItem($item))
+            ->sortBy(fn (ClockRecordImportItem $item) => [
+                $item->recorded_at?->format('Y-m-d H:i:s'),
+                $item->id,
+            ])
+            ->values();
+
+        $targetTimeKeys = $dateTimes
+            ->map(fn (Carbon $dateTime) => $dateTime->format('Y-m-d H:i:s'))
+            ->values();
+
+        $usedOriginalIds = collect();
+        $usedManualIds = collect();
+
+        $originalItemsByTime = $originalItems
+            ->groupBy(fn (ClockRecordImportItem $item) => $item->recorded_at?->format('Y-m-d H:i:s') ?? '')
+            ->map(fn (Collection $items) => $items->values());
+
+        foreach ($dateTimes as $dateTime) {
+            $timeKey = $dateTime->format('Y-m-d H:i:s');
+            $queue = $originalItemsByTime->get($timeKey);
+
+            if (! $queue instanceof Collection || $queue->isEmpty()) {
+                continue;
+            }
+
+            /** @var ClockRecordImportItem $item */
+            $item = $queue->shift();
+            $originalItemsByTime->put($timeKey, $queue);
+            $usedOriginalIds->push($item->id);
+
+            $payload = is_array($item->payload) ? $item->payload : [];
+            unset(
+                $payload['manual_adjustment'],
+                $payload['original_raw_line'],
+                $payload['original_line_number'],
+                $payload['original_recorded_at']
+            );
+
+            $item->update([
+                'employee_id' => $employeeId,
+                'line_number' => $payload['original_line_number'] ?? $item->line_number,
+                'raw_line' => $payload['original_raw_line'] ?? $item->raw_line,
+                'recorded_at' => $dateTime,
+                'status' => $launched
+                    ? ClockRecordImportItemStatus::Launched
+                    : ClockRecordImportItemStatus::Resolved,
+                'record_hash' => $this->makeRecordHash(
+                    tenantId: $import->tenant_id,
+                    companyId: $import->company_id,
+                    employeeId: $employeeId,
+                    recordedAt: $dateTime,
+                ),
+                'divergence_reason' => null,
+                'payload' => empty($payload) ? null : $payload,
+            ]);
+
+            if ($launched) {
+                $this->syncClockRecordForItem($import, $item, $user);
+            }
+        }
+
+        $remainingTargetTimes = $dateTimes
+            ->reject(fn (Carbon $dateTime) => $usedOriginalIds->contains(
+                fn (int $itemId) => $originalItems->firstWhere('id', $itemId)?->recorded_at?->format('Y-m-d H:i:s') === $dateTime->format('Y-m-d H:i:s')
+            ))
+            ->values();
+
+        $manualItemsByTime = $manualItems
+            ->groupBy(fn (ClockRecordImportItem $item) => $item->recorded_at?->format('Y-m-d H:i:s') ?? '')
+            ->map(fn (Collection $items) => $items->values());
+
+        foreach ($remainingTargetTimes as $dateTime) {
+            $timeKey = $dateTime->format('Y-m-d H:i:s');
+            $queue = $manualItemsByTime->get($timeKey);
+
+            if (! $queue instanceof Collection || $queue->isEmpty()) {
+                continue;
+            }
+
+            /** @var ClockRecordImportItem $item */
+            $item = $queue->shift();
+            $manualItemsByTime->put($timeKey, $queue);
+            $usedManualIds->push($item->id);
+
+            $payload = is_array($item->payload) ? $item->payload : [];
+            $payload['manual_adjustment'] = true;
+
+            $item->update([
+                'employee_id' => $employeeId,
+                'line_number' => 0,
+                'raw_line' => 'Ajuste manual de horário',
+                'recorded_at' => $dateTime,
+                'status' => $launched
+                    ? ClockRecordImportItemStatus::Launched
+                    : ClockRecordImportItemStatus::Resolved,
+                'record_hash' => $this->makeRecordHash(
+                    tenantId: $import->tenant_id,
+                    companyId: $import->company_id,
+                    employeeId: $employeeId,
+                    recordedAt: $dateTime,
+                ),
+                'divergence_reason' => null,
+                'payload' => $payload,
+            ]);
+
+            if ($launched) {
+                $this->syncClockRecordForItem($import, $item, $user);
+            }
+        }
+
+        $remainingManualItems = $manualItems
+            ->reject(fn (ClockRecordImportItem $item) => $usedManualIds->contains($item->id))
+            ->values();
+
+        $remainingTargetTimes = $remainingTargetTimes
+            ->reject(function (Carbon $dateTime) use ($usedManualIds, $manualItems) {
+                return $usedManualIds->contains(
+                    fn (int $itemId) => $manualItems->firstWhere('id', $itemId)?->recorded_at?->format('Y-m-d H:i:s') === $dateTime->format('Y-m-d H:i:s')
+                );
+            })
+            ->values();
+
+        foreach ($remainingTargetTimes as $dateTime) {
+            /** @var ClockRecordImportItem|null $manualItem */
+            $manualItem = $remainingManualItems->shift();
+
+            if ($manualItem) {
+                $payload = is_array($manualItem->payload) ? $manualItem->payload : [];
+                $payload['manual_adjustment'] = true;
+
+                $manualItem->update([
                     'employee_id' => $employeeId,
+                    'line_number' => 0,
+                    'raw_line' => 'Ajuste manual de horário',
                     'recorded_at' => $dateTime,
                     'status' => $launched
                         ? ClockRecordImportItemStatus::Launched
@@ -397,10 +534,11 @@ class ClockRecordImportService
                         recordedAt: $dateTime,
                     ),
                     'divergence_reason' => null,
+                    'payload' => $payload,
                 ]);
 
                 if ($launched) {
-                    $this->syncClockRecordForItem($import, $item, $user);
+                    $this->syncClockRecordForItem($import, $manualItem, $user);
                 }
 
                 continue;
@@ -433,21 +571,37 @@ class ClockRecordImportService
             }
         }
 
-        if ($existingItems->count() > $dateTimes->count()) {
-            $existingItems
-                ->slice($dateTimes->count())
-                ->each(function (ClockRecordImportItem $item) use ($import) {
-                    if ($item->launched_clock_record_id) {
-                        $this->deleteLinkedClockRecord($item, $import);
-                    }
+        $unusedOriginalItems = $originalItems
+            ->reject(fn (ClockRecordImportItem $item) => $usedOriginalIds->contains($item->id))
+            ->values();
 
-                    $item->update([
-                        'status' => ClockRecordImportItemStatus::Ignored,
-                        'divergence_reason' => 'Item removido em ajuste manual de horários.',
-                        'launched_clock_record_id' => null,
-                    ]);
-                });
-        }
+        $unusedManualItems = $manualItems
+            ->reject(fn (ClockRecordImportItem $item) => $usedManualIds->contains($item->id))
+            ->values();
+
+        $unusedOriginalItems->each(function (ClockRecordImportItem $item) use ($import) {
+            if ($item->launched_clock_record_id) {
+                $this->deleteLinkedClockRecord($item, $import);
+            }
+
+            $item->update([
+                'status' => ClockRecordImportItemStatus::Ignored,
+                'divergence_reason' => 'Item removido em ajuste manual de horários.',
+                'launched_clock_record_id' => null,
+            ]);
+        });
+
+        $unusedManualItems->each(function (ClockRecordImportItem $item) use ($import) {
+            if ($item->launched_clock_record_id) {
+                $this->deleteLinkedClockRecord($item, $import);
+            }
+
+            $item->update([
+                'status' => ClockRecordImportItemStatus::Ignored,
+                'divergence_reason' => 'Item removido em ajuste manual de horários.',
+                'launched_clock_record_id' => null,
+            ]);
+        });
     }
 
     protected function syncClockRecordForItem(
@@ -626,5 +780,12 @@ class ClockRecordImportService
     protected function isLaunched(ClockRecordImport $import): bool
     {
         return $import->status === ClockRecordImportStatus::Launched || filled($import->launched_at);
+    }
+
+    protected function isManualAdjustmentItem(ClockRecordImportItem $item): bool
+    {
+        $payload = is_array($item->payload) ? $item->payload : [];
+
+        return (bool) ($payload['manual_adjustment'] ?? false);
     }
 }
