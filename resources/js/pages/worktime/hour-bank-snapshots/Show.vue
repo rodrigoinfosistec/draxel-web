@@ -374,7 +374,7 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                                 <div>Justificadas: {{ employee.justified_minutes }}</div>
                                 <div>Atrasos: {{ employee.late_minutes }}</div>
                                 <div>Extras: {{ employee.extra_minutes }}</div>
-                                <div>Suspensões: {{ employee.suspension_minutes }}</div>
+                                <div>Disp./Susp.: {{ employee.suspension_minutes }}</div>
                                 <div class="font-semibold">Saldo: {{ employee.balance_minutes }}</div>
                             </div>
                         </div>
@@ -423,7 +423,7 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                                     <th class="px-4 py-3 text-left">Justificadas</th>
                                     <th class="px-4 py-3 text-left">Atrasos</th>
                                     <th class="px-4 py-3 text-left">Extras</th>
-                                    <th class="px-4 py-3 text-left">Suspensões</th>
+                                    <th class="px-4 py-3 text-left">Disp./Susp.</th>
                                     <th class="px-4 py-3 text-left">Saldo</th>
                                 </tr>
                             </thead>

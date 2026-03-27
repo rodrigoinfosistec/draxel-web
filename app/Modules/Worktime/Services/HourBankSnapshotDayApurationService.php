@@ -94,7 +94,7 @@ class HourBankSnapshotDayApurationService
                 $divergenceReason = 'Existem registros em um dia coberto integralmente por evento.';
             }
 
-            if ($this->isSuspensionEvent($fullDayEvent)) {
+            if ($this->storesBlockedMinutesInSnapshot($fullDayEvent)) {
                 $suspensionMinutes = $baseExpectedMinutes;
             }
 
@@ -165,7 +165,7 @@ class HourBankSnapshotDayApurationService
             $divergenceReason = 'Quantidade ímpar de registros de ponto no dia.';
         }
 
-        $suspensionMinutes = $this->calculatePartialSuspensionMinutes(
+        $blockedMinutes = $this->calculatePartialBlockedMinutes(
             events: $events,
             date: $date,
             expectedStartTime: $baseExpectedStartTime,
@@ -173,7 +173,8 @@ class HourBankSnapshotDayApurationService
             fullDayEventId: $fullDayEvent?->id,
         );
 
-        $effectiveExpectedMinutes = max(0, $baseExpectedMinutes - $suspensionMinutes);
+        $effectiveExpectedMinutes = max(0, $baseExpectedMinutes - $blockedMinutes);
+        $suspensionMinutes = $blockedMinutes;
 
         if ($records->isEmpty()) {
             $hasDivergence = true;
@@ -206,7 +207,7 @@ class HourBankSnapshotDayApurationService
             'balance_minutes' => $balanceMinutes,
             'has_divergence' => $hasDivergence,
             'divergence_reason' => $divergenceReason,
-            'notes' => null,
+            'notes' => $notes,
         ];
     }
 
@@ -261,11 +262,11 @@ class HourBankSnapshotDayApurationService
                 return false;
             }
 
-            if (! $eventType->suppressesSchedule()) {
+            if (! $this->canBlockTheDayInSnapshot($eventType)) {
                 return false;
             }
 
-            return $this->coversEntireScheduledDay(
+            return $this->coversEntireRelevantDay(
                 event: $event,
                 date: $date,
                 expectedStartTime: $expectedStartTime,
@@ -275,7 +276,7 @@ class HourBankSnapshotDayApurationService
         });
     }
 
-    protected function calculatePartialSuspensionMinutes(
+    protected function calculatePartialBlockedMinutes(
         Collection $events,
         Carbon $date,
         ?string $expectedStartTime,
@@ -300,7 +301,7 @@ class HourBankSnapshotDayApurationService
                 continue;
             }
 
-            if (! $this->isSuspensionEvent($event)) {
+            if (! $this->isDispensationEvent($event)) {
                 continue;
             }
 
@@ -315,32 +316,33 @@ class HourBankSnapshotDayApurationService
         return min($minutes, $scheduleStart->diffInMinutes($scheduleEnd));
     }
 
-    protected function coversEntireScheduledDay(
+    protected function coversEntireRelevantDay(
         EmployeeEvent $event,
         Carbon $date,
         ?string $expectedStartTime,
         ?string $expectedEndTime,
         int $expectedMinutes,
     ): bool {
-        if ($expectedMinutes <= 0 || ! $expectedStartTime || ! $expectedEndTime) {
-            return false;
+        if ($expectedMinutes > 0 && $expectedStartTime && $expectedEndTime) {
+            $scheduleStart = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedStartTime));
+            $scheduleEnd = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedEndTime));
+
+            if ($scheduleEnd->lessThanOrEqualTo($scheduleStart)) {
+                return false;
+            }
+
+            $overlap = $this->calculateOverlapMinutes(
+                startA: $scheduleStart,
+                endA: $scheduleEnd,
+                startB: Carbon::parse($event->starts_at),
+                endB: Carbon::parse($event->ends_at),
+            );
+
+            return $overlap >= $scheduleStart->diffInMinutes($scheduleEnd);
         }
 
-        $scheduleStart = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedStartTime));
-        $scheduleEnd = Carbon::parse($date->format('Y-m-d') . ' ' . $this->normalizeTime($expectedEndTime));
-
-        if ($scheduleEnd->lessThanOrEqualTo($scheduleStart)) {
-            return false;
-        }
-
-        $overlap = $this->calculateOverlapMinutes(
-            startA: $scheduleStart,
-            endA: $scheduleEnd,
-            startB: Carbon::parse($event->starts_at),
-            endB: Carbon::parse($event->ends_at),
-        );
-
-        return $overlap >= $scheduleStart->diffInMinutes($scheduleEnd);
+        return Carbon::parse($event->starts_at)->lessThanOrEqualTo($date->copy()->startOfDay())
+            && Carbon::parse($event->ends_at)->greaterThanOrEqualTo($date->copy()->endOfDay());
     }
 
     protected function calculateOverlapMinutes(
@@ -359,9 +361,33 @@ class HourBankSnapshotDayApurationService
         return $start->diffInMinutes($end);
     }
 
+    protected function canBlockTheDayInSnapshot(EmployeeEventType $eventType): bool
+    {
+        return in_array($eventType, [
+            EmployeeEventType::MedicalCertificate,
+            EmployeeEventType::DayOff,
+            EmployeeEventType::Suspension,
+            EmployeeEventType::Vacation,
+            EmployeeEventType::Leave,
+            EmployeeEventType::Declaration,
+            EmployeeEventType::Absence,
+            EmployeeEventType::Dispensation,
+        ], true);
+    }
+
+    protected function storesBlockedMinutesInSnapshot(EmployeeEvent $employeeEvent): bool
+    {
+        return $this->isSuspensionEvent($employeeEvent) || $this->isDispensationEvent($employeeEvent);
+    }
+
     protected function isSuspensionEvent(EmployeeEvent $employeeEvent): bool
     {
         return $employeeEvent->event_type === EmployeeEventType::Suspension;
+    }
+
+    protected function isDispensationEvent(EmployeeEvent $employeeEvent): bool
+    {
+        return $employeeEvent->event_type === EmployeeEventType::Dispensation;
     }
 
     protected function buildEmployeeEventNote(EmployeeEvent $employeeEvent): string
