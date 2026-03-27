@@ -44,8 +44,25 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ]
 
+const weekdayOrder: Record<string, number> = {
+    sunday: 0,
+    monday: 1,
+    tuesday: 2,
+    wednesday: 3,
+    thursday: 4,
+    friday: 5,
+    saturday: 6,
+}
+
+const sortedTimes = [...props.times].sort((a, b) => {
+    const orderA = weekdayOrder[a.weekday] ?? 99
+    const orderB = weekdayOrder[b.weekday] ?? 99
+
+    return orderA - orderB
+})
+
 const form = useForm({
-    times: props.times.map((time) => ({
+    times: sortedTimes.map((time) => ({
         weekday: time.weekday,
         weekday_label: time.weekday_label,
         start_time: time.start_time,
