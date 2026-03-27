@@ -4,6 +4,7 @@ namespace App\Modules\Worktime\Services;
 
 use App\Models\User;
 use App\Modules\Worktime\Enums\BankHourEntryType;
+use App\Modules\Worktime\Enums\EmployeeEventType;
 use App\Modules\Worktime\Models\BankHourEntry;
 use App\Modules\Worktime\Models\EmployeeEvent;
 use Carbon\Carbon;
@@ -33,7 +34,7 @@ class EmployeeEventBankHourSyncService
                 return;
             }
 
-            if (! $event->event_type?->movesBankHourImmediately()) {
+            if (! $this->shouldMoveBankHourImmediately($event)) {
                 $this->deleteLinkedEntries($event);
                 return;
             }
@@ -67,9 +68,10 @@ class EmployeeEventBankHourSyncService
                     entryType: BankHourEntryType::Compensation,
                     minutes: -$minutes,
                     occurredOn: $event->starts_at->toDateString(),
-                    description: 'Débito automático por compensação.',
+                    description: $this->buildCompensationDescription($event),
                     metadata: [
                         'employee_event_id' => $event->id,
+                        'event_type' => $event->event_type?->value,
                     ],
                     source: $event,
                     user: $user,
@@ -115,9 +117,10 @@ class EmployeeEventBankHourSyncService
                     'entry_type' => BankHourEntryType::Compensation,
                     'minutes' => $newMinutes,
                     'occurred_on' => $event->starts_at->toDateString(),
-                    'description' => 'Débito automático por compensação.',
+                    'description' => $this->buildCompensationDescription($event),
                     'metadata' => [
                         'employee_event_id' => $event->id,
+                        'event_type' => $event->event_type?->value,
                     ],
                 ]);
 
@@ -138,9 +141,10 @@ class EmployeeEventBankHourSyncService
                 'entry_type' => BankHourEntryType::Compensation,
                 'minutes' => $newMinutes,
                 'occurred_on' => $event->starts_at->toDateString(),
-                'description' => 'Débito automático por compensação.',
+                'description' => $this->buildCompensationDescription($event),
                 'metadata' => [
                     'employee_event_id' => $event->id,
+                    'event_type' => $event->event_type?->value,
                 ],
             ]);
         });
@@ -151,6 +155,17 @@ class EmployeeEventBankHourSyncService
         DB::transaction(function () use ($event) {
             $this->deleteLinkedEntries($event);
         });
+    }
+
+    protected function shouldMoveBankHourImmediately(EmployeeEvent $event): bool
+    {
+        $eventType = $event->event_type;
+
+        if (! $eventType instanceof EmployeeEventType) {
+            return false;
+        }
+
+        return $eventType->movesBankHourImmediately();
     }
 
     protected function deleteLinkedEntries(EmployeeEvent $event): void
@@ -218,6 +233,11 @@ class EmployeeEventBankHourSyncService
         }
 
         return max(0, $event->starts_at->diffInMinutes($event->ends_at));
+    }
+
+    protected function buildCompensationDescription(EmployeeEvent $event): string
+    {
+        return 'Débito automático por compensação.';
     }
 
     protected function timeToMinutes(?string $time): int

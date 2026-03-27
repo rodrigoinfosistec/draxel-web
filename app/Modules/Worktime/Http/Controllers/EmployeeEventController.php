@@ -239,7 +239,10 @@ class EmployeeEventController extends Controller
                     'id' => $employeeEvent->id,
                     'employee_id' => $employeeEvent->employee_id,
                     'event_type' => $employeeEvent->event_type?->value,
-                    'input_mode' => $employeeEvent->event_type === EmployeeEventType::Absence
+                    'input_mode' => in_array($employeeEvent->event_type, [
+                        EmployeeEventType::Absence,
+                        EmployeeEventType::Suspension,
+                    ], true)
                         ? 'schedule_day'
                         : $this->resolveInputMode($employeeEvent),
                     'date' => $employeeEvent->starts_at?->format('Y-m-d'),

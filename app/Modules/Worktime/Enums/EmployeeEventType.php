@@ -12,6 +12,7 @@ enum EmployeeEventType: string
     case Compensation = 'compensation';
     case Declaration = 'declaration';
     case Absence = 'absence';
+    case Dispensation = 'dispensation';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum EmployeeEventType: string
             self::Compensation => 'Compensação',
             self::Declaration => 'Declaração',
             self::Absence => 'Falta',
+            self::Dispensation => 'Dispensa',
         };
     }
 
@@ -66,6 +68,9 @@ enum EmployeeEventType: string
 
     public function requiresScheduleDayMode(): bool
     {
-        return $this === self::Absence;
+        return in_array($this, [
+            self::Absence,
+            self::Suspension,
+        ], true);
     }
 }

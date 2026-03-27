@@ -116,7 +116,11 @@ class EmployeeEventService
     ): array {
         if ($eventType->requiresScheduleDayMode() && $inputMode !== 'schedule_day') {
             throw ValidationException::withMessages([
-                'input_mode' => 'O evento de falta deve usar a jornada prevista do dia.',
+                'input_mode' => match ($eventType) {
+                    EmployeeEventType::Absence => 'O evento de falta deve usar a jornada prevista do dia.',
+                    EmployeeEventType::Suspension => 'O evento de suspensão deve usar a jornada prevista do dia.',
+                    default => 'Este evento deve usar a jornada prevista do dia.',
+                },
             ]);
         }
 
@@ -161,11 +165,12 @@ class EmployeeEventService
 
         if (! $employeeTime || ! $employeeTime->start_time || ! $employeeTime->end_time) {
             throw ValidationException::withMessages([
-                'date' => $eventType === EmployeeEventType::Compensation
-                    ? 'Dia sem jornada prevista para este funcionário. Use período livre ou configure a jornada do funcionário antes de compensar.'
-                    : ($eventType === EmployeeEventType::Absence
-                        ? 'A falta exige um dia com jornada prevista para este funcionário.'
-                        : 'Dia sem jornada prevista para este funcionário. Use período livre ou configure a jornada do funcionário.'),
+                'date' => match ($eventType) {
+                    EmployeeEventType::Compensation => 'Dia sem jornada prevista para este funcionário. Use período livre ou configure a jornada do funcionário antes de compensar.',
+                    EmployeeEventType::Absence => 'A falta exige um dia com jornada prevista para este funcionário.',
+                    EmployeeEventType::Suspension => 'A suspensão exige um dia com jornada prevista para este funcionário.',
+                    default => 'Dia sem jornada prevista para este funcionário. Use período livre ou configure a jornada do funcionário.',
+                },
             ]);
         }
 

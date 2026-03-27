@@ -56,12 +56,14 @@ const form = useForm({
 })
 
 const isAbsenceEvent = computed(() => form.event_type === 'absence')
-const showCustomPeriod = computed(() => form.input_mode === 'custom_period' && !isAbsenceEvent.value)
+const isSuspensionEvent = computed(() => form.event_type === 'suspension')
+const requiresScheduleDay = computed(() => isAbsenceEvent.value || isSuspensionEvent.value)
+const showCustomPeriod = computed(() => form.input_mode === 'custom_period' && !requiresScheduleDay.value)
 
 watch(
     () => form.event_type,
     (value) => {
-        if (value === 'absence') {
+        if (value === 'absence' || value === 'suspension') {
             form.input_mode = 'schedule_day'
             form.starts_at = ''
             form.ends_at = ''
@@ -118,6 +120,10 @@ function submit() {
 
                     <div v-if="isAbsenceEvent" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                         A falta representa ausência integral em um dia com jornada prevista. Por isso, este tipo usa sempre a jornada do dia.
+                    </div>
+
+                    <div v-if="isSuspensionEvent" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        A suspensão representa afastamento integral de um dia com jornada prevista. Para afastamentos parciais, use o evento Dispensa.
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
@@ -182,14 +188,14 @@ function submit() {
 
                                 <label
                                     class="flex items-start gap-3 rounded-xl border bg-background px-4 py-3"
-                                    :class="isAbsenceEvent ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
+                                    :class="requiresScheduleDay ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
                                 >
                                     <input
                                         v-model="form.input_mode"
                                         type="radio"
                                         value="custom_period"
                                         class="mt-1 h-4 w-4"
-                                        :disabled="isAbsenceEvent"
+                                        :disabled="requiresScheduleDay"
                                     >
                                     <div>
                                         <div class="text-sm font-medium">Período livre</div>
