@@ -126,9 +126,10 @@ class HourBankSnapshotController extends Controller
                 'notes' => $hourBankSnapshot->notes,
                 'is_editable' => $hourBankSnapshot->status->isEditable(),
                 'is_consolidated' => $hourBankSnapshot->status->isConsolidated(),
-                'can_generate_preview_general' => ! $hourBankSnapshot->employees->contains(
-                    fn (HourBankSnapshotEmployee $employee) => $employee->has_divergence
-                ),
+                'can_generate_preview_general' => $hourBankSnapshot->status->isEditable()
+                    && ! $hourBankSnapshot->employees->contains(
+                        fn (HourBankSnapshotEmployee $employee) => $employee->has_divergence
+                    ),
                 'can_consolidate' => $validation['can_consolidate'],
                 'validation_errors' => $validation['errors'],
                 'duplicate_dates' => $validation['duplicate_dates'],
@@ -430,6 +431,8 @@ class HourBankSnapshotController extends Controller
     {
         abort_unless($request->user()->hasPermission('worktime.exportHourBankSnapshot'), 403);
         $this->ensureSnapshotContext($request, $hourBankSnapshot);
+
+        abort_unless($hourBankSnapshot->status->isEditable(), 422);
 
         $hourBankSnapshot->load('employees');
 
