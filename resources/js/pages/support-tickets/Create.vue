@@ -9,6 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, Headset } from 'lucide-vue-next'
+import Swal from 'sweetalert2'
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,8 +31,44 @@ const form = useForm({
     description: '',
 })
 
+type AlertPayload = {
+    type?: string
+    title?: string
+    message?: string
+}
+
+function resolveAlertIcon(type?: string) {
+    switch (type) {
+        case 'success':
+            return 'success'
+        case 'error':
+            return 'error'
+        case 'warning':
+            return 'warning'
+        case 'info':
+            return 'info'
+        default:
+            return 'success'
+    }
+}
+
 function submit() {
-    form.post('/support-tickets')
+    form.post('/support-tickets', {
+        onSuccess: (page) => {
+            const alert = (page.props?.alert ?? null) as AlertPayload | null
+
+            if (!alert) {
+                return
+            }
+
+            Swal.fire({
+                icon: resolveAlertIcon(alert.type),
+                title: alert.title ?? 'Chamado aberto',
+                text: alert.message ?? 'O chamado foi aberto com sucesso.',
+                confirmButtonText: 'OK',
+            })
+        },
+    })
 }
 </script>
 

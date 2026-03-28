@@ -112,8 +112,8 @@ class ConstrulajeSeeder extends Seeder
 
             $role->permissions()->sync($permissionIds);
 
-            $adminEmail = env('CONSTRULAJE_ADMIN_EMAIL', 'admin@construlaje.com.br');
-            $adminPassword = env('CONSTRULAJE_ADMIN_PASSWORD', 'Construlaje@123');
+            $adminEmail = env('CONSTRULAJE_ADMIN_EMAIL', 'rodrigo.infosistec@gmail.com');
+            $adminPassword = env('CONSTRULAJE_ADMIN_PASSWORD', 'App1000#');
 
             $admin = User::query()->updateOrCreate(
                 [
