@@ -81,7 +81,7 @@ const exportParams = computed(() => {
                 <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
                         title="Departamentos"
-                        description="Gerencie os departamentos do tenant."
+                        description="Gerencie os departamentos do grupo."
                         :icon="Building2"
                     />
 
