@@ -8,6 +8,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, Settings2 } from 'lucide-vue-next'
+import Swal from 'sweetalert2'
 import { ref, watch } from 'vue'
 
 type TabItem = {
@@ -30,10 +31,22 @@ type DefaultTimeItem = {
     break_duration: string | null
 }
 
+type WeeklyWorkloadItem = {
+    minutes: number
+    label: string
+}
+
+type AlertPayload = {
+    type?: string
+    title?: string
+    message?: string
+}
+
 const props = defineProps<{
     company: CompanyItem
     tabs: TabItem[]
     defaultTimes: DefaultTimeItem[]
+    weeklyWorkload: WeeklyWorkloadItem
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -73,12 +86,58 @@ watch(
     },
 )
 
+function resolveAlertIcon(type?: string) {
+    switch (type) {
+        case 'success':
+            return 'success'
+        case 'error':
+            return 'error'
+        case 'warning':
+            return 'warning'
+        case 'info':
+            return 'info'
+        default:
+            return 'success'
+    }
+}
+
+function showAlertFromPage(page: any, fallbackTitle: string, fallbackMessage: string) {
+    const alert = (page?.props?.alert ?? null) as AlertPayload | null
+
+    if (!alert) {
+        return
+    }
+
+    Swal.fire({
+        icon: resolveAlertIcon(alert.type),
+        title: alert.title ?? fallbackTitle,
+        text: alert.message ?? fallbackMessage,
+        confirmButtonText: 'OK',
+    })
+}
+
 function submitCompanyDefaultTimes() {
-    defaultTimesForm.patch('/parameters/company-default-times')
+    defaultTimesForm.patch('/parameters/company-default-times', {
+        onSuccess: (page) => {
+            showAlertFromPage(
+                page,
+                'Horários padrão atualizados',
+                'Os horários padrão da empresa foram atualizados com sucesso.',
+            )
+        },
+    })
 }
 
 function submitCompanyHourBank() {
-    hourBankForm.patch('/parameters/company-hour-bank')
+    hourBankForm.patch('/parameters/company-hour-bank', {
+        onSuccess: (page) => {
+            showAlertFromPage(
+                page,
+                'Banco de horas atualizado',
+                'As configurações do banco de horas foram atualizadas com sucesso.',
+            )
+        },
+    })
 }
 
 function setDayOff(index: number) {
@@ -165,10 +224,19 @@ function applyDefaultDay(index: number) {
                 >
                     <section class="space-y-6">
                         <div>
-                            <h2 class="text-sm font-semibold tracking-tight">Horários padrão</h2>
+                            <h2 class="text-sm font-semibold tracking-tight">
+                                {{ `Horários padrão - ${company.name}` }}
+                            </h2>
                             <p class="text-sm text-muted-foreground">
                                 Defina os horários padrão por dia da semana para a empresa em contexto.
                             </p>
+                        </div>
+
+                        <div class="rounded-xl border bg-background p-4">
+                            <div class="text-sm text-muted-foreground">Carga horária semanal programada</div>
+                            <div class="mt-1 text-lg font-semibold text-foreground">
+                                {{ weeklyWorkload.label }}
+                            </div>
                         </div>
 
                         <div class="space-y-4">

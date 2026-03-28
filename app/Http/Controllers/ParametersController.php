@@ -27,14 +27,23 @@ class ParametersController extends Controller
         $times = $company->defaultTimes()
             ->get()
             ->sortBy(fn (CompanyDefaultTime $time) => $time->weekday->order())
-            ->values()
-            ->map(fn (CompanyDefaultTime $time) => [
-                'weekday' => $time->weekday->value,
-                'weekday_label' => $time->weekday->label(),
-                'start_time' => $time->start_time,
-                'end_time' => $time->end_time,
-                'break_duration' => $time->break_duration,
-            ]);
+            ->values();
+
+        $weeklyWorkloadMinutes = $times->sum(function (CompanyDefaultTime $time) {
+            if (! $time->start_time || ! $time->end_time) {
+                return 0;
+            }
+
+            $startMinutes = $this->timeToMinutes($time->start_time);
+            $endMinutes = $this->timeToMinutes($time->end_time);
+            $breakMinutes = $time->break_duration ? $this->timeToMinutes($time->break_duration) : 0;
+
+            if ($endMinutes <= $startMinutes) {
+                return 0;
+            }
+
+            return max(0, ($endMinutes - $startMinutes) - $breakMinutes);
+        });
 
         return Inertia::render('parameters/Index', [
             'company' => [
@@ -53,7 +62,17 @@ class ParametersController extends Controller
                     'label' => 'Banco de horas',
                 ],
             ],
-            'defaultTimes' => $times,
+            'defaultTimes' => $times->map(fn (CompanyDefaultTime $time) => [
+                'weekday' => $time->weekday->value,
+                'weekday_label' => $time->weekday->label(),
+                'start_time' => $time->start_time,
+                'end_time' => $time->end_time,
+                'break_duration' => $time->break_duration,
+            ]),
+            'weeklyWorkload' => [
+                'minutes' => $weeklyWorkloadMinutes,
+                'label' => $this->formatMinutesToHuman($weeklyWorkloadMinutes),
+            ],
         ]);
     }
 
@@ -131,5 +150,24 @@ class ParametersController extends Controller
                 'Banco de horas atualizado',
                 'As configurações do banco de horas foram atualizadas com sucesso.'
             ));
+    }
+
+    protected function timeToMinutes(string $time): int
+    {
+        [$hours, $minutes] = array_pad(explode(':', $time), 2, '0');
+
+        return ((int) $hours * 60) + (int) $minutes;
+    }
+
+    protected function formatMinutesToHuman(int $minutes): string
+    {
+        $hours = intdiv($minutes, 60);
+        $remainingMinutes = $minutes % 60;
+
+        if ($remainingMinutes === 0) {
+            return sprintf('%dh', $hours);
+        }
+
+        return sprintf('%dh%02dmin', $hours, $remainingMinutes);
     }
 }
