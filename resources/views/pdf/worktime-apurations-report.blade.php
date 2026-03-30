@@ -27,22 +27,24 @@
             'Atrasos' => $totals['delay_hours'] ?? null,
             'Dispensas' => $totals['dispensation_hours'] ?? null,
             'Extras' => $totals['overtime_hours'] ?? null,
+            'DSR/Feriado' => $totals['dsr_worked_hours'] ?? null,
         ],
     ])
 
     <table class="report-table">
         <thead>
             <tr>
-                <th style="width: 16%;">Funcionário</th>
-                <th style="width: 8%;">Data</th>
-                <th style="width: 10%;">Jornada prevista</th>
-                <th style="width: 9%;">Trabalhado</th>
-                <th style="width: 9%;">Atrasos</th>
-                <th style="width: 9%;">Dispensa</th>
+                <th style="width: 14%;">Funcionário</th>
+                <th style="width: 7%;">Data</th>
+                <th style="width: 11%;">Jornada prevista</th>
+                <th style="width: 8%;">Trabalhado</th>
+                <th style="width: 8%;">Atrasos</th>
+                <th style="width: 8%;">Dispensa</th>
                 <th style="width: 8%;">Extra</th>
-                <th style="width: 7%;">Registros</th>
-                <th style="width: 11%;">Status</th>
-                <th style="width: 23%;">Observações</th>
+                <th style="width: 9%;">DSR/Feriado</th>
+                <th style="width: 6%;">Registros</th>
+                <th style="width: 9%;">Status</th>
+                <th style="width: 12%;">Observações</th>
             </tr>
         </thead>
         <tbody>
@@ -55,13 +57,14 @@
                     <td class="text-right">{{ $day['delay_hours'] }}</td>
                     <td class="text-right">{{ $day['dispensation_hours'] }}</td>
                     <td class="text-right">{{ $day['overtime_hours'] }}</td>
+                    <td class="text-right">{{ $day['dsr_worked_hours'] }}</td>
                     <td class="text-center">{{ $day['records_count'] }}</td>
                     <td>{{ $day['status_label'] }}</td>
                     <td>{{ $day['notes'] ?: '—' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10">Nenhum registro encontrado para o período informado.</td>
+                    <td colspan="11">Nenhum registro encontrado para o período informado.</td>
                 </tr>
             @endforelse
         </tbody>

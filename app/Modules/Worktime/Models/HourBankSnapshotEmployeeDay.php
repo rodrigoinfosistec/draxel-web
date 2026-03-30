@@ -26,6 +26,7 @@ class HourBankSnapshotEmployeeDay extends Model
         'extra_minutes',
         'absence_minutes',
         'suspension_minutes',
+        'dsr_worked_minutes',
         'balance_minutes',
         'has_divergence',
         'divergence_reason',

@@ -50,15 +50,13 @@ class HourBankSnapshotDayApurationService
         $extraMinutes = 0;
         $absenceMinutes = 0;
         $suspensionMinutes = 0;
+        $dsrWorkedMinutes = 0;
         $hasDivergence = false;
         $divergenceReason = null;
         $notes = null;
 
         if ($holiday) {
-            if ($records->isNotEmpty()) {
-                $hasDivergence = true;
-                $divergenceReason = 'Existem registros em um dia de feriado.';
-            }
+            $dsrWorkedMinutes = $workedMinutes;
 
             return [
                 'work_date' => $date->format('Y-m-d'),
@@ -73,10 +71,13 @@ class HourBankSnapshotDayApurationService
                 'extra_minutes' => 0,
                 'absence_minutes' => 0,
                 'suspension_minutes' => 0,
+                'dsr_worked_minutes' => $dsrWorkedMinutes,
                 'balance_minutes' => 0,
-                'has_divergence' => $hasDivergence,
-                'divergence_reason' => $divergenceReason,
-                'notes' => 'Feriado' . ($holiday->name ? ': ' . $holiday->name : '.'),
+                'has_divergence' => false,
+                'divergence_reason' => null,
+                'notes' => $dsrWorkedMinutes > 0
+                    ? 'Feriado trabalhado' . ($holiday->name ? ': ' . $holiday->name : '.')
+                    : 'Feriado' . ($holiday->name ? ': ' . $holiday->name : '.'),
             ];
         }
 
@@ -111,6 +112,7 @@ class HourBankSnapshotDayApurationService
                 'extra_minutes' => 0,
                 'absence_minutes' => 0,
                 'suspension_minutes' => $suspensionMinutes,
+                'dsr_worked_minutes' => 0,
                 'balance_minutes' => 0,
                 'has_divergence' => $hasDivergence,
                 'divergence_reason' => $divergenceReason,
@@ -132,6 +134,7 @@ class HourBankSnapshotDayApurationService
                 'extra_minutes' => 0,
                 'absence_minutes' => 0,
                 'suspension_minutes' => 0,
+                'dsr_worked_minutes' => 0,
                 'balance_minutes' => 0,
                 'has_divergence' => false,
                 'divergence_reason' => null,
@@ -153,10 +156,11 @@ class HourBankSnapshotDayApurationService
                 'extra_minutes' => 0,
                 'absence_minutes' => 0,
                 'suspension_minutes' => 0,
+                'dsr_worked_minutes' => $workedMinutes,
                 'balance_minutes' => 0,
-                'has_divergence' => true,
-                'divergence_reason' => 'Existem registros em um dia sem jornada prevista.',
-                'notes' => null,
+                'has_divergence' => false,
+                'divergence_reason' => null,
+                'notes' => 'DSR trabalhado.',
             ];
         }
 
@@ -204,6 +208,7 @@ class HourBankSnapshotDayApurationService
             'extra_minutes' => $extraMinutes,
             'absence_minutes' => $absenceMinutes,
             'suspension_minutes' => $suspensionMinutes,
+            'dsr_worked_minutes' => 0,
             'balance_minutes' => $balanceMinutes,
             'has_divergence' => $hasDivergence,
             'divergence_reason' => $divergenceReason,
@@ -345,85 +350,47 @@ class HourBankSnapshotDayApurationService
             && Carbon::parse($event->ends_at)->greaterThanOrEqualTo($date->copy()->endOfDay());
     }
 
-    protected function calculateOverlapMinutes(
-        Carbon $startA,
-        Carbon $endA,
-        Carbon $startB,
-        Carbon $endB,
-    ): int {
-        $start = $startA->greaterThan($startB) ? $startA : $startB;
-        $end = $endA->lessThan($endB) ? $endA : $endB;
-
-        if ($end->lessThanOrEqualTo($start)) {
-            return 0;
-        }
-
-        return $start->diffInMinutes($end);
-    }
-
     protected function canBlockTheDayInSnapshot(EmployeeEventType $eventType): bool
     {
         return in_array($eventType, [
-            EmployeeEventType::MedicalCertificate,
-            EmployeeEventType::DayOff,
-            EmployeeEventType::Suspension,
             EmployeeEventType::Vacation,
-            EmployeeEventType::Leave,
-            EmployeeEventType::Declaration,
+            EmployeeEventType::Suspension,
             EmployeeEventType::Absence,
-            EmployeeEventType::Dispensation,
+            EmployeeEventType::MedicalCertificate,
         ], true);
     }
 
-    protected function storesBlockedMinutesInSnapshot(EmployeeEvent $employeeEvent): bool
+    protected function storesBlockedMinutesInSnapshot(EmployeeEvent $event): bool
     {
-        return $this->isSuspensionEvent($employeeEvent) || $this->isDispensationEvent($employeeEvent);
+        return $event->event_type === EmployeeEventType::Dispensation;
     }
 
-    protected function isSuspensionEvent(EmployeeEvent $employeeEvent): bool
+    protected function isDispensationEvent(EmployeeEvent $event): bool
     {
-        return $employeeEvent->event_type === EmployeeEventType::Suspension;
+        return $event->event_type === EmployeeEventType::Dispensation;
     }
 
-    protected function isDispensationEvent(EmployeeEvent $employeeEvent): bool
+    protected function buildEmployeeEventNote(EmployeeEvent $event): string
     {
-        return $employeeEvent->event_type === EmployeeEventType::Dispensation;
+        return $event->event_type instanceof EmployeeEventType
+            ? $event->event_type->label()
+            : 'Evento';
     }
 
-    protected function buildEmployeeEventNote(EmployeeEvent $employeeEvent): string
+    protected function calculateExpectedMinutes(?string $startTime, ?string $endTime, ?string $breakDuration): int
     {
-        $label = $employeeEvent->event_type?->label() ?? 'Evento';
-
-        if (filled($employeeEvent->notes)) {
-            return $label . ': ' . trim($employeeEvent->notes);
-        }
-
-        return $label;
-    }
-
-    protected function calculateExpectedMinutes(
-        ?string $startTime,
-        ?string $endTime,
-        ?string $breakDuration,
-    ): int {
-        if (! filled($startTime) || ! filled($endTime)) {
+        if (! $startTime || ! $endTime) {
             return 0;
         }
 
-        $start = Carbon::createFromFormat('H:i:s', $this->normalizeTime($startTime));
-        $end = Carbon::createFromFormat('H:i:s', $this->normalizeTime($endTime));
+        $start = Carbon::parse('2000-01-01 ' . $this->normalizeTime($startTime));
+        $end = Carbon::parse('2000-01-01 ' . $this->normalizeTime($endTime));
 
         if ($end->lessThanOrEqualTo($start)) {
             return 0;
         }
 
-        $minutes = $start->diffInMinutes($end);
-
-        if (filled($breakDuration)) {
-            $minutes -= $this->timeToMinutes($breakDuration);
-        }
-
-        return max(0, $minutes);
+        return max(0, $start->diffInMinutes($end) - $this->timeToMinutes($breakDuration));
     }
 
     protected function calculateWorkedMinutes(Collection $records): int
@@ -435,28 +402,50 @@ class HourBankSnapshotDayApurationService
         $minutes = 0;
 
         foreach ($records->chunk(2) as $pair) {
-            $pair = $pair->values();
+            $start = Carbon::parse('2000-01-01 ' . $pair->get(0));
+            $end = Carbon::parse('2000-01-01 ' . $pair->get(1));
 
-            $start = Carbon::createFromFormat('H:i:s', $pair->get(0));
-            $end = Carbon::createFromFormat('H:i:s', $pair->get(1));
-
-            if ($end->greaterThan($start)) {
-                $minutes += $start->diffInMinutes($end);
+            if ($end->lessThanOrEqualTo($start)) {
+                continue;
             }
+
+            $minutes += $start->diffInMinutes($end);
         }
 
         return $minutes;
     }
 
-    protected function timeToMinutes(string $time): int
+    protected function calculateOverlapMinutes(Carbon $startA, Carbon $endA, Carbon $startB, Carbon $endB): int
     {
-        [$hours, $minutes, $seconds] = array_pad(explode(':', $time), 3, '0');
+        $start = $startA->greaterThan($startB) ? $startA : $startB;
+        $end = $endA->lessThan($endB) ? $endA : $endB;
 
-        return ((int) $hours * 60) + (int) $minutes + ((int) $seconds > 0 ? 1 : 0);
+        if (! $start->lessThan($end)) {
+            return 0;
+        }
+
+        return $start->diffInMinutes($end);
     }
 
-    protected function normalizeTime(string $time): string
+    protected function normalizeTime(?string $time): ?string
     {
-        return strlen($time) === 5 ? $time . ':00' : $time;
+        if (! $time) {
+            return null;
+        }
+
+        $parts = explode(':', $time);
+
+        return sprintf('%02d:%02d:%02d', (int) ($parts[0] ?? 0), (int) ($parts[1] ?? 0), (int) ($parts[2] ?? 0));
+    }
+
+    protected function timeToMinutes(?string $time): int
+    {
+        if (! $time) {
+            return 0;
+        }
+
+        $parts = explode(':', $time);
+
+        return ((int) ($parts[0] ?? 0) * 60) + (int) ($parts[1] ?? 0);
     }
 }

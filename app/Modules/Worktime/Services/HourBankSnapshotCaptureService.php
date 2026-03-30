@@ -41,6 +41,7 @@ class HourBankSnapshotCaptureService
                 'extra_minutes' => (int) $days->sum('extra_minutes'),
                 'absence_minutes' => (int) $days->sum('absence_minutes'),
                 'suspension_minutes' => (int) $days->sum('suspension_minutes'),
+                'dsr_worked_minutes' => (int) $days->sum('dsr_worked_minutes'),
                 'balance_minutes' => (int) $days->sum('balance_minutes'),
                 'has_divergence' => $days->contains(fn (array $day) => $day['has_divergence'] === true),
                 'divergence_summary' => $this->buildDivergenceSummary($days),

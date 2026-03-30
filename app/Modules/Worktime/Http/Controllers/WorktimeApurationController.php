@@ -8,8 +8,9 @@ use App\Modules\Worktime\Services\WorktimeApurationService;
 use App\Support\CompanyContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
-use Inertia\Response;
+use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class WorktimeApurationController extends Controller
@@ -19,7 +20,7 @@ class WorktimeApurationController extends Controller
     ) {
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request): InertiaResponse
     {
         abort_unless($request->user()->hasPermission('worktime.viewAnyApuration'), 403);
 
@@ -51,10 +52,12 @@ class WorktimeApurationController extends Controller
             ->where('company_id', $company->id)
             ->orderBy('name')
             ->get(['id', 'name'])
-            ->map(fn ($employee) => [
+            ->map(fn (Employee $employee): array => [
                 'id' => $employee->id,
                 'name' => $employee->name,
-            ]);
+            ])
+            ->values()
+            ->all();
 
         return Inertia::render('worktime/apurations/Index', [
             'filters' => [
@@ -92,7 +95,7 @@ class WorktimeApurationController extends Controller
 
         $filename = 'worktime-apuration-' . now()->format('Y-m-d_H-i-s') . '.csv';
 
-        return response()->streamDownload(function () use ($apuration) {
+        return response()->streamDownload(function () use ($apuration): void {
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, [
@@ -104,6 +107,7 @@ class WorktimeApurationController extends Controller
                 'Atrasos',
                 'Dispensa',
                 'Extra',
+                'DSR/Feriado',
                 'Registros',
                 'Horários',
                 'Status',
@@ -120,6 +124,7 @@ class WorktimeApurationController extends Controller
                     $day['delay_hours'],
                     $day['dispensation_hours'],
                     $day['overtime_hours'],
+                    $day['dsr_worked_hours'],
                     $day['records_count'],
                     $day['record_times'] ?? '',
                     $day['status_label'],
@@ -133,7 +138,7 @@ class WorktimeApurationController extends Controller
         ]);
     }
 
-    public function exportPdf(Request $request)
+    public function exportPdf(Request $request): HttpResponse
     {
         abort_unless($request->user()->hasPermission('worktime.exportApuration'), 403);
 

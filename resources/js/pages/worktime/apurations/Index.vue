@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, router } from '@inertiajs/vue3'
-import { Calculator, ChevronDown, ChevronRight, Download, FileText } from 'lucide-vue-next'
+import { Calculator, ChevronDown, ChevronUp, Download, FileText, Filter, RefreshCw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
 type EmployeeOption = {
@@ -27,6 +27,8 @@ type DayItem = {
     dispensation_hours: string
     overtime_minutes: number
     overtime_hours: string
+    dsr_worked_minutes: number
+    dsr_worked_hours: string
     records_count: number
     record_times: string[]
     status: string
@@ -48,6 +50,8 @@ type EmployeeItem = {
         dispensation_hours: string
         overtime_minutes: number
         overtime_hours: string
+        dsr_worked_minutes: number
+        dsr_worked_hours: string
         inconsistent_days: number
         worked_days: number
         warning_days: number
@@ -77,6 +81,8 @@ const props = defineProps<{
             dispensation_hours: string
             overtime_minutes: number
             overtime_hours: string
+            dsr_worked_minutes: number
+            dsr_worked_hours: string
             inconsistent_days: number
             warning_days: number
         }
@@ -109,6 +115,13 @@ function submitSearch() {
     )
 }
 
+function clearFilters() {
+    employeeIds.value = []
+    startDate.value = props.filters.start_date
+    endDate.value = props.filters.end_date
+    submitSearch()
+}
+
 const exportParams = computed(() => {
     const params = new URLSearchParams()
 
@@ -127,15 +140,6 @@ const exportParams = computed(() => {
     }
 })
 
-function toggleEmployee(employeeId: number) {
-    if (employeeIds.value.includes(employeeId)) {
-        employeeIds.value = employeeIds.value.filter((id) => id !== employeeId)
-        return
-    }
-
-    employeeIds.value.push(employeeId)
-}
-
 function statusClass(status: string) {
     if (status === 'inconsistent') {
         return 'bg-red-100 text-red-700 ring-1 ring-inset ring-red-200'
@@ -151,6 +155,10 @@ function statusClass(status: string) {
 
     if (status === 'neutral') {
         return 'bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200'
+    }
+
+    if (status === 'rest_day_worked') {
+        return 'bg-violet-100 text-violet-700 ring-1 ring-inset ring-violet-200'
     }
 
     return 'bg-green-100 text-green-700 ring-1 ring-inset ring-green-200'
@@ -239,204 +247,137 @@ function collapseAll() {
                             >
                         </div>
 
-                        <div class="flex items-end">
-                            <Button type="submit" variant="outline" class="w-full">
-                                Apurar período
-                            </Button>
+                        <div class="grid gap-2">
+                            <label class="text-sm font-medium">Funcionários</label>
+                            <select
+                                v-model="employeeIds"
+                                multiple
+                                class="min-h-[120px] w-full rounded-md border bg-card px-3 py-2 text-sm"
+                            >
+                                <option v-for="employee in employees" :key="employee.id" :value="employee.id">
+                                    {{ employee.name }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 
-                    <div class="space-y-3">
-                        <div class="text-sm font-medium">Funcionários</div>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                        <Button type="button" variant="outline" @click="clearFilters">
+                            <RefreshCw class="mr-2 h-4 w-4" />
+                            Limpar
+                        </Button>
 
-                        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            <label
-                                v-for="employee in employees"
-                                :key="employee.id"
-                                class="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 text-sm transition hover:bg-muted/40"
-                            >
-                                <input
-                                    :checked="employeeIds.includes(employee.id)"
-                                    type="checkbox"
-                                    class="h-4 w-4 rounded border-border"
-                                    @change="toggleEmployee(employee.id)"
-                                >
-                                <span>{{ employee.name }}</span>
-                            </label>
-                        </div>
+                        <Button type="submit">
+                            <Filter class="mr-2 h-4 w-4" />
+                            Apurar
+                        </Button>
                     </div>
                 </form>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+            <div class="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Funcionários</div>
-                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.employees_count }}</div>
+                    <div class="text-xs font-medium uppercase text-muted-foreground">Previsto</div>
+                    <div class="mt-2 text-2xl font-semibold">{{ apuration.totals.expected_hours }}</div>
                 </div>
-
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Dias apurados</div>
-                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.days_count }}</div>
+                    <div class="text-xs font-medium uppercase text-muted-foreground">Trabalhado</div>
+                    <div class="mt-2 text-2xl font-semibold">{{ apuration.totals.worked_hours }}</div>
                 </div>
-
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Previsto</div>
-                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.expected_hours }}</div>
+                    <div class="text-xs font-medium uppercase text-muted-foreground">Atrasos</div>
+                    <div class="mt-2 text-2xl font-semibold">{{ apuration.totals.delay_hours }}</div>
                 </div>
-
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Trabalhado</div>
-                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.worked_hours }}</div>
+                    <div class="text-xs font-medium uppercase text-muted-foreground">Dispensas</div>
+                    <div class="mt-2 text-2xl font-semibold">{{ apuration.totals.dispensation_hours }}</div>
                 </div>
-
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Atrasos</div>
-                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.delay_hours }}</div>
+                    <div class="text-xs font-medium uppercase text-muted-foreground">Extras</div>
+                    <div class="mt-2 text-2xl font-semibold">{{ apuration.totals.overtime_hours }}</div>
                 </div>
-
                 <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Dispensas</div>
-                    <div class="mt-1 text-2xl font-semibold">{{ apuration.totals.dispensation_hours }}</div>
+                    <div class="text-xs font-medium uppercase text-muted-foreground">DSR/Feriado</div>
+                    <div class="mt-2 text-2xl font-semibold">{{ apuration.totals.dsr_worked_hours }}</div>
                 </div>
             </div>
 
-            <div
-                v-if="apuration.employees.length > 0"
-                class="flex flex-wrap justify-end gap-2"
-            >
-                <Button type="button" variant="outline" @click="expandAll">
-                    Expandir todos
-                </Button>
-
-                <Button type="button" variant="outline" @click="collapseAll">
-                    Recolher todos
-                </Button>
+            <div class="flex items-center justify-end gap-3">
+                <Button type="button" variant="outline" @click="expandAll">Expandir tudo</Button>
+                <Button type="button" variant="outline" @click="collapseAll">Recolher tudo</Button>
             </div>
 
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <div
                     v-for="employee in apuration.employees"
                     :key="employee.id"
-                    class="rounded-xl border bg-card/50 shadow-sm"
+                    class="overflow-hidden rounded-2xl border bg-card/50 shadow-sm"
                 >
                     <button
                         type="button"
-                        class="flex w-full items-start justify-between gap-4 border-b px-4 py-4 text-left transition hover:bg-muted/30"
+                        class="flex w-full items-center justify-between gap-4 border-b px-4 py-4 text-left"
                         @click="toggleCollapse(employee.id)"
                     >
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="mt-0.5 text-muted-foreground">
-                                <ChevronRight v-if="isCollapsed(employee.id)" class="h-5 w-5" />
-                                <ChevronDown v-else class="h-5 w-5" />
-                            </span>
-
-                            <div>
-                                <div class="text-base font-semibold">{{ employee.name }}</div>
-
-                                <div class="mt-3 grid gap-3 text-sm md:grid-cols-3 xl:grid-cols-5">
-                                    <div><span class="text-muted-foreground">Previsto:</span> {{ employee.summary.expected_hours }}</div>
-                                    <div><span class="text-muted-foreground">Trabalhado:</span> {{ employee.summary.worked_hours }}</div>
-                                    <div><span class="text-muted-foreground">Atrasos:</span> {{ employee.summary.delay_hours }}</div>
-                                    <div><span class="text-muted-foreground">Dispensas:</span> {{ employee.summary.dispensation_hours }}</div>
-                                    <div><span class="text-muted-foreground">Extras:</span> {{ employee.summary.overtime_hours }}</div>
-                                    <div><span class="text-muted-foreground">Dias trabalhados:</span> {{ employee.summary.worked_days }}</div>
-                                    <div><span class="text-muted-foreground">Inconsistentes:</span> {{ employee.summary.inconsistent_days }}</div>
-                                    <div><span class="text-muted-foreground">Atenção:</span> {{ employee.summary.warning_days }}</div>
-                                </div>
+                        <div>
+                            <div class="text-base font-semibold">{{ employee.name }}</div>
+                            <div class="mt-1 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                <span>Previsto: {{ employee.summary.expected_hours }}</span>
+                                <span>Trabalhado: {{ employee.summary.worked_hours }}</span>
+                                <span>Atrasos: {{ employee.summary.delay_hours }}</span>
+                                <span>Dispensa: {{ employee.summary.dispensation_hours }}</span>
+                                <span>Extra: {{ employee.summary.overtime_hours }}</span>
+                                <span>DSR/Feriado: {{ employee.summary.dsr_worked_hours }}</span>
                             </div>
                         </div>
+
+                        <component :is="isCollapsed(employee.id) ? ChevronDown : ChevronUp" class="h-5 w-5" />
                     </button>
 
-                    <div v-show="!isCollapsed(employee.id)" class="overflow-x-auto">
-                        <table class="min-w-[1460px] w-full text-sm">
-                            <thead class="bg-muted/50">
+                    <div v-if="!isCollapsed(employee.id)" class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-muted/40 text-left">
                                 <tr>
-                                    <th class="px-4 py-3 text-left">Data</th>
-                                    <th class="px-4 py-3 text-left">Dia</th>
-                                    <th class="px-4 py-3 text-left">Previsto</th>
-                                    <th class="px-4 py-3 text-left">Trabalhado</th>
-                                    <th class="px-4 py-3 text-left">Atrasos</th>
-                                    <th class="px-4 py-3 text-left">Dispensa</th>
-                                    <th class="px-4 py-3 text-left">Extra</th>
-                                    <th class="px-4 py-3 text-left">Registros</th>
-                                    <th class="px-4 py-3 text-left">Horários</th>
-                                    <th class="px-4 py-3 text-left">Status</th>
-                                    <th class="px-4 py-3 text-left">Observações</th>
+                                    <th class="px-4 py-3 font-medium">Data</th>
+                                    <th class="px-4 py-3 font-medium">Previsto</th>
+                                    <th class="px-4 py-3 font-medium">Trabalhado</th>
+                                    <th class="px-4 py-3 font-medium">Atrasos</th>
+                                    <th class="px-4 py-3 font-medium">Dispensa</th>
+                                    <th class="px-4 py-3 font-medium">Extra</th>
+                                    <th class="px-4 py-3 font-medium">DSR/Feriado</th>
+                                    <th class="px-4 py-3 font-medium">Registros</th>
+                                    <th class="px-4 py-3 font-medium">Status</th>
+                                    <th class="px-4 py-3 font-medium">Observações</th>
                                 </tr>
                             </thead>
-
                             <tbody>
-                                <tr
-                                    v-for="day in employee.days"
-                                    :key="`${employee.id}-${day.date}`"
-                                    class="border-t align-top"
-                                    :class="{
-                                        'bg-red-50/40': day.status === 'inconsistent',
-                                    }"
-                                >
-                                    <td class="px-4 py-3">{{ day.date_label }}</td>
-                                    <td class="px-4 py-3">{{ day.weekday_label }}</td>
+                                <tr v-for="day in employee.days" :key="`${employee.id}-${day.date}`" class="border-t align-top">
+                                    <td class="px-4 py-3">
+                                        <div>{{ day.date_label }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ day.weekday_label }}</div>
+                                    </td>
                                     <td class="px-4 py-3">{{ day.expected_hours }}</td>
                                     <td class="px-4 py-3">{{ day.worked_hours }}</td>
                                     <td class="px-4 py-3">{{ day.delay_hours }}</td>
                                     <td class="px-4 py-3">{{ day.dispensation_hours }}</td>
                                     <td class="px-4 py-3">{{ day.overtime_hours }}</td>
+                                    <td class="px-4 py-3">{{ day.dsr_worked_hours }}</td>
                                     <td class="px-4 py-3">
-                                        <span
-                                            class="inline-flex rounded-md px-2 py-1 text-xs font-medium"
-                                            :class="day.status === 'inconsistent'
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-zinc-100 text-zinc-700'"
-                                        >
-                                            {{ day.records_count }}
-                                        </span>
+                                        <div>{{ day.records_count }}</div>
+                                        <div class="mt-1 text-xs text-muted-foreground">{{ day.record_times.join(' • ') || '—' }}</div>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div v-if="day.record_times?.length" class="flex flex-wrap gap-1">
-                                            <span
-                                                v-for="time in day.record_times"
-                                                :key="time"
-                                                class="inline-flex rounded-md bg-zinc-100 px-2 py-1 text-xs text-zinc-700"
-                                            >
-                                                {{ time }}
-                                            </span>
-                                        </div>
-                                        <span v-else>—</span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <span
-                                            class="inline-flex rounded-md px-2 py-1 text-xs font-medium"
-                                            :class="statusClass(day.status)"
-                                        >
+                                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="statusClass(day.status)">
                                             {{ day.status_label }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-3">
-                                        <div v-if="day.notes.length" class="space-y-1">
-                                            <div
-                                                v-for="note in day.notes"
-                                                :key="note"
-                                                class="rounded-md px-2 py-1 text-xs"
-                                                :class="day.status === 'inconsistent'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : 'bg-muted text-muted-foreground'"
-                                            >
-                                                {{ note }}
-                                            </div>
-                                        </div>
+                                        <span v-if="day.notes.length">{{ day.notes.join(' | ') }}</span>
                                         <span v-else>—</span>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                </div>
-
-                <div
-                    v-if="apuration.employees.length === 0"
-                    class="rounded-xl border bg-card/50 px-4 py-8 text-center text-muted-foreground shadow-sm"
-                >
-                    Nenhum funcionário encontrado para o período informado.
                 </div>
             </div>
         </div>

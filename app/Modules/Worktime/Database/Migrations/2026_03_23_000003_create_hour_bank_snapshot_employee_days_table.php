@@ -47,6 +47,7 @@ return new class extends Migration
             $table->integer('extra_minutes')->default(0);
             $table->integer('absence_minutes')->default(0);
             $table->integer('suspension_minutes')->default(0);
+            $table->integer('dsr_worked_minutes')->default(0);
             $table->integer('balance_minutes')->default(0);
 
             $table->boolean('has_divergence')->default(false);
