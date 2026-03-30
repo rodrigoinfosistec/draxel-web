@@ -127,6 +127,9 @@ class HourBankSnapshotService
                 'status' => HourBankSnapshotStatus::CONSOLIDATED,
                 'consolidated_by' => $user->id,
                 'consolidated_at' => now(),
+                'reversed_by' => null,
+                'reversed_at' => null,
+                'reversal_reason' => null,
             ]);
         });
     }
@@ -192,6 +195,7 @@ class HourBankSnapshotService
             'extra_minutes' => $captured['totals']['extra_minutes'],
             'absence_minutes' => $captured['totals']['absence_minutes'],
             'suspension_minutes' => $captured['totals']['suspension_minutes'],
+            'dsr_worked_minutes' => $captured['totals']['dsr_worked_minutes'],
             'balance_minutes' => $captured['totals']['balance_minutes'],
             'has_divergence' => $captured['totals']['has_divergence'],
             'divergence_summary' => $captured['totals']['divergence_summary'],
@@ -232,6 +236,7 @@ class HourBankSnapshotService
                 'extra_minutes' => $day['extra_minutes'],
                 'absence_minutes' => $day['absence_minutes'],
                 'suspension_minutes' => $day['suspension_minutes'],
+                'dsr_worked_minutes' => $day['dsr_worked_minutes'],
                 'balance_minutes' => $day['balance_minutes'],
                 'has_divergence' => $day['has_divergence'],
                 'divergence_reason' => $day['divergence_reason'],

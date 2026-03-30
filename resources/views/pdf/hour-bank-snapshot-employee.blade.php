@@ -220,12 +220,13 @@
             <tr>
                 <th style="width: 10%;">Data</th>
                 <th style="width: 7%;">Dia</th>
-                <th style="width: 20%;">Jornada esperada</th>
-                <th style="width: 23%;">Registros</th>
-                <th style="width: 10%;">Justificadas</th>
-                <th style="width: 10%;">Atrasos</th>
-                <th style="width: 10%;">Dispensa</th>
-                <th style="width: 10%;">Extras</th>
+                <th style="width: 18%;">Jornada esperada</th>
+                <th style="width: 19%;">Registros</th>
+                <th style="width: 9%;">Justificadas</th>
+                <th style="width: 9%;">Atrasos</th>
+                <th style="width: 9%;">Dispensa</th>
+                <th style="width: 9%;">Extras</th>
+                <th style="width: 10%;">DSR/Feriado</th>
                 <th style="width: 10%;">Saldo</th>
             </tr>
         </thead>
@@ -246,11 +247,12 @@
                     <td class="text-right">{{ pdf_format_minutes((int) $day->late_minutes) }}</td>
                     <td class="text-right">{{ pdf_format_minutes((int) $day->suspension_minutes) }}</td>
                     <td class="text-right">{{ pdf_format_minutes((int) $day->extra_minutes) }}</td>
+                    <td class="text-right">{{ pdf_format_minutes((int) $day->dsr_worked_minutes) }}</td>
                     <td class="text-right">{{ pdf_format_minutes((int) $day->balance_minutes) }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9">Nenhum dia encontrado para este fechamento.</td>
+                    <td colspan="10">Nenhum dia encontrado para este fechamento.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -263,6 +265,8 @@
                 <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->suspension_minutes) }}</strong>
                 </td>
                 <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->extra_minutes) }}</strong></td>
+                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->dsr_worked_minutes) }}</strong>
+                </td>
                 <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->balance_minutes) }}</strong></td>
             </tr>
         </tfoot>

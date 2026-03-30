@@ -44,14 +44,15 @@
     <table class="report-table">
         <thead>
             <tr>
-                <th style="width: 24%;">Funcionário</th>
-                <th style="width: 10%;">Justificadas</th>
-                <th style="width: 10%;">Atrasos</th>
-                <th style="width: 10%;">Dispensa</th>
-                <th style="width: 10%;">Extras</th>
+                <th style="width: 20%;">Funcionário</th>
+                <th style="width: 9%;">Justificadas</th>
+                <th style="width: 9%;">Atrasos</th>
+                <th style="width: 9%;">Dispensa</th>
+                <th style="width: 9%;">Extras</th>
+                <th style="width: 10%;">DSR/Feriado</th>
                 <th style="width: 8%;">Saldo</th>
-                <th style="width: 14%;">Suspensão</th>
-                <th style="width: 14%;">Falta</th>
+                <th style="width: 13%;">Suspensão</th>
+                <th style="width: 13%;">Falta</th>
             </tr>
         </thead>
         <tbody>
@@ -77,6 +78,9 @@
                         {{ pdf_format_minutes_general_preview((int) $employee['extra_minutes']) }}
                     </td>
                     <td class="text-right">
+                        {{ pdf_format_minutes_general_preview((int) $employee['dsr_worked_minutes']) }}
+                    </td>
+                    <td class="text-right">
                         {{ pdf_format_minutes_general_preview((int) $employee['balance_minutes']) }}
                     </td>
                     <td>
@@ -88,7 +92,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8">Nenhum funcionário encontrado.</td>
+                    <td colspan="9">Nenhum funcionário encontrado.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -106,6 +110,9 @@
                 </td>
                 <td class="text-right">
                     <strong>{{ pdf_format_minutes_general_preview((int) $employees->sum('extra_minutes')) }}</strong>
+                </td>
+                <td class="text-right">
+                    <strong>{{ pdf_format_minutes_general_preview((int) $employees->sum('dsr_worked_minutes')) }}</strong>
                 </td>
                 <td class="text-right">
                     <strong>{{ pdf_format_minutes_general_preview((int) $employees->sum('balance_minutes')) }}</strong>

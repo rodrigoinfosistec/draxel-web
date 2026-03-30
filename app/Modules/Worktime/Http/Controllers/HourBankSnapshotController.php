@@ -15,6 +15,7 @@ use App\Support\Flash;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -149,6 +150,7 @@ class HourBankSnapshotController extends Controller
                         'late_minutes' => $this->formatMinutes((int) $snapshotEmployee->late_minutes),
                         'extra_minutes' => $this->formatMinutes((int) $snapshotEmployee->extra_minutes),
                         'suspension_minutes' => $this->formatMinutes((int) $snapshotEmployee->suspension_minutes),
+                        'dsr_worked_minutes' => $this->formatMinutes((int) $snapshotEmployee->dsr_worked_minutes),
                         'balance_minutes' => $this->formatMinutes((int) $snapshotEmployee->balance_minutes),
                         'has_divergence' => $snapshotEmployee->has_divergence,
                         'divergence_summary' => $snapshotEmployee->divergence_summary,
@@ -185,6 +187,7 @@ class HourBankSnapshotController extends Controller
                                     'late_minutes' => $this->formatMinutes((int) $day->late_minutes),
                                     'extra_minutes' => $this->formatMinutes((int) $day->extra_minutes),
                                     'suspension_minutes' => $this->formatMinutes((int) $day->suspension_minutes),
+                                    'dsr_worked_minutes' => $this->formatMinutes((int) $day->dsr_worked_minutes),
                                     'balance_minutes' => $this->formatMinutes((int) $day->balance_minutes),
                                     'has_divergence' => $day->has_divergence,
                                     'divergence_reason' => $day->divergence_reason,
@@ -371,7 +374,7 @@ class HourBankSnapshotController extends Controller
         ]);
     }
 
-    public function exportPdf(Request $request)
+    public function exportPdf(Request $request): HttpResponse
     {
         abort_unless($request->user()->hasPermission('worktime.exportHourBankSnapshot'), 403);
 
@@ -427,7 +430,7 @@ class HourBankSnapshotController extends Controller
         );
     }
 
-    public function exportGeneralPreview(Request $request, HourBankSnapshot $hourBankSnapshot)
+    public function exportGeneralPreview(Request $request, HourBankSnapshot $hourBankSnapshot): HttpResponse
     {
         abort_unless($request->user()->hasPermission('worktime.exportHourBankSnapshot'), 403);
         $this->ensureSnapshotContext($request, $hourBankSnapshot);
@@ -442,48 +445,7 @@ class HourBankSnapshotController extends Controller
             ]);
         }
 
-        $employees = $hourBankSnapshot->employees
-            ->sortBy('employee_name')
-            ->map(function (HourBankSnapshotEmployee $employee) {
-                $suspensionDates = $employee->days
-                    ->filter(function ($day) {
-                        $notes = mb_strtolower((string) ($day->notes ?? ''));
-
-                        return str_contains($notes, 'suspens');
-                    })
-                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
-                    ->filter()
-                    ->values();
-
-                $absenceDates = $employee->days
-                    ->filter(function ($day) {
-                        $notes = mb_strtolower((string) ($day->notes ?? ''));
-
-                        return str_contains($notes, 'falta');
-                    })
-                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
-                    ->filter()
-                    ->values();
-
-                return [
-                    'employee_name' => $employee->employee_name,
-                    'employee_registration' => $employee->employee_registration,
-                    'justified_minutes' => (int) $employee->justified_minutes,
-                    'late_minutes' => (int) $employee->late_minutes,
-                    'dispensation_minutes' => (int) $employee->suspension_minutes,
-                    'extra_minutes' => (int) $employee->extra_minutes,
-                    'suspension_dates' => $suspensionDates->all(),
-                    'suspension_dates_label' => $suspensionDates->isNotEmpty()
-                        ? $suspensionDates->implode(', ')
-                        : '—',
-                    'absence_dates' => $absenceDates->all(),
-                    'absence_dates_label' => $absenceDates->isNotEmpty()
-                        ? $absenceDates->implode(', ')
-                        : '—',
-                    'balance_minutes' => (int) $employee->balance_minutes,
-                ];
-            })
-            ->values();
+        $employees = $this->buildGeneralReportEmployees($hourBankSnapshot);
 
         $pdf = Pdf::setOption([
                 'isPhpEnabled' => false,
@@ -523,7 +485,7 @@ class HourBankSnapshotController extends Controller
         );
     }
 
-    public function exportGeneralConsolidated(Request $request, HourBankSnapshot $hourBankSnapshot)
+    public function exportGeneralConsolidated(Request $request, HourBankSnapshot $hourBankSnapshot): HttpResponse
     {
         abort_unless($request->user()->hasPermission('worktime.exportHourBankSnapshot'), 403);
         $this->ensureSnapshotContext($request, $hourBankSnapshot);
@@ -532,48 +494,7 @@ class HourBankSnapshotController extends Controller
 
         $hourBankSnapshot->load('employees.days');
 
-        $employees = $hourBankSnapshot->employees
-            ->sortBy('employee_name')
-            ->map(function (HourBankSnapshotEmployee $employee) {
-                $suspensionDates = $employee->days
-                    ->filter(function ($day) {
-                        $notes = mb_strtolower((string) ($day->notes ?? ''));
-
-                        return str_contains($notes, 'suspens');
-                    })
-                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
-                    ->filter()
-                    ->values();
-
-                $absenceDates = $employee->days
-                    ->filter(function ($day) {
-                        $notes = mb_strtolower((string) ($day->notes ?? ''));
-
-                        return str_contains($notes, 'falta');
-                    })
-                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
-                    ->filter()
-                    ->values();
-
-                return [
-                    'employee_name' => $employee->employee_name,
-                    'employee_registration' => $employee->employee_registration,
-                    'justified_minutes' => (int) $employee->justified_minutes,
-                    'late_minutes' => (int) $employee->late_minutes,
-                    'dispensation_minutes' => (int) $employee->suspension_minutes,
-                    'extra_minutes' => (int) $employee->extra_minutes,
-                    'suspension_dates' => $suspensionDates->all(),
-                    'suspension_dates_label' => $suspensionDates->isNotEmpty()
-                        ? $suspensionDates->implode(', ')
-                        : '—',
-                    'absence_dates' => $absenceDates->all(),
-                    'absence_dates_label' => $absenceDates->isNotEmpty()
-                        ? $absenceDates->implode(', ')
-                        : '—',
-                    'balance_minutes' => (int) $employee->balance_minutes,
-                ];
-            })
-            ->values();
+        $employees = $this->buildGeneralReportEmployees($hourBankSnapshot);
 
         $pdf = Pdf::setOption([
                 'isPhpEnabled' => false,
@@ -617,7 +538,7 @@ class HourBankSnapshotController extends Controller
         Request $request,
         HourBankSnapshot $hourBankSnapshot,
         HourBankSnapshotEmployee $hourBankSnapshotEmployee,
-    ) {
+    ): HttpResponse {
         abort_unless($request->user()->hasPermission('worktime.exportHourBankSnapshot'), 403);
         $this->ensureSnapshotContext($request, $hourBankSnapshot);
         $this->ensureSnapshotEmployeeContext($hourBankSnapshot, $hourBankSnapshotEmployee);
@@ -651,8 +572,8 @@ class HourBankSnapshotController extends Controller
         $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
 
         $canvas->page_text(
-            750,
-            550,
+            520,
+            810,
             '{PAGE_NUM}/{PAGE_COUNT}',
             $font,
             9,
@@ -667,6 +588,53 @@ class HourBankSnapshotController extends Controller
                 'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-employee-' . $hourBankSnapshotEmployee->id . '.pdf"',
             ]
         );
+    }
+
+    protected function buildGeneralReportEmployees(HourBankSnapshot $hourBankSnapshot)
+    {
+        return $hourBankSnapshot->employees
+            ->sortBy('employee_name')
+            ->map(function (HourBankSnapshotEmployee $employee) {
+                $suspensionDates = $employee->days
+                    ->filter(function ($day) {
+                        $notes = mb_strtolower((string) ($day->notes ?? ''));
+
+                        return str_contains($notes, 'suspens');
+                    })
+                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
+                    ->filter()
+                    ->values();
+
+                $absenceDates = $employee->days
+                    ->filter(function ($day) {
+                        $notes = mb_strtolower((string) ($day->notes ?? ''));
+
+                        return str_contains($notes, 'falta');
+                    })
+                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
+                    ->filter()
+                    ->values();
+
+                return [
+                    'employee_name' => $employee->employee_name,
+                    'employee_registration' => $employee->employee_registration,
+                    'justified_minutes' => (int) $employee->justified_minutes,
+                    'late_minutes' => (int) $employee->late_minutes,
+                    'dispensation_minutes' => (int) $employee->suspension_minutes,
+                    'extra_minutes' => (int) $employee->extra_minutes,
+                    'dsr_worked_minutes' => (int) $employee->dsr_worked_minutes,
+                    'suspension_dates' => $suspensionDates->all(),
+                    'suspension_dates_label' => $suspensionDates->isNotEmpty()
+                        ? $suspensionDates->implode(', ')
+                        : '—',
+                    'absence_dates' => $absenceDates->all(),
+                    'absence_dates_label' => $absenceDates->isNotEmpty()
+                        ? $absenceDates->implode(', ')
+                        : '—',
+                    'balance_minutes' => (int) $employee->balance_minutes,
+                ];
+            })
+            ->values();
     }
 
     protected function filteredQuery(Request $request)

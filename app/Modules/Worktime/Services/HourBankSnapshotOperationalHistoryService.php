@@ -29,11 +29,13 @@ class HourBankSnapshotOperationalHistoryService
             ],
             [
                 'bank_hour_account_id' => $bankHourAccountId,
-                'minutes' => $snapshotEmployee->balance_minutes,
+                'minutes' => (int) $snapshotEmployee->balance_minutes,
                 'created_by' => $user->id,
                 'updated_by' => $user->id,
             ],
         );
+
+        $this->syncBankHourAccountBalance($bankHourAccountId);
     }
 
     public function remove(HourBankSnapshot $snapshot, HourBankSnapshotEmployee $snapshotEmployee): void
@@ -49,6 +51,8 @@ class HourBankSnapshotOperationalHistoryService
             ->where('occurred_on', $snapshot->period_end->format('Y-m-d'))
             ->where('description', $this->buildDescription($snapshot))
             ->delete();
+
+        $this->syncBankHourAccountBalance($bankHourAccountId);
     }
 
     protected function resolveBankHourAccountId(
@@ -82,9 +86,24 @@ class HourBankSnapshotOperationalHistoryService
             'tenant_id' => $snapshot->tenant_id,
             'company_id' => $snapshot->company_id,
             'employee_id' => $snapshotEmployee->employee_id,
+            'current_balance_minutes' => 0,
             'created_at' => $createdAt,
             'updated_at' => $createdAt,
         ]);
+    }
+
+    protected function syncBankHourAccountBalance(int $bankHourAccountId): void
+    {
+        $totalMinutes = (int) DB::table('bank_hour_entries')
+            ->where('bank_hour_account_id', $bankHourAccountId)
+            ->sum('minutes');
+
+        DB::table('bank_hour_accounts')
+            ->where('id', $bankHourAccountId)
+            ->update([
+                'current_balance_minutes' => $totalMinutes,
+                'updated_at' => now(),
+            ]);
     }
 
     protected function buildDescription(HourBankSnapshot $snapshot): string

@@ -28,6 +28,7 @@ type SnapshotDay = {
     late_minutes: string
     extra_minutes: string
     suspension_minutes: string
+    dsr_worked_minutes: string
     balance_minutes: string
     has_divergence: boolean
     divergence_reason: string | null
@@ -43,6 +44,7 @@ type SnapshotEmployee = {
     late_minutes: string
     extra_minutes: string
     suspension_minutes: string
+    dsr_worked_minutes: string
     balance_minutes: string
     has_divergence: boolean
     divergence_summary: string | null
@@ -154,11 +156,39 @@ function recaptureEmployee(employeeId: number) {
     )
 }
 
-function consolidate() {
+async function consolidate() {
+    const result = await Swal.fire({
+        title: 'Consolidar fechamento?',
+        text: 'Essa ação lançará o saldo do período no histórico do banco de horas.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, consolidar',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) {
+        return
+    }
+
     router.post(`/worktime/hour-bank-snapshots/${props.snapshot.id}/consolidate`)
 }
 
-function reverseSnapshot() {
+async function reverseSnapshot() {
+    const result = await Swal.fire({
+        title: 'Reverter fechamento?',
+        text: 'Essa ação removerá o lançamento deste período do histórico do banco de horas.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, reverter',
+        cancelButtonText: 'Cancelar',
+        reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) {
+        return
+    }
+
     reverseForm.post(`/worktime/hour-bank-snapshots/${props.snapshot.id}/reverse`)
 }
 
@@ -320,7 +350,7 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                 <div>
                     <h2 class="text-sm font-semibold tracking-tight">Reversão do fechamento</h2>
                     <p class="text-sm text-muted-foreground">
-                        A reversão deve ser usada apenas em situações excepcionais e exige justificativa.
+                        A reversão remove o lançamento deste período do histórico do banco de horas e exige justificativa.
                     </p>
                 </div>
 
@@ -373,8 +403,9 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                             <div class="grid gap-2 text-sm xl:text-right">
                                 <div>Justificadas: {{ employee.justified_minutes }}</div>
                                 <div>Atrasos: {{ employee.late_minutes }}</div>
+                                <div>Dispensa: {{ employee.suspension_minutes }}</div>
                                 <div>Extras: {{ employee.extra_minutes }}</div>
-                                <div>Disp./Susp.: {{ employee.suspension_minutes }}</div>
+                                <div>DSR/Feriado: {{ employee.dsr_worked_minutes }}</div>
                                 <div class="font-semibold">Saldo: {{ employee.balance_minutes }}</div>
                             </div>
                         </div>
@@ -413,7 +444,7 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="min-w-[1200px] w-full text-sm">
+                        <table class="min-w-[1320px] w-full text-sm">
                             <thead class="bg-muted/50">
                                 <tr>
                                     <th class="px-4 py-3 text-left">Data</th>
@@ -422,8 +453,9 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                                     <th class="px-4 py-3 text-left">Registros</th>
                                     <th class="px-4 py-3 text-left">Justificadas</th>
                                     <th class="px-4 py-3 text-left">Atrasos</th>
+                                    <th class="px-4 py-3 text-left">Dispensa</th>
                                     <th class="px-4 py-3 text-left">Extras</th>
-                                    <th class="px-4 py-3 text-left">Disp./Susp.</th>
+                                    <th class="px-4 py-3 text-left">DSR/Feriado</th>
                                     <th class="px-4 py-3 text-left">Saldo</th>
                                 </tr>
                             </thead>
@@ -442,8 +474,9 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                                     </td>
                                     <td class="px-4 py-3">{{ day.justified_minutes }}</td>
                                     <td class="px-4 py-3">{{ day.late_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.extra_minutes }}</td>
                                     <td class="px-4 py-3">{{ day.suspension_minutes }}</td>
+                                    <td class="px-4 py-3">{{ day.extra_minutes }}</td>
+                                    <td class="px-4 py-3">{{ day.dsr_worked_minutes }}</td>
                                     <td class="px-4 py-3">{{ day.balance_minutes }}</td>
                                 </tr>
 
@@ -451,8 +484,9 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                                     <td colspan="4" class="px-4 py-3 text-right">Totais</td>
                                     <td class="px-4 py-3">{{ employee.justified_minutes }}</td>
                                     <td class="px-4 py-3">{{ employee.late_minutes }}</td>
-                                    <td class="px-4 py-3">{{ employee.extra_minutes }}</td>
                                     <td class="px-4 py-3">{{ employee.suspension_minutes }}</td>
+                                    <td class="px-4 py-3">{{ employee.extra_minutes }}</td>
+                                    <td class="px-4 py-3">{{ employee.dsr_worked_minutes }}</td>
                                     <td class="px-4 py-3">{{ employee.balance_minutes }}</td>
                                 </tr>
                             </tbody>
