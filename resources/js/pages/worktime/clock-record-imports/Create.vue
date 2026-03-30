@@ -48,7 +48,7 @@ function submit() {
                 <div class="relative flex items-start justify-between gap-4">
                     <Heading
                         title="Nova importação de ponto"
-                        description="Escolha o device e envie o arquivo TXT."
+                        description="Escolha o device, envie o arquivo TXT e revise os registros antes do lançamento."
                         :icon="FileClock"
                     />
 

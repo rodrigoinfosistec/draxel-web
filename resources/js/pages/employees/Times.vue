@@ -8,6 +8,7 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, useForm } from '@inertiajs/vue3'
 import { ArrowLeft, Clock3 } from 'lucide-vue-next'
+import { computed } from 'vue'
 
 type EmployeeItem = {
     id: number
@@ -71,6 +72,26 @@ const form = useForm({
     })),
 })
 
+const weeklyWorkloadLabel = computed(() => {
+    const totalMinutes = form.times.reduce((total, time) => {
+        if (!time.start_time || !time.end_time) {
+            return total
+        }
+
+        const startMinutes = timeToMinutes(time.start_time)
+        const endMinutes = timeToMinutes(time.end_time)
+        const breakMinutes = time.break_duration ? timeToMinutes(time.break_duration) : 0
+
+        if (endMinutes <= startMinutes) {
+            return total
+        }
+
+        return total + Math.max(0, (endMinutes - startMinutes) - breakMinutes)
+    }, 0)
+
+    return formatMinutesToHuman(totalMinutes)
+})
+
 function submit() {
     form.patch(`/employees/${props.employee.id}/times`)
 }
@@ -99,6 +120,23 @@ function applyStandardDay(index: number) {
     form.times[index].start_time = '08:00'
     form.times[index].end_time = '17:00'
     form.times[index].break_duration = '01:00'
+}
+
+function timeToMinutes(time: string): number {
+    const [hours = '0', minutes = '0'] = time.split(':')
+
+    return (Number(hours) * 60) + Number(minutes)
+}
+
+function formatMinutesToHuman(minutes: number): string {
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+
+    if (remainingMinutes === 0) {
+        return `${hours}h`
+    }
+
+    return `${hours}h${String(remainingMinutes).padStart(2, '0')}min`
 }
 </script>
 
@@ -144,6 +182,13 @@ function applyStandardDay(index: number) {
                         <p class="text-sm text-muted-foreground">
                             Ajuste os horários individuais do funcionário.
                         </p>
+                    </div>
+
+                    <div class="rounded-xl border bg-background p-4">
+                        <div class="text-sm text-muted-foreground">Carga horária semanal definida</div>
+                        <div class="mt-1 text-lg font-semibold text-foreground">
+                            {{ weeklyWorkloadLabel }}
+                        </div>
                     </div>
 
                     <div class="space-y-4">

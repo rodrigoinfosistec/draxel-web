@@ -224,8 +224,8 @@
                 <th style="width: 23%;">Registros</th>
                 <th style="width: 10%;">Justificadas</th>
                 <th style="width: 10%;">Atrasos</th>
+                <th style="width: 10%;">Dispensa</th>
                 <th style="width: 10%;">Extras</th>
-                <th style="width: 10%;">Suspensões</th>
                 <th style="width: 10%;">Saldo</th>
             </tr>
         </thead>
@@ -244,8 +244,8 @@
                     <td class="{{ $recordsClass }}">{{ $recordsLabel }}</td>
                     <td class="text-right">{{ pdf_format_minutes((int) $day->justified_minutes) }}</td>
                     <td class="text-right">{{ pdf_format_minutes((int) $day->late_minutes) }}</td>
-                    <td class="text-right">{{ pdf_format_minutes((int) $day->extra_minutes) }}</td>
                     <td class="text-right">{{ pdf_format_minutes((int) $day->suspension_minutes) }}</td>
+                    <td class="text-right">{{ pdf_format_minutes((int) $day->extra_minutes) }}</td>
                     <td class="text-right">{{ pdf_format_minutes((int) $day->balance_minutes) }}</td>
                 </tr>
             @empty
@@ -260,9 +260,9 @@
                 <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->justified_minutes) }}</strong>
                 </td>
                 <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->late_minutes) }}</strong></td>
-                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->extra_minutes) }}</strong></td>
                 <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->suspension_minutes) }}</strong>
                 </td>
+                <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->extra_minutes) }}</strong></td>
                 <td class="text-right"><strong>{{ pdf_format_minutes((int) $employee->balance_minutes) }}</strong></td>
             </tr>
         </tfoot>

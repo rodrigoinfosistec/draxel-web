@@ -434,7 +434,7 @@ class HourBankSnapshotController extends Controller
 
         abort_unless($hourBankSnapshot->status->isEditable(), 422);
 
-        $hourBankSnapshot->load('employees');
+        $hourBankSnapshot->load('employees.days');
 
         if ($hourBankSnapshot->employees->contains(fn (HourBankSnapshotEmployee $employee) => $employee->has_divergence)) {
             throw ValidationException::withMessages([
@@ -442,12 +442,55 @@ class HourBankSnapshotController extends Controller
             ]);
         }
 
+        $employees = $hourBankSnapshot->employees
+            ->sortBy('employee_name')
+            ->map(function (HourBankSnapshotEmployee $employee) {
+                $suspensionDates = $employee->days
+                    ->filter(function ($day) {
+                        $notes = mb_strtolower((string) ($day->notes ?? ''));
+
+                        return str_contains($notes, 'suspens');
+                    })
+                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
+                    ->filter()
+                    ->values();
+
+                $absenceDates = $employee->days
+                    ->filter(function ($day) {
+                        $notes = mb_strtolower((string) ($day->notes ?? ''));
+
+                        return str_contains($notes, 'falta');
+                    })
+                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
+                    ->filter()
+                    ->values();
+
+                return [
+                    'employee_name' => $employee->employee_name,
+                    'employee_registration' => $employee->employee_registration,
+                    'justified_minutes' => (int) $employee->justified_minutes,
+                    'late_minutes' => (int) $employee->late_minutes,
+                    'dispensation_minutes' => (int) $employee->suspension_minutes,
+                    'extra_minutes' => (int) $employee->extra_minutes,
+                    'suspension_dates' => $suspensionDates->all(),
+                    'suspension_dates_label' => $suspensionDates->isNotEmpty()
+                        ? $suspensionDates->implode(', ')
+                        : '—',
+                    'absence_dates' => $absenceDates->all(),
+                    'absence_dates_label' => $absenceDates->isNotEmpty()
+                        ? $absenceDates->implode(', ')
+                        : '—',
+                    'balance_minutes' => (int) $employee->balance_minutes,
+                ];
+            })
+            ->values();
+
         $pdf = Pdf::setOption([
                 'isPhpEnabled' => false,
             ])
             ->loadView('pdf.hour-bank-snapshot-general-preview', [
                 'snapshot' => $hourBankSnapshot,
-                'employees' => $hourBankSnapshot->employees->sortBy('employee_name')->values(),
+                'employees' => $employees,
                 'generatedAt' => now()->format('d/m/Y H:i:s'),
                 'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
                 'companyName' => CompanyContext::current()?->name ?? 'Empresa',
@@ -487,14 +530,57 @@ class HourBankSnapshotController extends Controller
 
         abort_unless($hourBankSnapshot->status->isConsolidated(), 422);
 
-        $hourBankSnapshot->load('employees');
+        $hourBankSnapshot->load('employees.days');
+
+        $employees = $hourBankSnapshot->employees
+            ->sortBy('employee_name')
+            ->map(function (HourBankSnapshotEmployee $employee) {
+                $suspensionDates = $employee->days
+                    ->filter(function ($day) {
+                        $notes = mb_strtolower((string) ($day->notes ?? ''));
+
+                        return str_contains($notes, 'suspens');
+                    })
+                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
+                    ->filter()
+                    ->values();
+
+                $absenceDates = $employee->days
+                    ->filter(function ($day) {
+                        $notes = mb_strtolower((string) ($day->notes ?? ''));
+
+                        return str_contains($notes, 'falta');
+                    })
+                    ->map(fn ($day) => $day->work_date?->format('d/m/Y'))
+                    ->filter()
+                    ->values();
+
+                return [
+                    'employee_name' => $employee->employee_name,
+                    'employee_registration' => $employee->employee_registration,
+                    'justified_minutes' => (int) $employee->justified_minutes,
+                    'late_minutes' => (int) $employee->late_minutes,
+                    'dispensation_minutes' => (int) $employee->suspension_minutes,
+                    'extra_minutes' => (int) $employee->extra_minutes,
+                    'suspension_dates' => $suspensionDates->all(),
+                    'suspension_dates_label' => $suspensionDates->isNotEmpty()
+                        ? $suspensionDates->implode(', ')
+                        : '—',
+                    'absence_dates' => $absenceDates->all(),
+                    'absence_dates_label' => $absenceDates->isNotEmpty()
+                        ? $absenceDates->implode(', ')
+                        : '—',
+                    'balance_minutes' => (int) $employee->balance_minutes,
+                ];
+            })
+            ->values();
 
         $pdf = Pdf::setOption([
                 'isPhpEnabled' => false,
             ])
             ->loadView('pdf.hour-bank-snapshot-general-consolidated', [
                 'snapshot' => $hourBankSnapshot,
-                'employees' => $hourBankSnapshot->employees->sortBy('employee_name')->values(),
+                'employees' => $employees,
                 'generatedAt' => now()->format('d/m/Y H:i:s'),
                 'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
                 'companyName' => CompanyContext::current()?->name ?? 'Empresa',
