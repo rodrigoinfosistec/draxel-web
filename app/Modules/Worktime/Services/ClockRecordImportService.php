@@ -310,6 +310,66 @@ class ClockRecordImportService
         });
     }
 
+
+    public function revert(ClockRecordImport $import, User $user): ClockRecordImport
+    {
+        return DB::transaction(function () use ($import, $user) {
+            abort_unless($import->tenant_id === $user->tenant_id, 404);
+            abort_unless($import->company_id === session('current_company_id'), 404);
+
+            if (! $this->isLaunched($import)) {
+                throw ValidationException::withMessages([
+                    'import' => 'Apenas importações lançadas podem ser revertidas.',
+                ]);
+            }
+
+            $this->assertImportCanBeReverted($import);
+
+            $items = $import->items()
+                ->whereNotNull('launched_clock_record_id')
+                ->get();
+
+            foreach ($items as $item) {
+                $this->deleteLinkedClockRecord($item, $import);
+
+                $item->update([
+                    'status' => $this->determineStatusAfterRevert($import, $item),
+                    'launched_clock_record_id' => null,
+                ]);
+            }
+
+            $import->update([
+                'launched_at' => null,
+            ]);
+
+            $this->recalculateImport($import);
+
+            return $import->fresh(['items.employee', 'tenantClockDevice.clockDevice']);
+        });
+    }
+
+    public function canRevert(ClockRecordImport $import): bool
+    {
+        if (! $this->isLaunched($import)) {
+            return false;
+        }
+
+        return ! $this->hasAnySnapshotUsingImport($import);
+    }
+
+    public function getCannotRevertReason(ClockRecordImport $import): ?string
+    {
+        if (! $this->isLaunched($import)) {
+            return null;
+        }
+
+        if ($this->hasAnySnapshotUsingImport($import)) {
+            return 'Esta importação não pode ser revertida porque um ou mais registros dela já foram utilizados em fechamento.';
+        }
+
+        return null;
+    }
+
     public function launch(ClockRecordImport $import, User $user): ClockRecordImport
     {
         return DB::transaction(function () use ($import, $user) {
@@ -740,6 +800,81 @@ class ClockRecordImportService
                 }
             }
         }
+    }
+
+
+    protected function determineStatusAfterRevert(
+        ClockRecordImport $import,
+        ClockRecordImportItem $item,
+    ): ClockRecordImportItemStatus {
+        if ($this->isManualAdjustmentItem($item)) {
+            return ClockRecordImportItemStatus::Resolved;
+        }
+
+        if (! $item->employee_id || ! $item->recorded_at) {
+            return ClockRecordImportItemStatus::Invalid;
+        }
+
+        $identifierColumn = config('worktime.employee_identifier_column', 'registration');
+
+        $resolvedEmployeeId = $this->resolveEmployeeId(
+            employeeCode: $item->employee_code,
+            tenantId: $import->tenant_id,
+            companyId: $import->company_id,
+            identifierColumn: $identifierColumn,
+        );
+
+        if (! $resolvedEmployeeId || $resolvedEmployeeId !== (int) $item->employee_id) {
+            return ClockRecordImportItemStatus::Resolved;
+        }
+
+        return ClockRecordImportItemStatus::Valid;
+    }
+
+    protected function assertImportCanBeReverted(ClockRecordImport $import): void
+    {
+        if ($this->hasAnySnapshotUsingImport($import)) {
+            throw ValidationException::withMessages([
+                'import' => 'Esta importação não pode ser revertida porque um ou mais registros dela já foram utilizados em fechamento.',
+            ]);
+        }
+    }
+
+    protected function hasAnySnapshotUsingImport(ClockRecordImport $import): bool
+    {
+        if (! Schema::hasTable('hour_bank_snapshot_employee_days')) {
+            return false;
+        }
+
+        $employeeDates = $import->items()
+            ->whereNotNull('launched_clock_record_id')
+            ->whereNotNull('employee_id')
+            ->whereNotNull('recorded_at')
+            ->get(['employee_id', 'recorded_at'])
+            ->map(fn (ClockRecordImportItem $item) => [
+                'employee_id' => (int) $item->employee_id,
+                'work_date' => $item->recorded_at->format('Y-m-d'),
+            ])
+            ->unique(fn (array $item) => $item['employee_id'] . '|' . $item['work_date'])
+            ->values();
+
+        if ($employeeDates->isEmpty()) {
+            return false;
+        }
+
+        return DB::table('hour_bank_snapshot_employee_days as snapshot_days')
+            ->where('snapshot_days.tenant_id', $import->tenant_id)
+            ->where('snapshot_days.company_id', $import->company_id)
+            ->where(function ($query) use ($employeeDates) {
+                foreach ($employeeDates as $employeeDate) {
+                    $query->orWhere(function ($subQuery) use ($employeeDate) {
+                        $subQuery
+                            ->where('snapshot_days.employee_id', $employeeDate['employee_id'])
+                            ->whereDate('snapshot_days.work_date', $employeeDate['work_date']);
+                    });
+                }
+            })
+            ->exists();
     }
 
     protected function makeRecordHash(

@@ -6,7 +6,7 @@ import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Download, FileClock, FileText, Search, Trash2, X } from 'lucide-vue-next'
+import { Download, FileClock, FileText, RotateCcw, Search, Trash2, X } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 type ImportItem = {
@@ -20,6 +20,8 @@ type ImportItem = {
     invalid_items: number
     created_at: string | null
     can_delete: boolean
+    can_revert: boolean
+    can_revert_reason: string | null
 }
 
 type PaginationLink = {
@@ -96,6 +98,22 @@ const statusClass = (status: string) => {
     }
 
     return 'bg-zinc-100 text-zinc-700 ring-zinc-200'
+}
+
+async function revertImport(importId: number) {
+    const confirmed = await useConfirm({
+        title: 'Reverter importação?',
+        text: 'Os registros lançados por esta importação serão removidos. A importação voltará para revisão e poderá ser lançada novamente.',
+        confirmButtonText: 'Sim, reverter',
+        cancelButtonText: 'Cancelar',
+        icon: 'warning',
+    })
+
+    if (!confirmed) {
+        return
+    }
+
+    router.post(`/worktime/clock-record-imports/${importId}/revert`)
 }
 
 async function destroyImport(importId: number) {
@@ -254,6 +272,20 @@ async function destroyImport(importId: number) {
                                         >
                                             Ver
                                         </Link>
+
+                                        <Can permission="worktime.reverseClockRecordImport">
+                                            <Button
+                                                v-if="item.status === 'launched'"
+                                                variant="outline"
+                                                type="button"
+                                                class="border-amber-200 text-amber-700 hover:bg-amber-50 hover:text-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                                :disabled="!item.can_revert"
+                                                :title="item.can_revert ? 'Reverter importação' : (item.can_revert_reason ?? 'Importação não pode ser revertida')"
+                                                @click="revertImport(item.id)"
+                                            >
+                                                <RotateCcw class="h-4 w-4" />
+                                            </Button>
+                                        </Can>
 
                                         <Can permission="worktime.deleteClockRecordImport">
                                             <Button

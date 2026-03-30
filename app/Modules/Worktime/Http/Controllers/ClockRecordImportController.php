@@ -49,18 +49,29 @@ class ClockRecordImportController extends Controller
             ->latest()
             ->paginate(10)
             ->withQueryString()
-            ->through(fn (ClockRecordImport $import) => [
-                'id' => $import->id,
-                'original_filename' => $import->original_filename,
-                'status' => $import->status?->value,
-                'status_label' => $import->status?->label(),
-                'device_name' => $import->tenantClockDevice?->clockDevice?->name,
-                'total_items' => $import->total_items,
-                'valid_items' => $import->valid_items,
-                'invalid_items' => $import->invalid_items,
-                'created_at' => $import->created_at?->format('d/m/Y H:i'),
-                'can_delete' => $import->status?->value !== 'launched',
-            ]);
+            ->through(function (ClockRecordImport $import) {
+                $canRevert = $import->status?->value === 'launched'
+                    && $this->service->canRevert($import);
+
+                return [
+                    'id' => $import->id,
+                    'original_filename' => $import->original_filename,
+                    'status' => $import->status?->value,
+                    'status_label' => $import->status?->label(),
+                    'device_name' => $import->tenantClockDevice?->clockDevice?->name,
+                    'total_items' => $import->total_items,
+                    'valid_items' => $import->valid_items,
+                    'invalid_items' => $import->invalid_items,
+                    'created_at' => $import->created_at?->format('d/m/Y H:i'),
+                    'can_delete' => $import->status?->value !== 'launched',
+                    'can_revert' => $canRevert,
+                    'can_revert_reason' => $canRevert
+                        ? null
+                        : ($import->status?->value === 'launched'
+                            ? $this->service->getCannotRevertReason($import)
+                            : null),
+                ];
+            });
 
         return Inertia::render('worktime/clock-record-imports/Index', [
             'imports' => $imports,
@@ -301,6 +312,11 @@ class ClockRecordImportController extends Controller
                 'valid_items' => $clockRecordImport->valid_items,
                 'invalid_items' => $clockRecordImport->invalid_items,
                 'can_launch' => $clockRecordImport->status?->value === 'ready_to_launch',
+                'can_revert' => $clockRecordImport->status?->value === 'launched'
+                    && $this->service->canRevert($clockRecordImport),
+                'cannot_revert_reason' => $clockRecordImport->status?->value === 'launched'
+                    ? $this->service->getCannotRevertReason($clockRecordImport)
+                    : null,
             ],
             'groups' => $groups,
             'employees' => $employees,
@@ -334,7 +350,7 @@ class ClockRecordImportController extends Controller
         ClockRecordImport $clockRecordImport,
         ClockRecordImportItem $clockRecordImportItem,
     ): RedirectResponse {
-        abort_unless($request->user()->hasPermission('worktime.updateClockRecordImport'), 403);
+        abort_unless($request->user()->hasPermission('worktime.reverseClockRecordImport'), 403);
         abort_unless(
             $clockRecordImport->tenant_id === $request->user()->tenant_id
             && $clockRecordImport->company_id === session('current_company_id'),
@@ -446,5 +462,26 @@ class ClockRecordImportController extends Controller
         return redirect()
             ->route('worktime.clock-record-imports.show', $clockRecordImport)
             ->with('alert', Flash::success('Importação lançada', 'Os registros foram lançados com sucesso.'));
+    }
+    public function revert(Request $request, ClockRecordImport $clockRecordImport): RedirectResponse
+    {
+        abort_unless($request->user()->hasPermission('worktime.updateClockRecordImport'), 403);
+        abort_unless(
+            $clockRecordImport->tenant_id === $request->user()->tenant_id
+            && $clockRecordImport->company_id === session('current_company_id'),
+            404
+        );
+
+        $clockRecordImport = $this->service->revert($clockRecordImport, $request->user());
+
+        Audit::event('worktime.clock-record-imports.reverted', $clockRecordImport, [
+            'clock_record_import_id' => $clockRecordImport->id,
+            'status' => $clockRecordImport->status?->value,
+            'launched_at' => $clockRecordImport->launched_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        return redirect()
+            ->route('worktime.clock-record-imports.show', $clockRecordImport)
+            ->with('alert', Flash::success('Importação revertida', 'Os registros lançados pela importação foram revertidos com sucesso.'));
     }
 }
