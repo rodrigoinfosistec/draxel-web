@@ -339,8 +339,11 @@ class ClockRecordImportService
             }
 
             $import->update([
+                'status' => ClockRecordImportStatus::Processing,
                 'launched_at' => null,
             ]);
+
+            $import->refresh();
 
             $this->recalculateImport($import);
 
