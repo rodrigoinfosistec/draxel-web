@@ -75,6 +75,9 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
             Route::get('/{bankHourEntry}/edit', [BankHourController::class, 'edit'])->name('edit');
             Route::put('/{bankHourEntry}', [BankHourController::class, 'update'])->name('update');
 
+            Route::get('/{bankHourAccount}/export/pdf', [BankHourController::class, 'exportEmployeePdf'])
+                ->name('export.employee-pdf');
+
             Route::prefix('export')->name('export.')->group(function () {
                 Route::get('/csv', [BankHourController::class, 'exportCsv'])->name('csv');
                 Route::get('/pdf', [BankHourController::class, 'exportPdf'])->name('pdf');

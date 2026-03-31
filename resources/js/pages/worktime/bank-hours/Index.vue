@@ -20,6 +20,8 @@ type EntryItem = {
     entry_type_label: string | null
     minutes: number
     minutes_label: string
+    running_balance_minutes: number
+    running_balance_label: string
     description: string | null
     can_edit: boolean
 }
@@ -29,6 +31,8 @@ type AccountItem = {
     employee_name: string | null
     current_balance_minutes: number
     current_balance_label: string
+    opening_balance_minutes: number
+    opening_balance_label: string
     entries: EntryItem[]
 }
 
@@ -86,6 +90,14 @@ const exportParams = computed(() => {
         pdf: `/worktime/bank-hours/export/pdf?${query}`,
     }
 })
+
+function employeePdfHref(accountId: number) {
+    const params = new URLSearchParams()
+    params.set('start_date', startDate.value)
+    params.set('end_date', endDate.value)
+
+    return `/worktime/bank-hours/${accountId}/export/pdf?${params.toString()}`
+}
 
 function balanceClass(balance: number) {
     if (balance < 0) {
@@ -243,64 +255,97 @@ function toggleAccount(accountId: number) {
                             </div>
                         </div>
 
-                        <div class="text-sm">
-                            <span class="text-muted-foreground">Saldo atual:</span>
-                            <span class="ml-2 text-lg font-semibold" :class="balanceClass(account.current_balance_minutes)">
-                                {{ account.current_balance_label }}
-                            </span>
+                        <div class="text-right text-sm">
+                            <div>
+                                <span class="text-muted-foreground">Saldo atual:</span>
+                                <span class="ml-2 text-lg font-semibold" :class="balanceClass(account.current_balance_minutes)">
+                                    {{ account.current_balance_label }}
+                                </span>
+                            </div>
+
+                            <div class="mt-1 text-xs text-muted-foreground">
+                                Saldo inicial do período: {{ account.opening_balance_label }}
+                            </div>
                         </div>
                     </button>
 
-                    <div v-if="isExpanded(account.id)" class="overflow-x-auto">
-                        <table class="min-w-[860px] w-full text-sm">
-                            <thead class="bg-muted/50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left">Data</th>
-                                    <th class="px-4 py-3 text-left">Tipo</th>
-                                    <th class="px-4 py-3 text-left">Movimento</th>
-                                    <th class="px-4 py-3 text-left">Descrição</th>
-                                    <th class="px-4 py-3 text-right">Ações</th>
-                                </tr>
-                            </thead>
+                    <div v-if="isExpanded(account.id)">
+                        <div class="flex justify-end gap-3 border-b px-4 py-3">
+                            <Can permission="worktime.exportBankHour">
+                                <Button as-child variant="outline" size="sm">
+                                    <a :href="employeePdfHref(account.id)">
+                                        <FileText class="mr-2 h-4 w-4" />
+                                        PDF individual
+                                    </a>
+                                </Button>
+                            </Can>
+                        </div>
 
-                            <tbody>
-                                <tr
-                                    v-for="entry in account.entries"
-                                    :key="entry.id"
-                                    class="border-t"
-                                >
-                                    <td class="px-4 py-3">{{ entry.occurred_on || '—' }}</td>
-                                    <td class="px-4 py-3">{{ entry.entry_type_label || '—' }}</td>
-                                    <td class="px-4 py-3">
-                                        <span
-                                            class="inline-flex rounded-md px-2 py-1 text-xs font-medium"
-                                            :class="entryClass(entry.minutes)"
-                                        >
-                                            {{ entry.minutes_label }}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3">{{ entry.description || '—' }}</td>
-                                    <td class="px-4 py-3 text-right">
-                                        <Can permission="worktime.updateBankHourEntry">
-                                            <Link
-                                                v-if="entry.can_edit"
-                                                :href="`/worktime/bank-hours/${entry.id}/edit`"
-                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition hover:bg-muted"
+                        <div class="overflow-x-auto">
+                            <table class="min-w-[980px] w-full text-sm">
+                                <thead class="bg-muted/50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left">Data</th>
+                                        <th class="px-4 py-3 text-left">Tipo</th>
+                                        <th class="px-4 py-3 text-left">Movimento</th>
+                                        <th class="px-4 py-3 text-left">Saldo após</th>
+                                        <th class="px-4 py-3 text-left">Descrição</th>
+                                        <th class="px-4 py-3 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <tr class="border-t bg-muted/20">
+                                        <td class="px-4 py-3 font-medium" colspan="3">Saldo inicial do período</td>
+                                        <td class="px-4 py-3 font-semibold" :class="balanceClass(account.opening_balance_minutes)">
+                                            {{ account.opening_balance_label }}
+                                        </td>
+                                        <td class="px-4 py-3 text-muted-foreground" colspan="2">
+                                            Acumulado anterior a {{ filters.start_date }}
+                                        </td>
+                                    </tr>
+
+                                    <tr
+                                        v-for="entry in account.entries"
+                                        :key="entry.id"
+                                        class="border-t"
+                                    >
+                                        <td class="px-4 py-3">{{ entry.occurred_on || '—' }}</td>
+                                        <td class="px-4 py-3">{{ entry.entry_type_label || '—' }}</td>
+                                        <td class="px-4 py-3">
+                                            <span
+                                                class="inline-flex rounded-md px-2 py-1 text-xs font-medium"
+                                                :class="entryClass(entry.minutes)"
                                             >
-                                                <Pencil class="h-4 w-4" />
-                                                Editar
-                                            </Link>
-                                        </Can>
-                                    </td>
-                                </tr>
+                                                {{ entry.minutes_label }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 font-medium" :class="balanceClass(entry.running_balance_minutes)">
+                                            {{ entry.running_balance_label }}
+                                        </td>
+                                        <td class="px-4 py-3">{{ entry.description || '—' }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <Can permission="worktime.updateBankHourEntry">
+                                                <Link
+                                                    v-if="entry.can_edit"
+                                                    :href="`/worktime/bank-hours/${entry.id}/edit`"
+                                                    class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition hover:bg-muted"
+                                                >
+                                                    <Pencil class="h-4 w-4" />
+                                                    Editar
+                                                </Link>
+                                            </Can>
+                                        </td>
+                                    </tr>
 
-                                <tr v-if="account.entries.length === 0">
-                                    <td colspan="5" class="px-4 py-6 text-center text-muted-foreground">
-                                        Nenhum movimento encontrado no período.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    <tr v-if="account.entries.length === 0">
+                                        <td colspan="6" class="px-4 py-6 text-center text-muted-foreground">
+                                            Nenhum movimento encontrado no período.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
