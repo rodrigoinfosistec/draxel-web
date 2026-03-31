@@ -2,11 +2,11 @@
 import Can from '@/components/Can.vue'
 import Heading from '@/components/Heading.vue'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { Download, FileClock, FileText, Plus, Trash2 } from 'lucide-vue-next'
-import Swal from 'sweetalert2'
 
 type SnapshotItem = {
     id: number
@@ -55,17 +55,15 @@ function statusBadgeClass(status: string) {
 }
 
 async function destroySnapshot(snapshotId: number) {
-    const result = await Swal.fire({
+    const confirmed = await useConfirm({
         title: 'Excluir fechamento?',
         text: 'Essa ação removerá definitivamente este fechamento.',
-        icon: 'warning',
-        showCancelButton: true,
         confirmButtonText: 'Sim, excluir',
         cancelButtonText: 'Cancelar',
-        reverseButtons: true,
+        icon: 'warning',
     })
 
-    if (!result.isConfirmed) {
+    if (!confirmed) {
         return
     }
 

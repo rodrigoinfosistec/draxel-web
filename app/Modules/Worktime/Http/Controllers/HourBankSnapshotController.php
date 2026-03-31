@@ -146,12 +146,28 @@ class HourBankSnapshotController extends Controller
                         'employee_id' => $snapshotEmployee->employee_id,
                         'employee_name' => $snapshotEmployee->employee_name,
                         'employee_registration' => $snapshotEmployee->employee_registration,
-                        'justified_minutes' => $this->formatMinutes((int) $snapshotEmployee->justified_minutes),
-                        'late_minutes' => $this->formatMinutes((int) $snapshotEmployee->late_minutes),
-                        'extra_minutes' => $this->formatMinutes((int) $snapshotEmployee->extra_minutes),
-                        'suspension_minutes' => $this->formatMinutes((int) $snapshotEmployee->suspension_minutes),
-                        'dsr_worked_minutes' => $this->formatMinutes((int) $snapshotEmployee->dsr_worked_minutes),
-                        'balance_minutes' => $this->formatMinutes((int) $snapshotEmployee->balance_minutes),
+
+                        'justified_minutes' => (int) $snapshotEmployee->justified_minutes,
+                        'justified_hours' => $this->formatMinutes((int) $snapshotEmployee->justified_minutes),
+
+                        'late_minutes' => (int) $snapshotEmployee->late_minutes,
+                        'late_hours' => $this->formatMinutes((int) $snapshotEmployee->late_minutes),
+
+                        'extra_minutes' => (int) $snapshotEmployee->extra_minutes,
+                        'extra_hours' => $this->formatMinutes((int) $snapshotEmployee->extra_minutes),
+
+                        'absence_minutes' => (int) $snapshotEmployee->absence_minutes,
+                        'absence_hours' => $this->formatMinutes((int) $snapshotEmployee->absence_minutes),
+
+                        'suspension_minutes' => (int) $snapshotEmployee->suspension_minutes,
+                        'suspension_hours' => $this->formatMinutes((int) $snapshotEmployee->suspension_minutes),
+
+                        'dsr_worked_minutes' => (int) $snapshotEmployee->dsr_worked_minutes,
+                        'dsr_worked_hours' => $this->formatMinutes((int) $snapshotEmployee->dsr_worked_minutes),
+
+                        'balance_minutes' => (int) $snapshotEmployee->balance_minutes,
+                        'balance_hours' => $this->formatMinutes((int) $snapshotEmployee->balance_minutes),
+
                         'has_divergence' => $snapshotEmployee->has_divergence,
                         'divergence_summary' => $snapshotEmployee->divergence_summary,
                         'can_generate_individual_report' => ! $snapshotEmployee->has_divergence,
@@ -183,12 +199,28 @@ class HourBankSnapshotController extends Controller
                                         expectedSchedule: $expectedSchedule,
                                         hasDivergence: (bool) $day->has_divergence,
                                     ),
-                                    'justified_minutes' => $this->formatMinutes((int) $day->justified_minutes),
-                                    'late_minutes' => $this->formatMinutes((int) $day->late_minutes),
-                                    'extra_minutes' => $this->formatMinutes((int) $day->extra_minutes),
-                                    'suspension_minutes' => $this->formatMinutes((int) $day->suspension_minutes),
-                                    'dsr_worked_minutes' => $this->formatMinutes((int) $day->dsr_worked_minutes),
-                                    'balance_minutes' => $this->formatMinutes((int) $day->balance_minutes),
+
+                                    'justified_minutes' => (int) $day->justified_minutes,
+                                    'justified_hours' => $this->formatMinutes((int) $day->justified_minutes),
+
+                                    'late_minutes' => (int) $day->late_minutes,
+                                    'late_hours' => $this->formatMinutes((int) $day->late_minutes),
+
+                                    'extra_minutes' => (int) $day->extra_minutes,
+                                    'extra_hours' => $this->formatMinutes((int) $day->extra_minutes),
+
+                                    'absence_minutes' => (int) $day->absence_minutes,
+                                    'absence_hours' => $this->formatMinutes((int) $day->absence_minutes),
+
+                                    'suspension_minutes' => (int) $day->suspension_minutes,
+                                    'suspension_hours' => $this->formatMinutes((int) $day->suspension_minutes),
+
+                                    'dsr_worked_minutes' => (int) $day->dsr_worked_minutes,
+                                    'dsr_worked_hours' => $this->formatMinutes((int) $day->dsr_worked_minutes),
+
+                                    'balance_minutes' => (int) $day->balance_minutes,
+                                    'balance_hours' => $this->formatMinutes((int) $day->balance_minutes),
+
                                     'has_divergence' => $day->has_divergence,
                                     'divergence_reason' => $day->divergence_reason,
                                     'notes' => $day->notes,
@@ -394,8 +426,8 @@ class HourBankSnapshotController extends Controller
             ]);
 
         $pdf = Pdf::setOption([
-                'isPhpEnabled' => false,
-            ])
+            'isPhpEnabled' => false,
+        ])
             ->loadView('pdf.hour-bank-snapshots-report', [
                 'snapshots' => $snapshots,
                 'generatedAt' => now()->format('d/m/Y H:i:s'),
@@ -448,8 +480,8 @@ class HourBankSnapshotController extends Controller
         $employees = $this->buildGeneralReportEmployees($hourBankSnapshot);
 
         $pdf = Pdf::setOption([
-                'isPhpEnabled' => false,
-            ])
+            'isPhpEnabled' => false,
+        ])
             ->loadView('pdf.hour-bank-snapshot-general-preview', [
                 'snapshot' => $hourBankSnapshot,
                 'employees' => $employees,
@@ -497,8 +529,8 @@ class HourBankSnapshotController extends Controller
         $employees = $this->buildGeneralReportEmployees($hourBankSnapshot);
 
         $pdf = Pdf::setOption([
-                'isPhpEnabled' => false,
-            ])
+            'isPhpEnabled' => false,
+        ])
             ->loadView('pdf.hour-bank-snapshot-general-consolidated', [
                 'snapshot' => $hourBankSnapshot,
                 'employees' => $employees,
@@ -552,8 +584,8 @@ class HourBankSnapshotController extends Controller
         $hourBankSnapshotEmployee->load('days');
 
         $pdf = Pdf::setOption([
-                'isPhpEnabled' => false,
-            ])
+            'isPhpEnabled' => false,
+        ])
             ->loadView('pdf.hour-bank-snapshot-employee', [
                 'snapshot' => $hourBankSnapshot,
                 'employee' => $hourBankSnapshotEmployee,

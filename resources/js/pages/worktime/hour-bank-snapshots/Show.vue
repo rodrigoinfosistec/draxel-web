@@ -3,6 +3,7 @@ import Can from '@/components/Can.vue'
 import Heading from '@/components/Heading.vue'
 import InputError from '@/components/InputError.vue'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
@@ -119,17 +120,15 @@ function submitAddEmployees() {
 }
 
 async function removeEmployee(snapshotEmployeeId: number) {
-    const result = await Swal.fire({
+    const confirmed = await useConfirm({
         title: 'Remover funcionário?',
         text: 'O funcionário será retirado deste fechamento. Você poderá incluí-lo novamente depois, capturando o estado atual.',
-        icon: 'warning',
-        showCancelButton: true,
         confirmButtonText: 'Sim, remover',
         cancelButtonText: 'Cancelar',
-        reverseButtons: true,
+        icon: 'warning',
     })
 
-    if (!result.isConfirmed) {
+    if (!confirmed) {
         return
     }
 
@@ -400,7 +399,7 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                                 </div>
                             </div>
 
-                            <div class="grid gap-2 text-sm xl:text-right">
+                            <div class="grid gap-1 text-sm xl:text-right">
                                 <div>Justificadas: {{ employee.justified_minutes }}</div>
                                 <div>Atrasos: {{ employee.late_minutes }}</div>
                                 <div>Dispensa: {{ employee.suspension_minutes }}</div>
@@ -448,7 +447,6 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                             <thead class="bg-muted/50">
                                 <tr>
                                     <th class="px-4 py-3 text-left">Data</th>
-                                    <th class="px-4 py-3 text-left">Dia</th>
                                     <th class="px-4 py-3 text-left">Jornada esperada</th>
                                     <th class="px-4 py-3 text-left">Registros</th>
                                     <th class="px-4 py-3 text-left">Justificadas</th>
@@ -466,8 +464,10 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                                     :key="day.id"
                                     class="border-t"
                                 >
-                                    <td class="px-4 py-3">{{ day.work_date }}</td>
-                                    <td class="px-4 py-3">{{ day.weekday_label }}</td>
+                                    <td class="px-4 py-3">
+                                        <div>{{ day.work_date }}</div>
+                                        <div class="text-muted-foreground">{{ day.weekday_label }}</div>
+                                    </td>
                                     <td class="px-4 py-3">{{ day.expected_schedule }}</td>
                                     <td class="px-4 py-3" :class="recordsCellClass(day.records_variant)">
                                         {{ day.records_label }}
