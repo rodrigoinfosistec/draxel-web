@@ -249,10 +249,11 @@ class HourBankSnapshotDayApurationService
             $eventStart = Carbon::parse($event->starts_at);
             $eventEnd = Carbon::parse($event->ends_at);
 
-            if (
-                $eventStart->lessThanOrEqualTo($date->copy()->startOfDay())
-                && $eventEnd->greaterThanOrEqualTo($date->copy()->endOfDay())
-            ) {
+            $coversWholeDay =
+                $eventStart->toDateString() <= $date->toDateString()
+                && $eventEnd->toDateString() >= $date->toDateString();
+
+            if ($coversWholeDay) {
                 return [
                     'expected_start' => null,
                     'expected_end' => null,
