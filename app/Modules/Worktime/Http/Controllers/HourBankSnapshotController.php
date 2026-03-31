@@ -576,8 +576,8 @@ class HourBankSnapshotController extends Controller
         $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
 
         $canvas->page_text(
-            520,
-            810,
+            750,
+            550,
             '{PAGE_NUM}/{PAGE_COUNT}',
             $font,
             9,
@@ -589,7 +589,7 @@ class HourBankSnapshotController extends Controller
             200,
             [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-employee-' . $hourBankSnapshotEmployee->id . '.pdf"',
+                'Content-Disposition' => 'attachment; filename="hour-bank-snapshot-general-consolidated-' . $hourBankSnapshot->id . '.pdf"',
             ]
         );
     }
