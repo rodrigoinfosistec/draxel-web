@@ -7,9 +7,8 @@ import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router, useForm } from '@inertiajs/vue3'
-import { ArrowLeft, Download, FileClock, RefreshCw, RotateCcw, Trash2 } from 'lucide-vue-next'
-import Swal from 'sweetalert2'
-import { computed } from 'vue'
+import { ArrowLeft, ChevronDown, ChevronUp, Download, FileClock, RefreshCw, Trash2 } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
 
 type AvailableEmployee = {
     id: number
@@ -25,12 +24,18 @@ type SnapshotDay = {
     expected_schedule: string
     records_label: string
     records_variant: 'default' | 'info' | 'muted' | 'danger'
-    justified_minutes: string
-    late_minutes: string
-    extra_minutes: string
-    suspension_minutes: string
-    dsr_worked_minutes: string
-    balance_minutes: string
+    justified_minutes: number
+    justified_hours: string
+    late_minutes: number
+    late_hours: string
+    extra_minutes: number
+    extra_hours: string
+    suspension_minutes: number
+    suspension_hours: string
+    dsr_worked_minutes: number
+    dsr_worked_hours: string
+    balance_minutes: number
+    balance_hours: string
     has_divergence: boolean
     divergence_reason: string | null
     notes: string | null
@@ -41,12 +46,18 @@ type SnapshotEmployee = {
     employee_id: number
     employee_name: string
     employee_registration: string | null
-    justified_minutes: string
-    late_minutes: string
-    extra_minutes: string
-    suspension_minutes: string
-    dsr_worked_minutes: string
-    balance_minutes: string
+    justified_minutes: number
+    justified_hours: string
+    late_minutes: number
+    late_hours: string
+    extra_minutes: number
+    extra_hours: string
+    suspension_minutes: number
+    suspension_hours: string
+    dsr_worked_minutes: number
+    dsr_worked_hours: string
+    balance_minutes: number
+    balance_hours: string
     has_divergence: boolean
     divergence_summary: string | null
     can_generate_individual_report: boolean
@@ -90,12 +101,9 @@ const addForm = useForm({
     employee_ids: [] as number[],
 })
 
-const reverseForm = useForm({
-    reason: '',
-})
-
 const duplicateEmployees = computed(() => Object.keys(props.snapshot.duplicate_dates))
 const selectableEmployees = computed(() => props.availableEmployees)
+const collapsedEmployees = ref<number[]>([])
 
 function refreshPage() {
     router.get(
@@ -156,39 +164,19 @@ function recaptureEmployee(employeeId: number) {
 }
 
 async function consolidate() {
-    const result = await Swal.fire({
+    const confirmed = await useConfirm({
         title: 'Consolidar fechamento?',
         text: 'Essa ação lançará o saldo do período no histórico do banco de horas.',
-        icon: 'question',
-        showCancelButton: true,
         confirmButtonText: 'Sim, consolidar',
         cancelButtonText: 'Cancelar',
-        reverseButtons: true,
+        icon: 'warning',
     })
 
-    if (!result.isConfirmed) {
+    if (!confirmed) {
         return
     }
 
     router.post(`/worktime/hour-bank-snapshots/${props.snapshot.id}/consolidate`)
-}
-
-async function reverseSnapshot() {
-    const result = await Swal.fire({
-        title: 'Reverter fechamento?',
-        text: 'Essa ação removerá o lançamento deste período do histórico do banco de horas.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sim, reverter',
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true,
-    })
-
-    if (!result.isConfirmed) {
-        return
-    }
-
-    reverseForm.post(`/worktime/hour-bank-snapshots/${props.snapshot.id}/reverse`)
 }
 
 function recordsCellClass(variant: SnapshotDay['records_variant']) {
@@ -205,6 +193,27 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
     }
 
     return ''
+}
+
+function isCollapsed(employeeId: number) {
+    return collapsedEmployees.value.includes(employeeId)
+}
+
+function toggleCollapse(employeeId: number) {
+    if (isCollapsed(employeeId)) {
+        collapsedEmployees.value = collapsedEmployees.value.filter((id) => id !== employeeId)
+        return
+    }
+
+    collapsedEmployees.value.push(employeeId)
+}
+
+function expandAll() {
+    collapsedEmployees.value = []
+}
+
+function collapseAll() {
+    collapsedEmployees.value = props.employees.map((employee) => employee.id)
 }
 </script>
 
@@ -306,10 +315,9 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                 </div>
             </div>
 
-            <form
+            <div
                 v-if="snapshot.is_editable"
                 class="space-y-4 rounded-2xl border bg-card/50 p-5 shadow-sm"
-                @submit.prevent="submitAddEmployees"
             >
                 <div>
                     <h2 class="text-sm font-semibold tracking-tight">Incluir funcionários</h2>
@@ -318,179 +326,175 @@ function recordsCellClass(variant: SnapshotDay['records_variant']) {
                     </p>
                 </div>
 
-                <div class="grid gap-2">
-                    <select
-                        v-model="addForm.employee_ids"
-                        multiple
-                        class="min-h-[180px] rounded-md border bg-card px-3 py-2 text-sm"
-                    >
-                        <option
-                            v-for="employee in selectableEmployees"
-                            :key="employee.id"
-                            :value="employee.id"
+                <form
+                    v-if="selectableEmployees.length > 0"
+                    class="space-y-4"
+                    @submit.prevent="submitAddEmployees"
+                >
+                    <div class="grid gap-2">
+                        <select
+                            v-model="addForm.employee_ids"
+                            multiple
+                            class="min-h-[180px] rounded-md border bg-card px-3 py-2 text-sm"
                         >
-                            {{ employee.label }}
-                        </option>
-                    </select>
-                    <InputError :message="addForm.errors.employee_ids" />
+                            <option
+                                v-for="employee in selectableEmployees"
+                                :key="employee.id"
+                                :value="employee.id"
+                            >
+                                {{ employee.label }}
+                            </option>
+                        </select>
+                        <InputError :message="addForm.errors.employee_ids" />
+                    </div>
+
+                    <div class="flex justify-end">
+                        <Button :disabled="addForm.processing">
+                            {{ addForm.processing ? 'Incluindo...' : 'Incluir funcionários' }}
+                        </Button>
+                    </div>
+                </form>
+
+                <div
+                    v-else
+                    class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                >
+                    Todos os funcionários disponíveis para este período já foram incluídos no fechamento.
                 </div>
+            </div>
 
-                <div class="flex justify-end">
-                    <Button :disabled="addForm.processing || selectableEmployees.length === 0">
-                        {{ addForm.processing ? 'Incluindo...' : 'Incluir funcionários' }}
-                    </Button>
-                </div>
-            </form>
-
-            <div
-                v-if="snapshot.is_consolidated && !snapshot.reversed_at"
-                class="space-y-4 rounded-2xl border bg-card/50 p-5 shadow-sm"
-            >
-                <div>
-                    <h2 class="text-sm font-semibold tracking-tight">Reversão do fechamento</h2>
-                    <p class="text-sm text-muted-foreground">
-                        A reversão remove o lançamento deste período do histórico do banco de horas e exige justificativa.
-                    </p>
-                </div>
-
-                <Can permission="worktime.reverseHourBankSnapshot">
-                    <form class="space-y-4" @submit.prevent="reverseSnapshot">
-                        <div class="grid gap-2">
-                            <label class="text-sm font-medium">Motivo da reversão</label>
-                            <textarea
-                                v-model="reverseForm.reason"
-                                rows="4"
-                                class="w-full rounded-md border bg-card px-3 py-2 text-sm"
-                            />
-                            <InputError :message="reverseForm.errors.reason" />
-                        </div>
-
-                        <div class="flex justify-end">
-                            <Button :disabled="reverseForm.processing" variant="outline" type="submit">
-                                <RotateCcw class="mr-2 h-4 w-4" />
-                                {{ reverseForm.processing ? 'Revertendo...' : 'Reverter fechamento' }}
-                            </Button>
-                        </div>
-                    </form>
-                </Can>
+            <div class="flex items-center justify-end gap-3">
+                <Button type="button" variant="outline" @click="expandAll">Expandir tudo</Button>
+                <Button type="button" variant="outline" @click="collapseAll">Recolher tudo</Button>
             </div>
 
             <div class="space-y-6">
                 <div
                     v-for="employee in employees"
                     :key="employee.id"
-                    class="rounded-2xl border bg-card/50 shadow-sm"
+                    class="overflow-hidden rounded-2xl border bg-card/50 shadow-sm"
                 >
-                    <div class="border-b px-5 py-4">
-                        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                            <div>
-                                <div class="text-base font-semibold">
-                                    {{ employee.employee_name }}
-                                </div>
-                                <div class="text-sm text-muted-foreground">
-                                    Matrícula: {{ employee.employee_registration || '—' }}
-                                </div>
-
-                                <div
-                                    v-if="employee.has_divergence"
-                                    class="mt-2 text-sm text-red-600"
-                                >
-                                    {{ employee.divergence_summary }}
-                                </div>
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 border-b px-5 py-4 text-left"
+                        @click="toggleCollapse(employee.id)"
+                    >
+                        <div class="min-w-0">
+                            <div class="text-base font-semibold">
+                                {{ employee.employee_name }}
+                            </div>
+                            <div class="text-sm text-muted-foreground">
+                                Matrícula: {{ employee.employee_registration || '—' }}
                             </div>
 
-                            <div class="grid gap-1 text-sm xl:text-right">
-                                <div>Justificadas: {{ employee.justified_minutes }}</div>
-                                <div>Atrasos: {{ employee.late_minutes }}</div>
-                                <div>Dispensa: {{ employee.suspension_minutes }}</div>
-                                <div>Extras: {{ employee.extra_minutes }}</div>
-                                <div>DSR/Feriado: {{ employee.dsr_worked_minutes }}</div>
-                                <div class="font-semibold">Saldo: {{ employee.balance_minutes }}</div>
-                            </div>
-                        </div>
-
-                        <div v-if="snapshot.is_editable" class="mt-4 flex flex-wrap items-end gap-2">
-                            <Button type="button" variant="outline" @click="recaptureEmployee(employee.employee_id)">
-                                <RefreshCw class="mr-2 h-4 w-4" />
-                                Recapturar
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                class="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                @click="removeEmployee(employee.id)"
+                            <div
+                                v-if="employee.has_divergence"
+                                class="mt-2 text-sm text-red-600"
                             >
-                                <Trash2 class="mr-2 h-4 w-4" />
-                                Remover
-                            </Button>
+                                {{ employee.divergence_summary }}
+                            </div>
+
+                            <div class="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                                <span>Justificadas: {{ employee.justified_hours }}</span>
+                                <span>Atrasos: {{ employee.late_hours }}</span>
+                                <span>Dispensa: {{ employee.suspension_hours }}</span>
+                                <span>Extras: {{ employee.extra_hours }}</span>
+                                <span>DSR/Feriado: {{ employee.dsr_worked_hours }}</span>
+                                <span class="font-semibold text-foreground">Saldo: {{ employee.balance_hours }}</span>
+                            </div>
                         </div>
 
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <Can permission="worktime.exportHourBankSnapshot">
-                                <a
-                                    v-if="employee.can_generate_individual_report"
-                                    :href="`/worktime/hour-bank-snapshots/reports/${snapshot.id}/employees/${employee.id}`"
-                                    class="inline-flex"
+                        <component :is="isCollapsed(employee.id) ? ChevronDown : ChevronUp" class="h-5 w-5 shrink-0" />
+                    </button>
+
+                    <div v-if="!isCollapsed(employee.id)">
+                        <div class="border-b px-5 py-4">
+                            <div v-if="snapshot.is_editable" class="flex flex-wrap items-end gap-2">
+                                <Button type="button" variant="outline" @click="recaptureEmployee(employee.employee_id)">
+                                    <RefreshCw class="mr-2 h-4 w-4" />
+                                    Recapturar
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    @click="removeEmployee(employee.id)"
                                 >
-                                    <Button variant="outline" type="button">
-                                        <Download class="mr-2 h-4 w-4" />
-                                        Relatório individual
-                                    </Button>
-                                </a>
-                            </Can>
+                                    <Trash2 class="mr-2 h-4 w-4" />
+                                    Remover
+                                </Button>
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <Can permission="worktime.exportHourBankSnapshot">
+                                    <a
+                                        v-if="employee.can_generate_individual_report"
+                                        :href="`/worktime/hour-bank-snapshots/reports/${snapshot.id}/employees/${employee.id}`"
+                                        class="inline-flex"
+                                    >
+                                        <Button variant="outline" type="button">
+                                            <Download class="mr-2 h-4 w-4" />
+                                            Relatório individual
+                                        </Button>
+                                    </a>
+                                </Can>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="min-w-[1320px] w-full text-sm">
-                            <thead class="bg-muted/50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left">Data</th>
-                                    <th class="px-4 py-3 text-left">Jornada esperada</th>
-                                    <th class="px-4 py-3 text-left">Registros</th>
-                                    <th class="px-4 py-3 text-left">Justificadas</th>
-                                    <th class="px-4 py-3 text-left">Atrasos</th>
-                                    <th class="px-4 py-3 text-left">Dispensa</th>
-                                    <th class="px-4 py-3 text-left">Extras</th>
-                                    <th class="px-4 py-3 text-left">DSR/Feriado</th>
-                                    <th class="px-4 py-3 text-left">Saldo</th>
-                                </tr>
-                            </thead>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-[1000px] w-full text-sm">
+                                <thead class="bg-muted/50">
+                                    <tr>
+                                        <th class="px-2 py-3 text-left">Data</th>
+                                        <th class="px-2 py-3 text-left">Jornada esperada</th>
+                                        <th class="px-2 py-3 text-left">Registros</th>
+                                        <th class="px-2 py-3 text-left">Justif.</th>
+                                        <th class="px-2 py-3 text-left">Atrasos</th>
+                                        <th class="px-2 py-3 text-left text-xs">Dispensa</th>
+                                        <th class="px-2 py-3 text-left">Extras</th>
+                                        <th class="px-2 py-3 text-left text-xs">
+                                            DSR<br/>Feriado
+                                        </th>
+                                        <th class="px-2 py-3 text-left">Saldo</th>
+                                    </tr>
+                                </thead>
 
-                            <tbody>
-                                <tr
-                                    v-for="day in employee.days"
-                                    :key="day.id"
-                                    class="border-t"
-                                >
-                                    <td class="px-4 py-3">
-                                        <div>{{ day.work_date }}</div>
-                                        <div class="text-muted-foreground">{{ day.weekday_label }}</div>
-                                    </td>
-                                    <td class="px-4 py-3">{{ day.expected_schedule }}</td>
-                                    <td class="px-4 py-3" :class="recordsCellClass(day.records_variant)">
-                                        {{ day.records_label }}
-                                    </td>
-                                    <td class="px-4 py-3">{{ day.justified_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.late_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.suspension_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.extra_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.dsr_worked_minutes }}</td>
-                                    <td class="px-4 py-3">{{ day.balance_minutes }}</td>
-                                </tr>
+                                <tbody>
+                                    <tr
+                                        v-for="day in employee.days"
+                                        :key="day.id"
+                                        class="border-t"
+                                    >
+                                        <td class="px-2 py-3">
+                                            <div class="text-xs">{{ day.work_date }}</div>
+                                            <div class="text-muted-foreground">{{ day.weekday_label }}</div>
+                                        </td>
+                                        <td class="px-2 py-3 text-xs">{{ day.expected_schedule }}</td>
+                                        <td class="px-2 py-3 max-w-[80px] break-words whitespace-normal align-middle text-xs"
+    :class="recordsCellClass(day.records_variant)">
+    {{ day.records_label }}
+</td>
+                                        <td class="px-2 py-3">{{ day.justified_hours }}</td>
+                                        <td class="px-2 py-3">{{ day.late_hours }}</td>
+                                        <td class="px-2 py-3">{{ day.suspension_hours }}</td>
+                                        <td class="px-2 py-3">{{ day.extra_hours }}</td>
+                                        <td class="px-2 py-3">{{ day.dsr_worked_hours }}</td>
+                                        <td class="px-2 py-3">{{ day.balance_hours }}</td>
+                                    </tr>
 
-                                <tr class="border-t bg-muted/30 font-semibold">
-                                    <td colspan="4" class="px-4 py-3 text-right">Totais</td>
-                                    <td class="px-4 py-3">{{ employee.justified_minutes }}</td>
-                                    <td class="px-4 py-3">{{ employee.late_minutes }}</td>
-                                    <td class="px-4 py-3">{{ employee.suspension_minutes }}</td>
-                                    <td class="px-4 py-3">{{ employee.extra_minutes }}</td>
-                                    <td class="px-4 py-3">{{ employee.dsr_worked_minutes }}</td>
-                                    <td class="px-4 py-3">{{ employee.balance_minutes }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                    <tr class="border-t bg-muted/30 font-semibold">
+                                        <td colspan="3" class="px-4 py-3 text-right">Totais</td>
+                                        <td class="px-2 py-3">{{ employee.justified_hours }}</td>
+                                        <td class="px-2 py-3">{{ employee.late_hours }}</td>
+                                        <td class="px-2 py-3">{{ employee.suspension_hours }}</td>
+                                        <td class="px-2 py-3">{{ employee.extra_hours }}</td>
+                                        <td class="px-2 py-3">{{ employee.dsr_worked_hours }}</td>
+                                        <td class="px-2 py-3">{{ employee.balance_hours }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 

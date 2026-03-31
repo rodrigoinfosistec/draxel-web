@@ -334,34 +334,6 @@ class HourBankSnapshotController extends Controller
             ));
     }
 
-    public function reverse(Request $request, HourBankSnapshot $hourBankSnapshot): RedirectResponse
-    {
-        abort_unless($request->user()->hasPermission('worktime.reverseHourBankSnapshot'), 403);
-        $this->ensureSnapshotContext($request, $hourBankSnapshot);
-
-        $validated = $request->validate([
-            'reason' => ['required', 'string', 'max:1000'],
-        ]);
-
-        $this->service->reverse(
-            snapshot: $hourBankSnapshot,
-            user: $request->user(),
-            reason: $validated['reason'],
-        );
-
-        Audit::event('worktime.hour-bank-snapshots.reversed', $hourBankSnapshot, [
-            'snapshot_id' => $hourBankSnapshot->id,
-            'reason' => $validated['reason'],
-        ]);
-
-        return redirect()
-            ->route('worktime.hour-bank-snapshots.show', $hourBankSnapshot)
-            ->with('alert', Flash::success(
-                'Fechamento revertido',
-                'O fechamento foi revertido com sucesso.'
-            ));
-    }
-
     public function exportCsv(Request $request): StreamedResponse
     {
         abort_unless($request->user()->hasPermission('worktime.exportHourBankSnapshot'), 403);
