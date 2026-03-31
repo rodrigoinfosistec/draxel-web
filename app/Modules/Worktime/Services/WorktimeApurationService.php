@@ -84,6 +84,7 @@ class WorktimeApurationService
                 'delay_minutes' => 0,
                 'dispensation_minutes' => 0,
                 'overtime_minutes' => 0,
+                'dsr_worked_minutes' => 0,
                 'inconsistent_days' => 0,
                 'worked_days' => 0,
                 'warning_days' => 0,
@@ -124,6 +125,7 @@ class WorktimeApurationService
                 $delayMinutes = 0;
                 $dispensationMinutes = $schedule['dispensation_minutes'];
                 $overtimeMinutes = 0;
+                $dsrWorkedMinutes = 0;
                 $notes = collect($schedule['notes']);
 
                 if ($worked['is_inconsistent'] && $worked['inconsistency_reason']) {
@@ -185,10 +187,14 @@ class WorktimeApurationService
                             $notes->push('Déficit de jornada no dia.');
                         }
                     } else {
-                        $overtimeMinutes = $worked['worked_minutes'];
+                        $dsrWorkedMinutes = $worked['worked_minutes'];
 
-                        if ($overtimeMinutes > 0) {
-                            $notes->push('Trabalho realizado em dia sem jornada prevista.');
+                        if ($dsrWorkedMinutes > 0) {
+                            $notes->push(
+                                $schedule['is_holiday']
+                                    ? 'Trabalho realizado em feriado.'
+                                    : 'Trabalho realizado em DSR.'
+                            );
                         }
                     }
                 }
@@ -200,6 +206,7 @@ class WorktimeApurationService
                     delayMinutes: $delayMinutes,
                     dispensationMinutes: $dispensationMinutes,
                     overtimeMinutes: $overtimeMinutes,
+                    dsrWorkedMinutes: $dsrWorkedMinutes,
                     hasEvent: $schedule['has_event'],
                     isHoliday: $schedule['is_holiday'],
                 );
@@ -218,6 +225,8 @@ class WorktimeApurationService
                     'dispensation_hours' => $this->formatMinutes($dispensationMinutes),
                     'overtime_minutes' => $overtimeMinutes,
                     'overtime_hours' => $this->formatMinutes($overtimeMinutes),
+                    'dsr_worked_minutes' => $dsrWorkedMinutes,
+                    'dsr_worked_hours' => $this->formatMinutes($dsrWorkedMinutes),
                     'records_count' => $records->count(),
                     'record_times' => $recordTimes,
                     'status' => $dayStatus,
@@ -232,6 +241,7 @@ class WorktimeApurationService
                 $summary['delay_minutes'] += $day['delay_minutes'];
                 $summary['dispensation_minutes'] += $day['dispensation_minutes'];
                 $summary['overtime_minutes'] += $day['overtime_minutes'];
+                $summary['dsr_worked_minutes'] += $day['dsr_worked_minutes'];
 
                 if ($day['status'] === 'inconsistent') {
                     $summary['inconsistent_days']++;
@@ -259,6 +269,8 @@ class WorktimeApurationService
                     'dispensation_hours' => $day['dispensation_hours'],
                     'overtime_minutes' => $day['overtime_minutes'],
                     'overtime_hours' => $day['overtime_hours'],
+                    'dsr_worked_minutes' => $day['dsr_worked_minutes'],
+                    'dsr_worked_hours' => $day['dsr_worked_hours'],
                     'records_count' => $day['records_count'],
                     'record_times' => implode(' • ', $day['record_times']),
                     'status' => $day['status'],
@@ -281,6 +293,8 @@ class WorktimeApurationService
                     'dispensation_hours' => $this->formatMinutes($summary['dispensation_minutes']),
                     'overtime_minutes' => $summary['overtime_minutes'],
                     'overtime_hours' => $this->formatMinutes($summary['overtime_minutes']),
+                    'dsr_worked_minutes' => $summary['dsr_worked_minutes'],
+                    'dsr_worked_hours' => $this->formatMinutes($summary['dsr_worked_minutes']),
                     'inconsistent_days' => $summary['inconsistent_days'],
                     'worked_days' => $summary['worked_days'],
                     'warning_days' => $summary['warning_days'],
@@ -305,6 +319,8 @@ class WorktimeApurationService
                 'dispensation_hours' => $this->formatMinutes((int) collect($flatDays)->sum('dispensation_minutes')),
                 'overtime_minutes' => collect($flatDays)->sum('overtime_minutes'),
                 'overtime_hours' => $this->formatMinutes((int) collect($flatDays)->sum('overtime_minutes')),
+                'dsr_worked_minutes' => collect($flatDays)->sum('dsr_worked_minutes'),
+                'dsr_worked_hours' => $this->formatMinutes((int) collect($flatDays)->sum('dsr_worked_minutes')),
                 'inconsistent_days' => collect($flatDays)->where('status', 'inconsistent')->count(),
                 'warning_days' => collect($flatDays)->whereIn('status', ['warning', 'absence'])->count(),
             ],
@@ -474,6 +490,7 @@ class WorktimeApurationService
         int $delayMinutes,
         int $dispensationMinutes,
         int $overtimeMinutes,
+        int $dsrWorkedMinutes,
         bool $hasEvent,
         bool $isHoliday,
     ): string {
@@ -495,7 +512,13 @@ class WorktimeApurationService
             return 'absence';
         }
 
-        if ($delayMinutes > 0 || $dispensationMinutes > 0 || $overtimeMinutes > 0 || $hasEvent) {
+        if (
+            $delayMinutes > 0
+            || $dispensationMinutes > 0
+            || $overtimeMinutes > 0
+            || $dsrWorkedMinutes > 0
+            || $hasEvent
+        ) {
             return 'warning';
         }
 

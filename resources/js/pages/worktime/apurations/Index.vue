@@ -337,41 +337,47 @@ function collapseAll() {
                         <table class="min-w-full text-sm">
                             <thead class="bg-muted/40 text-left">
                                 <tr>
-                                    <th class="px-4 py-3 font-medium">Data</th>
-                                    <th class="px-4 py-3 font-medium">Previsto</th>
-                                    <th class="px-4 py-3 font-medium">Trabalhado</th>
-                                    <th class="px-4 py-3 font-medium">Atrasos</th>
-                                    <th class="px-4 py-3 font-medium">Dispensa</th>
-                                    <th class="px-4 py-3 font-medium">Extra</th>
-                                    <th class="px-4 py-3 font-medium">DSR/Feriado</th>
-                                    <th class="px-4 py-3 font-medium">Registros</th>
-                                    <th class="px-4 py-3 font-medium">Status</th>
-                                    <th class="px-4 py-3 font-medium">Observações</th>
+                                    <th class="px-2 py-3 font-medium">Data</th>
+                                    <th class="px-2 py-3 font-medium">Previsto</th>
+                                    <th class="px-2 py-3 font-medium">Trabalhado</th>
+                                    <th class="px-2 py-3 font-medium">Atrasos</th>
+                                    <th class="px-2 py-3 font-medium">Dispensa</th>
+                                    <th class="px-2 py-3 font-medium">Extra</th>
+                                    <th class="px-2 py-3 font-medium">DSR/Feriado</th>
+                                    <th class="px-2 py-3 font-medium w-40">
+                                        Registros
+                                    </th>
+                                    <th class="px-2 py-3 font-medium">Status</th>
+                                    <th class="px-2 py-3 font-medium">Observações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="day in employee.days" :key="`${employee.id}-${day.date}`" class="border-t align-top">
-                                    <td class="px-4 py-3">
+                                <tr v-for="day in employee.days" :key="`${employee.id}-${day.date}`" class="border-t align-top text-xs">
+                                    <td class="px-2 py-3">
                                         <div>{{ day.date_label }}</div>
-                                        <div class="text-xs text-muted-foreground">{{ day.weekday_label }}</div>
+                                        <div class="text-muted-foreground">{{ day.weekday_label }}</div>
                                     </td>
-                                    <td class="px-4 py-3">{{ day.expected_hours }}</td>
-                                    <td class="px-4 py-3">{{ day.worked_hours }}</td>
-                                    <td class="px-4 py-3">{{ day.delay_hours }}</td>
-                                    <td class="px-4 py-3">{{ day.dispensation_hours }}</td>
-                                    <td class="px-4 py-3">{{ day.overtime_hours }}</td>
-                                    <td class="px-4 py-3">{{ day.dsr_worked_hours }}</td>
-                                    <td class="px-4 py-3">
+                                    <td class="px-2 py-3">{{ day.expected_hours }}</td>
+                                    <td class="px-2 py-3">{{ day.worked_hours }}</td>
+                                    <td class="px-2 py-3">{{ day.delay_hours }}</td>
+                                    <td class="px-2 py-3">{{ day.dispensation_hours }}</td>
+                                    <td class="px-2 py-3">{{ day.overtime_hours }}</td>
+                                    <td class="px-2 py-3">{{ day.dsr_worked_hours }}</td>
+                                    <td class="px-2 py-3">
                                         <div>{{ day.records_count }}</div>
                                         <div class="mt-1 text-xs text-muted-foreground">{{ day.record_times.join(' • ') || '—' }}</div>
                                     </td>
-                                    <td class="px-4 py-3">
+                                    <td class="px-2 py-3">
                                         <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium" :class="statusClass(day.status)">
                                             {{ day.status_label }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3">
-                                        <span v-if="day.notes.length">{{ day.notes.join(' | ') }}</span>
+                                    <td class="px-2 py-3">
+                                        <div v-if="day.notes.length">
+                                            <div v-for="(note, index) in day.notes" :key="index">
+                                                {{ note }}
+                                            </div>
+                                        </div>
                                         <span v-else>—</span>
                                     </td>
                                 </tr>
