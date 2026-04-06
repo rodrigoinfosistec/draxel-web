@@ -183,7 +183,7 @@ const roadmapItems = [
                                 </h1>
 
                                 <p class="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                                    Visão central do ambiente, com acesso rápido às informações principais da operação.
+                                    Visão central do ambiente, com acesso rápido às informações principais da operação
                                 </p>
                             </div>
 
