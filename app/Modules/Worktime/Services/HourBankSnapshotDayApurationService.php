@@ -579,75 +579,77 @@ class HourBankSnapshotDayApurationService
                 continue;
             }
 
-            foreach ($remainingIntervals as $index => $interval) {
+            $updatedIntervals = [];
+
+            foreach ($remainingIntervals as $interval) {
                 $overlapStart = $eventStart->greaterThan($interval['start']) ? $eventStart : $interval['start'];
                 $overlapEnd = $eventEnd->lessThan($interval['end']) ? $eventEnd : $interval['end'];
 
                 if (! $overlapStart->lessThan($overlapEnd)) {
+                    $updatedIntervals[] = [
+                        'start' => $interval['start']->copy(),
+                        'end' => $interval['end']->copy(),
+                    ];
                     continue;
                 }
 
                 $minutes = $this->diffMinutesAbsolute($overlapStart, $overlapEnd);
 
-                if ($minutes <= 0) {
-                    continue;
+                if ($minutes > 0) {
+                    $justifiedMinutes += $minutes;
                 }
 
-                $justifiedMinutes += $minutes;
-                $remainingIntervals[$index] = $this->subtractInterval($interval, $overlapStart, $overlapEnd);
+                foreach ($this->subtractInterval($interval, $overlapStart, $overlapEnd) as $remainingInterval) {
+                    $updatedIntervals[] = $remainingInterval;
+                }
             }
 
-            $remainingIntervals = array_values(array_filter($remainingIntervals));
+            $remainingIntervals = $updatedIntervals;
+
+            if (empty($remainingIntervals)) {
+                break;
+            }
         }
 
         return (int) $justifiedMinutes;
     }
 
-    protected function subtractInterval(array $interval, Carbon $removeStart, Carbon $removeEnd): array|null
+    protected function subtractInterval(array $interval, Carbon $removeStart, Carbon $removeEnd): array
     {
         $start = $interval['start'];
         $end = $interval['end'];
 
         if (! $removeStart->lessThan($removeEnd)) {
-            return $interval;
+            return [[
+                'start' => $start->copy(),
+                'end' => $end->copy(),
+            ]];
         }
 
         if ($removeStart->lessThanOrEqualTo($start) && $removeEnd->greaterThanOrEqualTo($end)) {
-            return null;
+            return [];
         }
 
-        if ($removeStart->lessThanOrEqualTo($start) && $removeEnd->lessThan($end)) {
-            return [
-                'start' => $removeEnd->copy(),
-                'end' => $end->copy(),
-            ];
-        }
+        $remaining = [];
 
-        if ($removeStart->greaterThan($start) && $removeEnd->greaterThanOrEqualTo($end)) {
-            return [
+        if ($start->lessThan($removeStart)) {
+            $remaining[] = [
                 'start' => $start->copy(),
                 'end' => $removeStart->copy(),
             ];
         }
 
-        if ($removeStart->greaterThan($start) && $removeEnd->lessThan($end)) {
-            $leftMinutes = $this->diffMinutesAbsolute($start, $removeStart);
-            $rightMinutes = $this->diffMinutesAbsolute($removeEnd, $end);
-
-            if ($leftMinutes >= $rightMinutes) {
-                return [
-                    'start' => $start->copy(),
-                    'end' => $removeStart->copy(),
-                ];
-            }
-
-            return [
+        if ($removeEnd->lessThan($end)) {
+            $remaining[] = [
                 'start' => $removeEnd->copy(),
                 'end' => $end->copy(),
             ];
         }
 
-        return $interval;
+        return array_values(array_filter(
+            $remaining,
+            fn (array $item) => $item['start']->lessThan($item['end'])
+        ));
     }
 
     protected function timeToMinutes(?string $time): int
