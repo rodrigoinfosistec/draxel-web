@@ -58,40 +58,44 @@ class HourBankSnapshotDayApurationService
             $divergenceReason = $worked['inconsistency_reason'];
         }
 
-        if ($schedule['expected_minutes'] > 0 && ! $worked['is_inconsistent'] && $records->isNotEmpty()) {
-            $firstRecord = $this->normalizeDateTime($records->first()?->recorded_at);
-            $lastRecord = $this->normalizeDateTime($records->last()?->recorded_at);
-
-            if ($firstRecord && $schedule['expected_start']) {
-                $rawDelay = $this->diffMinutesSigned($schedule['expected_start'], $firstRecord);
-                $entryDelayMinutes = $rawDelay > $this->delayToleranceMinutes ? $rawDelay : 0;
-
-                if ($entryDelayMinutes > 0) {
-                    $lateMinutes += $entryDelayMinutes;
-                    $notes->push('Atraso identificado.');
-                }
-            }
-
-            if ($lastRecord && $schedule['expected_end']) {
-                $rawEarlyExit = $this->diffMinutesSigned($lastRecord, $schedule['expected_end']);
-                $earlyExitMinutes = $rawEarlyExit > $this->earlyExitToleranceMinutes ? $rawEarlyExit : 0;
-
-                if ($earlyExitMinutes > 0) {
-                    $lateMinutes += $earlyExitMinutes;
-                    $notes->push('Saída antecipada identificada.');
-                }
-            }
-        }
-
         if (! $worked['is_inconsistent']) {
             if ($schedule['expected_minutes'] > 0) {
-                $extraMinutes = max(0, $worked['worked_minutes'] - $schedule['expected_minutes']);
+                $balanceMinutes = $worked['worked_minutes'] - $schedule['expected_minutes'];
 
-                $deficitMinutes = max(0, $schedule['expected_minutes'] - $worked['worked_minutes']);
-                $alreadyCountedAsDelay = min($lateMinutes, $deficitMinutes);
-                $remainingDeficitMinutes = max(0, $deficitMinutes - $alreadyCountedAsDelay);
+                $extraMinutesOutsideExpectedSchedule = $this->resolveExtraMinutesOutsideExpectedSchedule(
+                    records: $records,
+                    expectedStart: $schedule['expected_start'],
+                    expectedEnd: $schedule['expected_end'],
+                );
 
-                $lateMinutes += $remainingDeficitMinutes;
+                $extraMinutes = max(
+                    0,
+                    $extraMinutesOutsideExpectedSchedule,
+                    $balanceMinutes,
+                );
+
+                $lateMinutes = max(0, $extraMinutes - $balanceMinutes);
+
+                if ($lateMinutes > 0) {
+                    $firstRecord = $this->normalizeDateTime($records->first()?->recorded_at);
+                    $lastRecord = $this->normalizeDateTime($records->last()?->recorded_at);
+
+                    if ($firstRecord && $schedule['expected_start']) {
+                        $rawDelay = $this->diffMinutesSigned($schedule['expected_start'], $firstRecord);
+
+                        if ($rawDelay > $this->delayToleranceMinutes) {
+                            $notes->push('Atraso identificado.');
+                        }
+                    }
+
+                    if ($lastRecord && $schedule['expected_end']) {
+                        $rawEarlyExit = $this->diffMinutesSigned($lastRecord, $schedule['expected_end']);
+
+                        if ($rawEarlyExit > $this->earlyExitToleranceMinutes) {
+                            $notes->push('Saída antecipada identificada.');
+                        }
+                    }
+                }
 
                 if ($extraMinutes > 0) {
                     $notes->push('Horas extras no dia.');
@@ -107,7 +111,7 @@ class HourBankSnapshotDayApurationService
                     $absenceMinutes = $schedule['expected_minutes'];
                     $notes->push('Ausência no dia.');
                 } elseif (
-                    $remainingDeficitMinutes > 0
+                    $lateMinutes > 0
                     && $worked['worked_minutes'] > 0
                     && ! $schedule['has_event']
                 ) {
@@ -349,6 +353,49 @@ class HourBankSnapshotDayApurationService
             'is_inconsistent' => false,
             'inconsistency_reason' => null,
         ];
+    }
+
+    protected function resolveExtraMinutesOutsideExpectedSchedule(
+        Collection $records,
+        ?Carbon $expectedStart,
+        ?Carbon $expectedEnd,
+    ): int {
+        if (! $expectedStart || ! $expectedEnd || $records->count() === 0 || $records->count() % 2 !== 0) {
+            return 0;
+        }
+
+        $orderedRecords = $records
+            ->sortBy(fn (ClockRecord $record) => $this->normalizeDateTime($record->recorded_at)?->format('Y-m-d H:i:s'))
+            ->values();
+
+        $extraMinutes = 0;
+
+        for ($i = 0; $i < $orderedRecords->count(); $i += 2) {
+            $start = $this->normalizeDateTime($orderedRecords->get($i)?->recorded_at);
+            $end = $this->normalizeDateTime($orderedRecords->get($i + 1)?->recorded_at);
+
+            if (! $start || ! $end || $end->lessThanOrEqualTo($start)) {
+                continue;
+            }
+
+            if ($start->lessThan($expectedStart)) {
+                $beforeStartEnd = $end->lessThan($expectedStart) ? $end : $expectedStart;
+
+                if ($start->lessThan($beforeStartEnd)) {
+                    $extraMinutes += $this->diffMinutesAbsolute($start, $beforeStartEnd);
+                }
+            }
+
+            if ($end->greaterThan($expectedEnd)) {
+                $afterEndStart = $start->greaterThan($expectedEnd) ? $start : $expectedEnd;
+
+                if ($afterEndStart->lessThan($end)) {
+                    $extraMinutes += $this->diffMinutesAbsolute($afterEndStart, $end);
+                }
+            }
+        }
+
+        return (int) $extraMinutes;
     }
 
     protected function eventAffectsExpectedSchedule(EmployeeEventType $eventType): bool
