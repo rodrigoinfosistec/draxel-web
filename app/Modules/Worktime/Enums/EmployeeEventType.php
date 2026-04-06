@@ -57,20 +57,27 @@ enum EmployeeEventType: string
     {
         return in_array($this, [
             self::MedicalCertificate,
-            self::DayOff,
             self::Suspension,
             self::Vacation,
             self::Leave,
-            self::Declaration,
             self::Absence,
+        ], true);
+    }
+
+    public function justifiesOnlyAbsentMinutes(): bool
+    {
+        return in_array($this, [
+            self::Declaration,
+            self::DayOff,
         ], true);
     }
 
     public function requiresScheduleDayMode(): bool
     {
         return in_array($this, [
-            self::Absence,
+            self::MedicalCertificate,
             self::Suspension,
+            self::Absence,
         ], true);
     }
 }

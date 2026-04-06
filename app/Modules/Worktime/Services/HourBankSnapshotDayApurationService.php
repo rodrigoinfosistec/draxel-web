@@ -46,8 +46,8 @@ class HourBankSnapshotDayApurationService
         $justifiedMinutes = 0;
         $lateMinutes = 0;
         $extraMinutes = 0;
-        $absenceMinutes = 0;
-        $dispensationMinutes = $schedule['dispensation_minutes'];
+        $absenceMinutes = (int) $schedule['absence_minutes'];
+        $suspensionMinutes = (int) $schedule['suspension_minutes'];
         $dsrWorkedMinutes = 0;
         $hasDivergence = false;
         $divergenceReason = null;
@@ -74,47 +74,63 @@ class HourBankSnapshotDayApurationService
                     $balanceMinutes,
                 );
 
-                $lateMinutes = max(0, $extraMinutes - $balanceMinutes);
+                $grossLateMinutes = max(0, $extraMinutes - $balanceMinutes);
 
-                if ($lateMinutes > 0) {
-                    $firstRecord = $this->normalizeDateTime($records->first()?->recorded_at);
-                    $lastRecord = $this->normalizeDateTime($records->last()?->recorded_at);
+                $dueAbsentIntervals = $this->resolveDueAbsentIntervals(
+                    records: $records,
+                    expectedStart: $schedule['expected_start'],
+                    expectedEnd: $schedule['expected_end'],
+                    breakMinutes: $schedule['expected_break_minutes'],
+                );
 
-                    if ($firstRecord && $schedule['expected_start']) {
-                        $rawDelay = $this->diffMinutesSigned($schedule['expected_start'], $firstRecord);
+                $justifiedMinutes = min(
+                    $grossLateMinutes,
+                    $this->resolveJustifiedMinutesFromEvents(
+                        events: $schedule['justifying_events'],
+                        dueAbsentIntervals: $dueAbsentIntervals,
+                    ),
+                );
 
-                        if ($rawDelay > $this->delayToleranceMinutes) {
-                            $notes->push('Atraso identificado.');
-                        }
-                    }
+                $lateMinutes = max(0, $grossLateMinutes - $justifiedMinutes);
 
-                    if ($lastRecord && $schedule['expected_end']) {
-                        $rawEarlyExit = $this->diffMinutesSigned($lastRecord, $schedule['expected_end']);
-
-                        if ($rawEarlyExit > $this->earlyExitToleranceMinutes) {
-                            $notes->push('Saída antecipada identificada.');
-                        }
-                    }
+                if ($justifiedMinutes > 0) {
+                    $notes->push('Período justificado no dia.');
                 }
 
                 if ($extraMinutes > 0) {
                     $notes->push('Horas extras no dia.');
                 }
 
+                $firstRecord = $this->normalizeDateTime($records->first()?->recorded_at);
+                $lastRecord = $this->normalizeDateTime($records->last()?->recorded_at);
+
+                if ($firstRecord && $schedule['expected_start']) {
+                    $rawDelay = $this->diffMinutesSigned($schedule['expected_start'], $firstRecord);
+
+                    if ($rawDelay > $this->delayToleranceMinutes) {
+                        $notes->push('Atraso identificado.');
+                    }
+                }
+
+                if ($lastRecord && $schedule['expected_end']) {
+                    $rawEarlyExit = $this->diffMinutesSigned($lastRecord, $schedule['expected_end']);
+
+                    if ($rawEarlyExit > $this->earlyExitToleranceMinutes) {
+                        $notes->push('Saída antecipada identificada.');
+                    }
+                }
+
                 if (
                     $worked['worked_minutes'] === 0
                     && $schedule['expected_minutes'] > 0
-                    && $dispensationMinutes === 0
+                    && $absenceMinutes === 0
+                    && $suspensionMinutes === 0
                     && ! $schedule['has_event']
                     && ! $schedule['is_holiday']
                 ) {
                     $absenceMinutes = $schedule['expected_minutes'];
                     $notes->push('Ausência no dia.');
-                } elseif (
-                    $lateMinutes > 0
-                    && $worked['worked_minutes'] > 0
-                    && ! $schedule['has_event']
-                ) {
+                } elseif ($lateMinutes > 0 && $worked['worked_minutes'] > 0) {
                     $notes->push('Déficit de jornada no dia.');
                 }
             } else {
@@ -146,7 +162,7 @@ class HourBankSnapshotDayApurationService
             'late_minutes' => (int) $lateMinutes,
             'extra_minutes' => (int) $extraMinutes,
             'absence_minutes' => (int) $absenceMinutes,
-            'suspension_minutes' => (int) $dispensationMinutes,
+            'suspension_minutes' => (int) $suspensionMinutes,
             'dsr_worked_minutes' => (int) $dsrWorkedMinutes,
             'balance_minutes' => (int) ($extraMinutes - $lateMinutes),
             'has_divergence' => $hasDivergence,
@@ -205,8 +221,11 @@ class HourBankSnapshotDayApurationService
                 'expected_start' => null,
                 'expected_end' => null,
                 'expected_break_duration' => null,
+                'expected_break_minutes' => 0,
                 'expected_minutes' => 0,
-                'dispensation_minutes' => 0,
+                'absence_minutes' => 0,
+                'suspension_minutes' => 0,
+                'justifying_events' => collect(),
                 'has_event' => false,
                 'is_holiday' => false,
                 'notes' => ['DSR'],
@@ -218,8 +237,11 @@ class HourBankSnapshotDayApurationService
                 'expected_start' => null,
                 'expected_end' => null,
                 'expected_break_duration' => null,
+                'expected_break_minutes' => 0,
                 'expected_minutes' => 0,
-                'dispensation_minutes' => 0,
+                'absence_minutes' => 0,
+                'suspension_minutes' => 0,
+                'justifying_events' => collect(),
                 'has_event' => false,
                 'is_holiday' => true,
                 'notes' => ['Feriado' . ($holiday->name ? ': ' . $holiday->name : '')],
@@ -232,9 +254,11 @@ class HourBankSnapshotDayApurationService
 
         $baseExpectedMinutes = max(0, $this->diffMinutesAbsolute($expectedStart, $expectedEnd) - $breakMinutes);
         $expectedMinutes = $baseExpectedMinutes;
-        $dispensationMinutes = 0;
+        $absenceMinutes = 0;
+        $suspensionMinutes = 0;
         $notes = [];
         $hasEvent = false;
+        $justifyingEvents = collect();
 
         foreach ($events as $event) {
             $eventType = $event->event_type;
@@ -243,32 +267,29 @@ class HourBankSnapshotDayApurationService
                 continue;
             }
 
-            if (! $this->eventAffectsExpectedSchedule($eventType)) {
+            $eventLabel = $eventType->label();
+            $eventStart = Carbon::parse($event->starts_at);
+            $eventEnd = Carbon::parse($event->ends_at);
+
+            if ($eventType->justifiesOnlyAbsentMinutes()) {
+                $justifyingEvents->push($event);
+                $notes[] = $eventLabel;
+                continue;
+            }
+
+            if ($eventType === EmployeeEventType::Dispensation) {
+                $notes[] = $eventLabel;
+                $hasEvent = true;
+                continue;
+            }
+
+            if (! $eventType->suppressesSchedule()) {
+                $notes[] = $eventLabel;
+                $hasEvent = true;
                 continue;
             }
 
             $hasEvent = true;
-            $eventLabel = $eventType->label();
-
-            $eventStart = Carbon::parse($event->starts_at);
-            $eventEnd = Carbon::parse($event->ends_at);
-
-            $coversWholeDay =
-                $eventStart->toDateString() <= $date->toDateString()
-                && $eventEnd->toDateString() >= $date->toDateString();
-
-            if ($coversWholeDay) {
-                return [
-                    'expected_start' => null,
-                    'expected_end' => null,
-                    'expected_break_duration' => null,
-                    'expected_minutes' => 0,
-                    'dispensation_minutes' => $eventType === EmployeeEventType::Dispensation ? $baseExpectedMinutes : 0,
-                    'has_event' => true,
-                    'is_holiday' => false,
-                    'notes' => [$eventLabel],
-                ];
-            }
 
             $overlapStart = $eventStart->greaterThan($expectedStart) ? $eventStart : $expectedStart;
             $overlapEnd = $eventEnd->lessThan($expectedEnd) ? $eventEnd : $expectedEnd;
@@ -282,8 +303,12 @@ class HourBankSnapshotDayApurationService
 
             $expectedMinutes -= $overlapMinutes;
 
-            if ($eventType === EmployeeEventType::Dispensation) {
-                $dispensationMinutes += $overlapMinutes;
+            if ($eventType === EmployeeEventType::Absence) {
+                $absenceMinutes += $overlapMinutes;
+            }
+
+            if ($eventType === EmployeeEventType::Suspension) {
+                $suspensionMinutes += $overlapMinutes;
             }
 
             $notes[] = $eventLabel;
@@ -293,8 +318,11 @@ class HourBankSnapshotDayApurationService
             'expected_start' => $expectedStart,
             'expected_end' => $expectedEnd,
             'expected_break_duration' => $employeeTime->break_duration,
+            'expected_break_minutes' => $breakMinutes,
             'expected_minutes' => max(0, (int) $expectedMinutes),
-            'dispensation_minutes' => min(max(0, (int) $dispensationMinutes), $baseExpectedMinutes),
+            'absence_minutes' => max(0, (int) $absenceMinutes),
+            'suspension_minutes' => max(0, (int) $suspensionMinutes),
+            'justifying_events' => $justifyingEvents,
             'has_event' => $hasEvent,
             'is_holiday' => false,
             'notes' => $notes,
@@ -398,18 +426,228 @@ class HourBankSnapshotDayApurationService
         return (int) $extraMinutes;
     }
 
-    protected function eventAffectsExpectedSchedule(EmployeeEventType $eventType): bool
+    protected function resolveDueAbsentIntervals(
+        Collection $records,
+        ?Carbon $expectedStart,
+        ?Carbon $expectedEnd,
+        int $breakMinutes,
+    ): array {
+        if (! $expectedStart || ! $expectedEnd) {
+            return [];
+        }
+
+        $workedSegments = $this->resolveWorkedSegmentsWithinSchedule(
+            records: $records,
+            expectedStart: $expectedStart,
+            expectedEnd: $expectedEnd,
+        );
+
+        $absentIntervals = [];
+        $cursor = $expectedStart->copy();
+
+        foreach ($workedSegments as $index => $segment) {
+            $segmentStart = $segment['start'];
+            $segmentEnd = $segment['end'];
+
+            if ($cursor->lessThan($segmentStart)) {
+                $absentIntervals[] = [
+                    'start' => $cursor->copy(),
+                    'end' => $segmentStart->copy(),
+                    'kind' => $index === 0 ? 'leading' : 'internal',
+                ];
+            }
+
+            if ($cursor->lessThan($segmentEnd)) {
+                $cursor = $segmentEnd->copy();
+            }
+        }
+
+        if ($cursor->lessThan($expectedEnd)) {
+            $absentIntervals[] = [
+                'start' => $cursor->copy(),
+                'end' => $expectedEnd->copy(),
+                'kind' => count($workedSegments) === 0 ? 'leading' : 'trailing',
+            ];
+        }
+
+        return $this->applyBreakDeductionToAbsentIntervals($absentIntervals, $breakMinutes);
+    }
+
+    protected function resolveWorkedSegmentsWithinSchedule(
+        Collection $records,
+        Carbon $expectedStart,
+        Carbon $expectedEnd,
+    ): array {
+        if ($records->count() === 0 || $records->count() % 2 !== 0) {
+            return [];
+        }
+
+        $orderedRecords = $records
+            ->sortBy(fn (ClockRecord $record) => $this->normalizeDateTime($record->recorded_at)?->format('Y-m-d H:i:s'))
+            ->values();
+
+        $segments = [];
+
+        for ($i = 0; $i < $orderedRecords->count(); $i += 2) {
+            $start = $this->normalizeDateTime($orderedRecords->get($i)?->recorded_at);
+            $end = $this->normalizeDateTime($orderedRecords->get($i + 1)?->recorded_at);
+
+            if (! $start || ! $end || $end->lessThanOrEqualTo($start)) {
+                continue;
+            }
+
+            $clippedStart = $start->greaterThan($expectedStart) ? $start : $expectedStart;
+            $clippedEnd = $end->lessThan($expectedEnd) ? $end : $expectedEnd;
+
+            if ($clippedStart->lessThan($clippedEnd)) {
+                $segments[] = [
+                    'start' => $clippedStart->copy(),
+                    'end' => $clippedEnd->copy(),
+                ];
+            }
+        }
+
+        return $segments;
+    }
+
+    protected function applyBreakDeductionToAbsentIntervals(array $absentIntervals, int $breakMinutes): array
     {
-        return in_array($eventType, [
-            EmployeeEventType::MedicalCertificate,
-            EmployeeEventType::DayOff,
-            EmployeeEventType::Suspension,
-            EmployeeEventType::Vacation,
-            EmployeeEventType::Leave,
-            EmployeeEventType::Declaration,
-            EmployeeEventType::Absence,
-            EmployeeEventType::Dispensation,
-        ], true);
+        if ($breakMinutes <= 0 || empty($absentIntervals)) {
+            return array_values(array_filter(
+                $absentIntervals,
+                fn (array $interval) => $interval['start']->lessThan($interval['end'])
+            ));
+        }
+
+        $breakRemaining = $breakMinutes;
+
+        $prioritizedIndexes = [];
+
+        foreach (['internal', 'leading', 'trailing'] as $kind) {
+            foreach ($absentIntervals as $index => $interval) {
+                if ($interval['kind'] === $kind) {
+                    $prioritizedIndexes[] = $index;
+                }
+            }
+        }
+
+        foreach ($prioritizedIndexes as $index) {
+            if ($breakRemaining <= 0) {
+                break;
+            }
+
+            $interval = $absentIntervals[$index];
+            $intervalMinutes = $this->diffMinutesAbsolute($interval['start'], $interval['end']);
+
+            if ($intervalMinutes <= 0) {
+                continue;
+            }
+
+            $deduction = min($breakRemaining, $intervalMinutes);
+
+            $absentIntervals[$index]['start'] = $interval['start']->copy()->addMinutes($deduction);
+            $breakRemaining -= $deduction;
+        }
+
+        return array_values(array_filter(
+            $absentIntervals,
+            fn (array $interval) => $interval['start']->lessThan($interval['end'])
+        ));
+    }
+
+    protected function resolveJustifiedMinutesFromEvents(Collection $events, array $dueAbsentIntervals): int
+    {
+        if ($events->isEmpty() || empty($dueAbsentIntervals)) {
+            return 0;
+        }
+
+        $remainingIntervals = array_map(
+            fn (array $interval) => [
+                'start' => $interval['start']->copy(),
+                'end' => $interval['end']->copy(),
+            ],
+            $dueAbsentIntervals,
+        );
+
+        $justifiedMinutes = 0;
+
+        foreach ($events as $event) {
+            $eventStart = Carbon::parse($event->starts_at);
+            $eventEnd = Carbon::parse($event->ends_at);
+
+            if (! $eventStart->lessThan($eventEnd)) {
+                continue;
+            }
+
+            foreach ($remainingIntervals as $index => $interval) {
+                $overlapStart = $eventStart->greaterThan($interval['start']) ? $eventStart : $interval['start'];
+                $overlapEnd = $eventEnd->lessThan($interval['end']) ? $eventEnd : $interval['end'];
+
+                if (! $overlapStart->lessThan($overlapEnd)) {
+                    continue;
+                }
+
+                $minutes = $this->diffMinutesAbsolute($overlapStart, $overlapEnd);
+
+                if ($minutes <= 0) {
+                    continue;
+                }
+
+                $justifiedMinutes += $minutes;
+                $remainingIntervals[$index] = $this->subtractInterval($interval, $overlapStart, $overlapEnd);
+            }
+
+            $remainingIntervals = array_values(array_filter($remainingIntervals));
+        }
+
+        return (int) $justifiedMinutes;
+    }
+
+    protected function subtractInterval(array $interval, Carbon $removeStart, Carbon $removeEnd): array|null
+    {
+        $start = $interval['start'];
+        $end = $interval['end'];
+
+        if (! $removeStart->lessThan($removeEnd)) {
+            return $interval;
+        }
+
+        if ($removeStart->lessThanOrEqualTo($start) && $removeEnd->greaterThanOrEqualTo($end)) {
+            return null;
+        }
+
+        if ($removeStart->lessThanOrEqualTo($start) && $removeEnd->lessThan($end)) {
+            return [
+                'start' => $removeEnd->copy(),
+                'end' => $end->copy(),
+            ];
+        }
+
+        if ($removeStart->greaterThan($start) && $removeEnd->greaterThanOrEqualTo($end)) {
+            return [
+                'start' => $start->copy(),
+                'end' => $removeStart->copy(),
+            ];
+        }
+
+        if ($removeStart->greaterThan($start) && $removeEnd->lessThan($end)) {
+            $leftMinutes = $this->diffMinutesAbsolute($start, $removeStart);
+            $rightMinutes = $this->diffMinutesAbsolute($removeEnd, $end);
+
+            if ($leftMinutes >= $rightMinutes) {
+                return [
+                    'start' => $start->copy(),
+                    'end' => $removeStart->copy(),
+                ];
+            }
+
+            return [
+                'start' => $removeEnd->copy(),
+                'end' => $end->copy(),
+            ];
+        }
+
+        return $interval;
     }
 
     protected function timeToMinutes(?string $time): int
