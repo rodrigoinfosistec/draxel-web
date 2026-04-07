@@ -10,6 +10,7 @@ use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\ParametersController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\UnitOfMeasureController;
@@ -202,6 +203,20 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
         Route::prefix('export')->name('export.')->group(function () {
             Route::get('/csv', [UnitOfMeasureController::class, 'exportCsv'])->name('csv');
             Route::get('/pdf', [UnitOfMeasureController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/', [ProductController::class, 'index'])->name('index');
+        Route::get('/create', [ProductController::class, 'create'])->name('create');
+        Route::post('/', [ProductController::class, 'store'])->name('store');
+        Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
+        Route::put('/{product}', [ProductController::class, 'update'])->name('update');
+        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [ProductController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [ProductController::class, 'exportPdf'])->name('pdf');
         });
     });
 });

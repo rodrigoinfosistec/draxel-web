@@ -70,6 +70,11 @@ class DatabaseSeeder extends Seeder
                  * Marcas
                  */
                 BrandSeeder::class,
+
+                /**
+                 * Produtos
+                 */
+                ProductSeeder::class,
             ]);
         }
     }

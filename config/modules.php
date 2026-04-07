@@ -603,7 +603,7 @@ return [
 
             'viewAny' => [
                 'name' => 'Ver lista de categorias de produto',
-                'description' => 'Permite visualizar a lista de categorias de produto do tenant',
+                'description' => 'Permite visualizar a lista de categorias de produto do grupo',
             ],
 
             'view' => [
@@ -637,7 +637,7 @@ return [
         'permissions' => [
             'viewAny' => [
                 'name' => 'Ver lista de marcas',
-                'description' => 'Permite visualizar a lista de marcas do tenant',
+                'description' => 'Permite visualizar a lista de marcas do grupo',
             ],
 
             'view' => [
@@ -670,7 +670,7 @@ return [
         'permissions' => [
             'viewAny' => [
                 'name' => 'Ver lista de unidades de medida',
-                'description' => 'Permite visualizar a lista de unidades de medida do tenant',
+                'description' => 'Permite visualizar a lista de unidades de medida do grupo',
             ],
 
             'view' => [
@@ -691,6 +691,39 @@ return [
             'delete' => [
                 'name' => 'Excluir unidade de medida',
                 'description' => 'Permite excluir unidades de medida',
+            ],
+        ],
+    ],
+
+    'products' => [
+        'name' => 'Produtos',
+        'description' => 'Gestão de produtos compartilhados do grupo',
+        'is_core' => true,
+
+        'permissions' => [
+            'viewAny' => [
+                'name' => 'Ver lista de produtos',
+                'description' => 'Permite visualizar a lista de produtos do grupo',
+            ],
+
+            'view' => [
+                'name' => 'Ver produto',
+                'description' => 'Permite visualizar os dados de um produto',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar produto',
+                'description' => 'Permite cadastrar novos produtos',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar produto',
+                'description' => 'Permite editar produtos',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir produto',
+                'description' => 'Permite excluir produtos',
             ],
         ],
     ],
