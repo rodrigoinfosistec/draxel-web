@@ -12,6 +12,7 @@ use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\UnitOfMeasureController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -187,6 +188,20 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
         Route::prefix('export')->name('export.')->group(function () {
             Route::get('/csv', [BrandController::class, 'exportCsv'])->name('csv');
             Route::get('/pdf', [BrandController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('unit-of-measures')->name('unit-of-measures.')->group(function () {
+        Route::get('/', [UnitOfMeasureController::class, 'index'])->name('index');
+        Route::get('/create', [UnitOfMeasureController::class, 'create'])->name('create');
+        Route::post('/', [UnitOfMeasureController::class, 'store'])->name('store');
+        Route::get('/{unitOfMeasure}/edit', [UnitOfMeasureController::class, 'edit'])->name('edit');
+        Route::put('/{unitOfMeasure}', [UnitOfMeasureController::class, 'update'])->name('update');
+        Route::delete('/{unitOfMeasure}', [UnitOfMeasureController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [UnitOfMeasureController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [UnitOfMeasureController::class, 'exportPdf'])->name('pdf');
         });
     });
 });

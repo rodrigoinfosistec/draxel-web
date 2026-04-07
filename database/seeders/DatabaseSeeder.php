@@ -53,6 +53,11 @@ class DatabaseSeeder extends Seeder
              * Categorias de produto
              */
             ProductCategorySeeder::class,
+
+            /**
+             * Unidades de medida
+             */
+            UnitOfMeasureSeeder::class,
         ]);
 
         /**

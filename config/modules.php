@@ -662,4 +662,38 @@ return [
         ],
     ],
 
+    'unitOfMeasures' => [
+        'name' => 'Unidades de medida',
+        'description' => 'Gestão de unidades de medida compartilhadas de produto',
+        'is_core' => true,
+
+        'permissions' => [
+            'viewAny' => [
+                'name' => 'Ver lista de unidades de medida',
+                'description' => 'Permite visualizar a lista de unidades de medida do tenant',
+            ],
+
+            'view' => [
+                'name' => 'Ver unidade de medida',
+                'description' => 'Permite visualizar os dados de uma unidade de medida',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar unidade de medida',
+                'description' => 'Permite cadastrar novas unidades de medida',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar unidade de medida',
+                'description' => 'Permite editar unidades de medida',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir unidade de medida',
+                'description' => 'Permite excluir unidades de medida',
+            ],
+        ],
+    ],
+
+
 ];
