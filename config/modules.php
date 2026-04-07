@@ -697,13 +697,18 @@ return [
 
     'products' => [
         'name' => 'Produtos',
-        'description' => 'Gestão de produtos compartilhados do grupo',
+        'description' => 'Gestão de produtos compartilhados do tenant',
         'is_core' => true,
 
         'permissions' => [
+            'dashboard' => [
+                'name' => 'Acessar dashboard de produtos',
+                'description' => 'Permite acessar o dashboard principal da área de produtos',
+            ],
+
             'viewAny' => [
                 'name' => 'Ver lista de produtos',
-                'description' => 'Permite visualizar a lista de produtos do grupo',
+                'description' => 'Permite visualizar a lista de produtos do tenant',
             ],
 
             'view' => [

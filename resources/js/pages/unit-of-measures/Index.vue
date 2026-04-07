@@ -36,6 +36,7 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Menu Produtos', href: '/products/dashboard' },
     { title: 'Unidades de medida', href: '/unit-of-measures' },
 ]
 

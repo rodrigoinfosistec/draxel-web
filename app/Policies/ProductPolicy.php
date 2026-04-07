@@ -7,6 +7,11 @@ use App\Models\User;
 
 class ProductPolicy
 {
+    public function dashboard(User $user): bool
+    {
+        return $user->hasPermission('products.dashboard');
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->hasPermission('products.viewAny');

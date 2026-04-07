@@ -20,6 +20,48 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends Controller
 {
+    public function dashboard(): Response
+    {
+        $this->authorize('dashboard', Product::class);
+
+        return Inertia::render('products/Dashboard', [
+            'cards' => [
+                [
+                    'title' => 'Categorias',
+                    'description' => 'Gerencie as classificações organizacionais dos produtos.',
+                    'href' => '/product-categories',
+                    'permission' => 'productCategories.viewAny',
+                    'action_label' => 'Acessar categorias',
+                    'icon' => 'folder-tree',
+                ],
+                [
+                    'title' => 'Marcas',
+                    'description' => 'Gerencie as marcas compartilhadas vinculáveis aos produtos.',
+                    'href' => '/brands',
+                    'permission' => 'brands.viewAny',
+                    'action_label' => 'Acessar marcas',
+                    'icon' => 'tags',
+                ],
+                [
+                    'title' => 'Unidades de medida',
+                    'description' => 'Gerencie as unidades utilizadas no cadastro dos produtos.',
+                    'href' => '/unit-of-measures',
+                    'permission' => 'unitOfMeasures.viewAny',
+                    'action_label' => 'Acessar unidades',
+                    'icon' => 'ruler',
+                ],
+                [
+                    'title' => 'Produtos',
+                    'description' => 'Gerencie o cadastro central de produtos compartilhados do tenant.',
+                    'href' => '/products',
+                    'permission' => 'products.viewAny',
+                    'action_label' => 'Acessar produtos',
+                    'icon' => 'box',
+                ],
+            ],
+        ]);
+    }
+
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Product::class);

@@ -19,6 +19,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import {
     AlarmClock,
     BookUser,
+    Box,
     BriefcaseBusiness,
     Building2,
     CalendarDays,
@@ -54,12 +55,12 @@ const mainNavItems: NavItem[] = [
 
     ...(can('contacts.viewAny')
         ? [
-            {
-                title: 'Agenda',
-                href: '/contacts',
-                icon: BookUser,
-            },
-        ]
+              {
+                  title: 'Agenda',
+                  href: '/contacts',
+                  icon: BookUser,
+              },
+          ]
         : []),
 
     ...(can('employees.viewAny')
@@ -88,6 +89,16 @@ const mainNavItems: NavItem[] = [
                   title: 'Departamentos',
                   href: '/departments',
                   icon: Building2,
+              },
+          ]
+        : []),
+
+    ...(can('products.dashboard')
+        ? [
+              {
+                  title: 'Produtos',
+                  href: '/products/dashboard',
+                  icon: Box,
               },
           ]
         : []),
