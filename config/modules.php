@@ -593,4 +593,40 @@ return [
         ],
     ],
 
+    'productCategories' => [
+
+        'name' => 'Categorias de produto',
+        'description' => 'Gestão de categorias compartilhadas de produto',
+        'is_core' => true,
+
+        'permissions' => [
+
+            'viewAny' => [
+                'name' => 'Ver lista de categorias de produto',
+                'description' => 'Permite visualizar a lista de categorias de produto do tenant',
+            ],
+
+            'view' => [
+                'name' => 'Ver categoria de produto',
+                'description' => 'Permite visualizar os dados de uma categoria de produto',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar categoria de produto',
+                'description' => 'Permite cadastrar novas categorias de produto',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar categoria de produto',
+                'description' => 'Permite editar categorias de produto',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir categoria de produto',
+                'description' => 'Permite excluir categorias de produto',
+            ],
+
+        ],
+    ],
+
 ];

@@ -48,6 +48,11 @@ class DatabaseSeeder extends Seeder
              * Base Construlaje
              */
             ConstrulajeSeeder::class,
+
+            /**
+             * Categorias de produto
+             */
+            ProductCategorySeeder::class,
         ]);
 
         /**
