@@ -61,7 +61,10 @@ class DatabaseSeeder extends Seeder
         if (app()->environment('local')) {
             // Seeds
             $this->call([
-                //
+                /**
+                 * Marcas
+                 */
+                BrandSeeder::class,
             ]);
         }
     }

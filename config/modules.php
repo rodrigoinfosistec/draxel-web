@@ -629,4 +629,37 @@ return [
         ],
     ],
 
+    'brands' => [
+        'name' => 'Marcas',
+        'description' => 'Gestão de marcas compartilhadas de produto',
+        'is_core' => true,
+
+        'permissions' => [
+            'viewAny' => [
+                'name' => 'Ver lista de marcas',
+                'description' => 'Permite visualizar a lista de marcas do tenant',
+            ],
+
+            'view' => [
+                'name' => 'Ver marca',
+                'description' => 'Permite visualizar os dados de uma marca',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar marca',
+                'description' => 'Permite cadastrar novas marcas',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar marca',
+                'description' => 'Permite editar marcas',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir marca',
+                'description' => 'Permite excluir marcas',
+            ],
+        ],
+    ],
+
 ];

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
@@ -172,6 +173,20 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
         Route::prefix('export')->name('export.')->group(function () {
             Route::get('/csv', [ProductCategoryController::class, 'exportCsv'])->name('csv');
             Route::get('/pdf', [ProductCategoryController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('brands')->name('brands.')->group(function () {
+        Route::get('/', [BrandController::class, 'index'])->name('index');
+        Route::get('/create', [BrandController::class, 'create'])->name('create');
+        Route::post('/', [BrandController::class, 'store'])->name('store');
+        Route::get('/{brand}/edit', [BrandController::class, 'edit'])->name('edit');
+        Route::put('/{brand}', [BrandController::class, 'update'])->name('update');
+        Route::delete('/{brand}', [BrandController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [BrandController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [BrandController::class, 'exportPdf'])->name('pdf');
         });
     });
 });
