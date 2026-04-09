@@ -20,6 +20,7 @@ import {
     AlarmClock,
     BookUser,
     Box,
+    Boxes,
     BriefcaseBusiness,
     Building2,
     CalendarDays,
@@ -99,6 +100,16 @@ const mainNavItems: NavItem[] = [
                   title: 'Produtos',
                   href: '/products/dashboard',
                   icon: Box,
+              },
+          ]
+        : []),
+
+    ...(can('inventory.viewDashboard')
+        ? [
+              {
+                  title: 'Estoque',
+                  href: '/inventory',
+                  icon: Boxes,
               },
           ]
         : []),

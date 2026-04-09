@@ -6,4 +6,5 @@ return [
     App\Providers\FortifyServiceProvider::class,
     App\Providers\HorizonServiceProvider::class,
     App\Modules\Worktime\Providers\WorktimeServiceProvider::class,
+    App\Modules\Inventory\Providers\InventoryServiceProvider::class,
 ];

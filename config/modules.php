@@ -363,23 +363,88 @@ return [
     'inventory' => [
 
         'name' => 'Estoque',
-        'description' => 'Controle de estoque',
+        'description' => 'Controle de depósitos, movimentações e posição de estoque',
 
         'permissions' => [
 
-            'viewAny' => [
-                'name' => 'Ver estoque',
-                'description' => 'Permite visualizar o estoque',
+            'viewDashboard' => [
+                'name' => 'Ver dashboard de estoque',
+                'description' => 'Permite visualizar a dashboard do módulo de estoque',
             ],
 
-            'create' => [
-                'name' => 'Cadastrar item',
-                'description' => 'Permite cadastrar itens no estoque',
+            'viewAnyWarehouse' => [
+                'name' => 'Ver lista de depósitos',
+                'description' => 'Permite visualizar a lista de depósitos da empresa em contexto',
             ],
 
-            'update' => [
-                'name' => 'Editar item',
-                'description' => 'Permite editar itens do estoque',
+            'viewWarehouse' => [
+                'name' => 'Ver depósito',
+                'description' => 'Permite visualizar os dados de um depósito',
+            ],
+
+            'createWarehouse' => [
+                'name' => 'Cadastrar depósito',
+                'description' => 'Permite cadastrar novos depósitos',
+            ],
+
+            'updateWarehouse' => [
+                'name' => 'Atualizar depósito',
+                'description' => 'Permite editar depósitos existentes',
+            ],
+
+            'deleteWarehouse' => [
+                'name' => 'Excluir depósito',
+                'description' => 'Permite excluir depósitos sem movimentações e sem saldo',
+            ],
+
+            'exportWarehouse' => [
+                'name' => 'Exportar depósitos',
+                'description' => 'Permite exportar relatórios e listagens de depósitos',
+            ],
+
+            'viewAnyStockMovement' => [
+                'name' => 'Ver lista de movimentações de estoque',
+                'description' => 'Permite visualizar a lista de movimentações de estoque',
+            ],
+
+            'viewStockMovement' => [
+                'name' => 'Ver movimentação de estoque',
+                'description' => 'Permite visualizar os dados de uma movimentação de estoque',
+            ],
+
+            'createStockMovement' => [
+                'name' => 'Cadastrar movimentação de estoque',
+                'description' => 'Permite registrar entradas, saídas e ajustes de estoque',
+            ],
+
+            'exportStockMovement' => [
+                'name' => 'Exportar movimentações de estoque',
+                'description' => 'Permite exportar relatórios e listagens de movimentações de estoque',
+            ],
+
+            'viewAnyProductStock' => [
+                'name' => 'Ver posição de estoque por depósito',
+                'description' => 'Permite visualizar a posição de estoque por depósito',
+            ],
+
+            'viewProductStock' => [
+                'name' => 'Ver detalhe de posição por depósito',
+                'description' => 'Permite visualizar os dados de uma posição de estoque por depósito',
+            ],
+
+            'exportProductStock' => [
+                'name' => 'Exportar posição por depósito',
+                'description' => 'Permite exportar relatórios e listagens da posição de estoque por depósito',
+            ],
+
+            'viewInventoryPosition' => [
+                'name' => 'Ver posição consolidada de estoque',
+                'description' => 'Permite visualizar a posição consolidada de estoque da empresa',
+            ],
+
+            'exportInventoryPosition' => [
+                'name' => 'Exportar posição consolidada de estoque',
+                'description' => 'Permite exportar relatórios e listagens da posição consolidada de estoque',
             ],
 
         ],
