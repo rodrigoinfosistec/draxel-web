@@ -24,6 +24,7 @@ import {
     BriefcaseBusiness,
     Building2,
     CalendarDays,
+    Factory,
     Headset,
     IdCard,
     LayoutGrid,
@@ -110,6 +111,16 @@ const mainNavItems: NavItem[] = [
                   title: 'Estoque',
                   href: '/inventory',
                   icon: Boxes,
+              },
+          ]
+        : []),
+
+    ...(can('production.viewDashboard')
+        ? [
+              {
+                  title: 'Produção',
+                  href: '/production',
+                  icon: Factory,
               },
           ]
         : []),

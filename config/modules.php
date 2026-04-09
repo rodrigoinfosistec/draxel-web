@@ -798,5 +798,60 @@ return [
         ],
     ],
 
+    'production' => [
+
+        'name' => 'Produção',
+        'description' => 'Gestão de entradas de produção e seus reflexos no estoque',
+
+        'permissions' => [
+
+            'viewDashboard' => [
+                'name' => 'Ver dashboard de produção',
+                'description' => 'Permite visualizar o dashboard do módulo de produção',
+            ],
+
+            'viewAnyEntry' => [
+                'name' => 'Ver lista de entradas de produção',
+                'description' => 'Permite visualizar a lista de entradas de produção',
+            ],
+
+            'viewEntry' => [
+                'name' => 'Ver entrada de produção',
+                'description' => 'Permite visualizar os dados de uma entrada de produção',
+            ],
+
+            'createEntry' => [
+                'name' => 'Cadastrar entrada de produção',
+                'description' => 'Permite cadastrar novas entradas de produção',
+            ],
+
+            'updateEntry' => [
+                'name' => 'Atualizar entrada de produção',
+                'description' => 'Permite editar entradas de produção em rascunho',
+            ],
+
+            'deleteEntry' => [
+                'name' => 'Excluir entrada de produção',
+                'description' => 'Permite excluir entradas de produção em rascunho',
+            ],
+
+            'postEntry' => [
+                'name' => 'Lançar entrada de produção',
+                'description' => 'Permite lançar entradas de produção no estoque',
+            ],
+
+            'cancelEntry' => [
+                'name' => 'Cancelar entrada de produção',
+                'description' => 'Permite cancelar entradas de produção já lançadas',
+            ],
+
+            'exportEntry' => [
+                'name' => 'Exportar entradas de produção',
+                'description' => 'Permite exportar relatórios das entradas de produção',
+            ],
+
+        ],
+    ],
+
 
 ];

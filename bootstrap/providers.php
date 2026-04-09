@@ -7,4 +7,5 @@ return [
     App\Providers\HorizonServiceProvider::class,
     App\Modules\Worktime\Providers\WorktimeServiceProvider::class,
     App\Modules\Inventory\Providers\InventoryServiceProvider::class,
+    App\Modules\Production\Providers\ProductionServiceProvider::class,
 ];
