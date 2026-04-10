@@ -453,23 +453,53 @@ return [
     'order' => [
 
         'name' => 'Pedido',
-        'description' => 'Gestão de pedidos',
+        'description' => 'Gestão de pedidos e saídas operacionais',
 
         'permissions' => [
 
-            'viewAny' => [
-                'name' => 'Ver pedidos',
-                'description' => 'Permite visualizar pedidos',
+            'viewDashboard' => [
+                'name' => 'Ver dashboard de pedidos',
+                'description' => 'Permite visualizar a dashboard do módulo de pedidos',
             ],
 
-            'create' => [
-                'name' => 'Criar pedido',
-                'description' => 'Permite registrar novos pedidos',
+            'viewAnyOrder' => [
+                'name' => 'Ver lista de pedidos',
+                'description' => 'Permite visualizar a lista de pedidos',
             ],
 
-            'update' => [
-                'name' => 'Editar pedido',
-                'description' => 'Permite editar pedidos',
+            'viewOrder' => [
+                'name' => 'Ver pedido',
+                'description' => 'Permite visualizar os dados de um pedido',
+            ],
+
+            'createOrder' => [
+                'name' => 'Cadastrar pedido',
+                'description' => 'Permite cadastrar novos pedidos',
+            ],
+
+            'updateOrder' => [
+                'name' => 'Atualizar pedido',
+                'description' => 'Permite editar pedidos em rascunho',
+            ],
+
+            'deleteOrder' => [
+                'name' => 'Excluir pedido',
+                'description' => 'Permite excluir pedidos em rascunho',
+            ],
+
+            'confirmOrder' => [
+                'name' => 'Confirmar pedido',
+                'description' => 'Permite confirmar pedidos e movimentar o estoque',
+            ],
+
+            'cancelOrder' => [
+                'name' => 'Cancelar pedido',
+                'description' => 'Permite cancelar pedidos em rascunho',
+            ],
+
+            'exportOrder' => [
+                'name' => 'Exportar pedidos',
+                'description' => 'Permite exportar relatórios e listagens de pedidos',
             ],
 
         ],

@@ -30,6 +30,7 @@ import {
     LayoutGrid,
     Settings2,
     ShieldCheck,
+    ShoppingCart,
     Users,
 } from 'lucide-vue-next'
 
@@ -121,6 +122,16 @@ const mainNavItems: NavItem[] = [
                   title: 'Produção',
                   href: '/production',
                   icon: Factory,
+              },
+          ]
+        : []),
+
+    ...(can('order.viewDashboard')
+        ? [
+              {
+                  title: 'Pedidos',
+                  href: '/order',
+                  icon: ShoppingCart,
               },
           ]
         : []),
