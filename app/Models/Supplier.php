@@ -8,29 +8,34 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Product extends Model
+class Supplier extends Model
 {
     use BelongsToTenant;
 
     protected $fillable = [
         'tenant_id',
-        'product_category_id',
-        'unit_of_measure_id',
-        'brand_id',
         'name',
-        'sku',
-        'barcode',
-        'ncm_code',
-        'description',
-        'purchase_description',
-        'tracks_stock',
+        'trade_name',
+        'document',
+        'state_registration',
+        'municipal_registration',
+        'email',
+        'phone',
+        'mobile',
+        'zip_code',
+        'street',
+        'number',
+        'complement',
+        'district',
+        'city',
+        'state',
+        'notes',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'tracks_stock' => 'boolean',
             'is_active' => 'boolean',
         ];
     }
@@ -38,21 +43,6 @@ class Product extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(ProductCategory::class, 'product_category_id');
-    }
-
-    public function unitOfMeasure(): BelongsTo
-    {
-        return $this->belongsTo(UnitOfMeasure::class);
-    }
-
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class);
     }
 
     public function supplierReferences(): HasMany

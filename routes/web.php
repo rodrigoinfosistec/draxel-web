@@ -11,7 +11,9 @@ use App\Http\Controllers\ParametersController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductSupplierReferenceController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\UnitOfMeasureController;
 use App\Http\Controllers\UserController;
@@ -219,6 +221,34 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
         Route::prefix('export')->name('export.')->group(function () {
             Route::get('/csv', [ProductController::class, 'exportCsv'])->name('csv');
             Route::get('/pdf', [ProductController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('suppliers')->name('suppliers.')->group(function () {
+        Route::get('/', [SupplierController::class, 'index'])->name('index');
+        Route::get('/create', [SupplierController::class, 'create'])->name('create');
+        Route::post('/', [SupplierController::class, 'store'])->name('store');
+        Route::get('/{supplier}/edit', [SupplierController::class, 'edit'])->name('edit');
+        Route::put('/{supplier}', [SupplierController::class, 'update'])->name('update');
+        Route::delete('/{supplier}', [SupplierController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [SupplierController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [SupplierController::class, 'exportPdf'])->name('pdf');
+        });
+    });
+
+    Route::prefix('supplier-product-references')->name('supplier-product-references.')->group(function () {
+        Route::get('/', [ProductSupplierReferenceController::class, 'index'])->name('index');
+        Route::get('/create', [ProductSupplierReferenceController::class, 'create'])->name('create');
+        Route::post('/', [ProductSupplierReferenceController::class, 'store'])->name('store');
+        Route::get('/{supplierProductReference}/edit', [ProductSupplierReferenceController::class, 'edit'])->name('edit');
+        Route::put('/{supplierProductReference}', [ProductSupplierReferenceController::class, 'update'])->name('update');
+        Route::delete('/{supplierProductReference}', [ProductSupplierReferenceController::class, 'destroy'])->name('destroy');
+
+        Route::prefix('export')->name('export.')->group(function () {
+            Route::get('/csv', [ProductSupplierReferenceController::class, 'exportCsv'])->name('csv');
+            Route::get('/pdf', [ProductSupplierReferenceController::class, 'exportPdf'])->name('pdf');
         });
     });
 });

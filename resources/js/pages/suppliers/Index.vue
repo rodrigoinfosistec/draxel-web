@@ -6,21 +6,19 @@ import { Input } from '@/components/ui/input'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { Box, Download, FileText, Pencil } from 'lucide-vue-next'
+import { Building2, Download, FileText, Pencil } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 
-type ProductItem = {
+type SupplierItem = {
     id: number
     name: string
-    sku: string
-    barcode: string | null
-    ncm_code: string | null
-    purchase_description: string | null
-    category: string | null
-    brand: string | null
-    unit_of_measure: string | null
-    description: string | null
-    tracks_stock: boolean
+    trade_name: string | null
+    document: string
+    email: string | null
+    phone: string | null
+    mobile: string | null
+    city: string | null
+    state: string | null
     is_active: boolean
     created_at: string | null
 }
@@ -32,8 +30,8 @@ type PaginationLink = {
 }
 
 const props = defineProps<{
-    products: {
-        data: ProductItem[]
+    suppliers: {
+        data: SupplierItem[]
         links: PaginationLink[]
     }
     filters: {
@@ -43,15 +41,14 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Menu Produtos', href: '/products/dashboard' },
-    { title: 'Produtos', href: '/products' },
+    { title: 'Fornecedores', href: '/suppliers' },
 ]
 
 const search = ref(props.filters.search ?? '')
 
 function submitSearch() {
     router.get(
-        '/products',
+        '/suppliers',
         { search: search.value || undefined },
         {
             preserveState: true,
@@ -68,14 +65,14 @@ const exportParams = computed(() => {
     const query = params.toString()
 
     return {
-        csv: query ? `/products/export/csv?${query}` : '/products/export/csv',
-        pdf: query ? `/products/export/pdf?${query}` : '/products/export/pdf',
+        csv: query ? `/suppliers/export/csv?${query}` : '/suppliers/export/csv',
+        pdf: query ? `/suppliers/export/pdf?${query}` : '/suppliers/export/pdf',
     }
 })
 </script>
 
 <template>
-    <Head title="Produtos" />
+    <Head title="Fornecedores" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
@@ -87,13 +84,13 @@ const exportParams = computed(() => {
 
                 <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <Heading
-                        title="Produtos"
-                        description="Gerencie os produtos compartilhados do tenant."
-                        :icon="Box"
+                        title="Fornecedores"
+                        description="Gerencie os fornecedores compartilhados do tenant."
+                        :icon="Building2"
                     />
 
                     <div class="flex flex-col gap-3 sm:flex-row">
-                        <Can permission="products.viewAny">
+                        <Can permission="suppliers.viewAny">
                             <Button as-child variant="outline" class="w-full sm:w-auto">
                                 <a :href="exportParams.csv">
                                     <Download class="mr-2 h-4 w-4" />
@@ -102,7 +99,7 @@ const exportParams = computed(() => {
                             </Button>
                         </Can>
 
-                        <Can permission="products.viewAny">
+                        <Can permission="suppliers.viewAny">
                             <Button as-child variant="outline" class="w-full sm:w-auto">
                                 <a :href="exportParams.pdf">
                                     <FileText class="mr-2 h-4 w-4" />
@@ -111,9 +108,9 @@ const exportParams = computed(() => {
                             </Button>
                         </Can>
 
-                        <Can permission="products.create">
-                            <Link href="/products/create" class="w-full sm:w-auto">
-                                <Button class="w-full sm:w-auto">Novo produto</Button>
+                        <Can permission="suppliers.create">
+                            <Link href="/suppliers/create" class="w-full sm:w-auto">
+                                <Button class="w-full sm:w-auto">Novo fornecedor</Button>
                             </Link>
                         </Can>
                     </div>
@@ -125,7 +122,7 @@ const exportParams = computed(() => {
                     <Input
                         v-model="search"
                         type="text"
-                        placeholder="Buscar por nome, SKU, GTIN/EAN, NCM, descrição ou descrição de compra"
+                        placeholder="Buscar por razão social, fantasia, documento, e-mail ou cidade"
                         class="w-full"
                     />
                     <Button type="submit" variant="outline" class="w-full sm:w-auto">
@@ -136,96 +133,65 @@ const exportParams = computed(() => {
 
             <div class="rounded-xl border bg-card/50 shadow-sm">
                 <div class="overflow-x-auto">
-                    <table class="min-w-[1320px] w-full text-sm">
+                    <table class="min-w-[1200px] w-full text-sm">
                         <thead class="bg-muted/50">
                             <tr>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Produto</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">SKU</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">GTIN/EAN</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">NCM</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Categoria</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Marca</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Unidade</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Estoque</th>
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Status</th>
-                                <th class="px-4 py-3 text-right whitespace-nowrap">Ações</th>
+                                <th class="px-4 py-3 text-left">Fornecedor</th>
+                                <th class="px-4 py-3 text-left">Documento</th>
+                                <th class="px-4 py-3 text-left">Contato</th>
+                                <th class="px-4 py-3 text-left">Cidade</th>
+                                <th class="px-4 py-3 text-left">Status</th>
+                                <th class="px-4 py-3 text-right">Ações</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             <tr
-                                v-for="product in products.data"
-                                :key="product.id"
+                                v-for="supplier in suppliers.data"
+                                :key="supplier.id"
                                 class="border-t"
                             >
                                 <td class="px-4 py-3 align-top">
-                                    <div class="font-medium">{{ product.name }}</div>
-
-                                    <div v-if="product.purchase_description" class="text-xs text-muted-foreground">
-                                        Compra/XML: {{ product.purchase_description }}
-                                    </div>
-
+                                    <div class="font-medium">{{ supplier.name }}</div>
                                     <div class="text-xs text-muted-foreground">
-                                        {{ product.description || '—' }}
+                                        {{ supplier.trade_name || '—' }}
                                     </div>
                                 </td>
 
                                 <td class="px-4 py-3 align-top">
-                                    <div class="font-medium">{{ product.sku }}</div>
+                                    {{ supplier.document }}
                                 </td>
 
                                 <td class="px-4 py-3 align-top">
-                                    {{ product.barcode || '—' }}
+                                    <div>{{ supplier.email || '—' }}</div>
+                                    <div class="text-xs text-muted-foreground">
+                                        {{ supplier.mobile || supplier.phone || '—' }}
+                                    </div>
                                 </td>
 
                                 <td class="px-4 py-3 align-top">
-                                    {{ product.ncm_code || '—' }}
-                                </td>
-
-                                <td class="px-4 py-3 align-top">
-                                    {{ product.category || '—' }}
-                                </td>
-
-                                <td class="px-4 py-3 align-top">
-                                    {{ product.brand || '—' }}
-                                </td>
-
-                                <td class="px-4 py-3 align-top">
-                                    {{ product.unit_of_measure || '—' }}
+                                    {{ supplier.city && supplier.state ? `${supplier.city}/${supplier.state}` : '—' }}
                                 </td>
 
                                 <td class="px-4 py-3 align-top">
                                     <span
                                         class="inline-flex rounded-md px-2 py-1 text-xs whitespace-nowrap"
                                         :class="
-                                            product.tracks_stock
-                                                ? 'bg-blue-100 text-blue-700'
-                                                : 'bg-zinc-100 text-zinc-700'
-                                        "
-                                    >
-                                        {{ product.tracks_stock ? 'Controla' : 'Não controla' }}
-                                    </span>
-                                </td>
-
-                                <td class="px-4 py-3 align-top">
-                                    <span
-                                        class="inline-flex rounded-md px-2 py-1 text-xs whitespace-nowrap"
-                                        :class="
-                                            product.is_active
+                                            supplier.is_active
                                                 ? 'bg-green-100 text-green-700'
                                                 : 'bg-red-100 text-red-700'
                                         "
                                     >
-                                        {{ product.is_active ? 'Ativo' : 'Inativo' }}
+                                        {{ supplier.is_active ? 'Ativo' : 'Inativo' }}
                                     </span>
                                 </td>
 
                                 <td class="px-4 py-3 text-right align-top">
                                     <div class="flex justify-end gap-2">
-                                        <Can permission="products.update">
+                                        <Can permission="suppliers.update">
                                             <Link
-                                                :href="`/products/${product.id}/edit`"
-                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium text-foreground transition hover:bg-muted"
+                                                :href="`/suppliers/${supplier.id}/edit`"
+                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition hover:bg-muted"
                                             >
                                                 <Pencil class="h-4 w-4" />
                                                 <span class="hidden sm:inline">Editar</span>
@@ -235,9 +201,9 @@ const exportParams = computed(() => {
                                 </td>
                             </tr>
 
-                            <tr v-if="products.data.length === 0">
-                                <td colspan="10" class="px-4 py-8 text-center text-muted-foreground">
-                                    Nenhum produto encontrado.
+                            <tr v-if="suppliers.data.length === 0">
+                                <td colspan="6" class="px-4 py-8 text-center text-muted-foreground">
+                                    Nenhum fornecedor encontrado.
                                 </td>
                             </tr>
                         </tbody>
@@ -247,7 +213,7 @@ const exportParams = computed(() => {
 
             <div class="flex flex-wrap gap-2">
                 <Link
-                    v-for="link in products.links"
+                    v-for="link in suppliers.links"
                     :key="link.label"
                     :href="link.url || '#'"
                     v-html="link.label"

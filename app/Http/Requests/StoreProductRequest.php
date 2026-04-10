@@ -26,6 +26,14 @@ class StoreProductRequest extends FormRequest
                 Rule::unique('products', 'sku')
                     ->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
+            'barcode' => [
+                'nullable',
+                'string',
+                'size:14',
+                Rule::unique('products', 'barcode')
+                    ->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
+            'ncm_code' => ['nullable', 'string', 'size:8'],
             'product_category_id' => [
                 'required',
                 'integer',
@@ -45,6 +53,7 @@ class StoreProductRequest extends FormRequest
                     ->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
             'description' => ['nullable', 'string'],
+            'purchase_description' => ['nullable', 'string', 'max:255'],
             'tracks_stock' => ['required', 'boolean'],
             'is_active' => ['required', 'boolean'],
         ];
@@ -52,11 +61,19 @@ class StoreProductRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $barcode = preg_replace('/\D+/', '', (string) $this->barcode);
+        $ncmCode = preg_replace('/\D+/', '', (string) $this->ncm_code);
+
         $this->merge([
             'name' => trim((string) $this->name),
             'sku' => strtoupper(trim((string) $this->sku)),
+            'barcode' => filled($barcode) ? str_pad($barcode, 14, '0', STR_PAD_LEFT) : null,
+            'ncm_code' => filled($ncmCode) ? $ncmCode : null,
             'description' => filled($this->description)
                 ? trim((string) $this->description)
+                : null,
+            'purchase_description' => filled($this->purchase_description)
+                ? trim((string) $this->purchase_description)
                 : null,
             'brand_id' => filled($this->brand_id) ? (int) $this->brand_id : null,
             'tracks_stock' => $this->boolean('tracks_stock'),
@@ -69,10 +86,13 @@ class StoreProductRequest extends FormRequest
         return [
             'name' => 'nome',
             'sku' => 'SKU',
+            'barcode' => 'GTIN/EAN',
+            'ncm_code' => 'NCM',
             'product_category_id' => 'categoria',
             'unit_of_measure_id' => 'unidade de medida',
             'brand_id' => 'marca',
             'description' => 'descrição',
+            'purchase_description' => 'descrição de compra',
             'tracks_stock' => 'controla estoque',
             'is_active' => 'status',
         ];
@@ -82,6 +102,9 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'sku.unique' => 'Já existe um produto com este SKU.',
+            'barcode.unique' => 'Já existe um produto com este GTIN/EAN.',
+            'barcode.size' => 'O GTIN/EAN deve ter 14 dígitos.',
+            'ncm_code.size' => 'O NCM deve ter 8 dígitos.',
         ];
     }
 }

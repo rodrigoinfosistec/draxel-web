@@ -8,8 +8,10 @@ import { Head, Link } from '@inertiajs/vue3'
 import {
     ArrowRight,
     Box,
+    Building2,
     FolderTree,
     LayoutGrid,
+    Link2,
     Ruler,
     Tags,
 } from 'lucide-vue-next'
@@ -53,6 +55,14 @@ function resolveIcon(icon: string) {
 
     if (icon === 'box') {
         return Box
+    }
+
+    if (icon === 'building-2') {
+        return Building2
+    }
+
+    if (icon === 'link-2') {
+        return Link2
     }
 
     return LayoutGrid

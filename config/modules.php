@@ -828,6 +828,72 @@ return [
         ],
     ],
 
+    'suppliers' => [
+        'name' => 'Fornecedores',
+        'description' => 'Gestão de fornecedores compartilhados do tenant',
+        'is_core' => true,
+
+        'permissions' => [
+            'viewAny' => [
+                'name' => 'Ver lista de fornecedores',
+                'description' => 'Permite visualizar a lista de fornecedores do tenant',
+            ],
+
+            'view' => [
+                'name' => 'Ver fornecedor',
+                'description' => 'Permite visualizar os dados de um fornecedor',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar fornecedor',
+                'description' => 'Permite cadastrar novos fornecedores',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar fornecedor',
+                'description' => 'Permite editar fornecedores',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir fornecedor',
+                'description' => 'Permite excluir fornecedores',
+            ],
+        ],
+    ],
+
+    'supplierProductReferences' => [
+        'name' => 'Vínculos fornecedor x produto',
+        'description' => 'Gestão dos vínculos comerciais entre fornecedores e produtos',
+        'is_core' => true,
+
+        'permissions' => [
+            'viewAny' => [
+                'name' => 'Ver lista de vínculos fornecedor x produto',
+                'description' => 'Permite visualizar a lista de vínculos comerciais entre fornecedores e produtos',
+            ],
+
+            'view' => [
+                'name' => 'Ver vínculo fornecedor x produto',
+                'description' => 'Permite visualizar os dados de um vínculo comercial entre fornecedor e produto',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar vínculo fornecedor x produto',
+                'description' => 'Permite cadastrar novos vínculos comerciais entre fornecedores e produtos',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar vínculo fornecedor x produto',
+                'description' => 'Permite editar vínculos comerciais entre fornecedores e produtos',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir vínculo fornecedor x produto',
+                'description' => 'Permite excluir vínculos comerciais entre fornecedores e produtos',
+            ],
+        ],
+    ],
+
     'production' => [
 
         'name' => 'Produção',
@@ -882,6 +948,5 @@ return [
 
         ],
     ],
-
 
 ];

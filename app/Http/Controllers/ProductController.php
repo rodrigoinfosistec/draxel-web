@@ -58,6 +58,22 @@ class ProductController extends Controller
                     'action_label' => 'Acessar produtos',
                     'icon' => 'box',
                 ],
+                [
+                    'title' => 'Fornecedores',
+                    'description' => 'Gerencie os fornecedores compartilhados usados no recebimento.',
+                    'href' => '/suppliers',
+                    'permission' => 'suppliers.viewAny',
+                    'action_label' => 'Acessar fornecedores',
+                    'icon' => 'building-2',
+                ],
+                [
+                    'title' => 'Vínculos fornecedor x produto',
+                    'description' => 'Gerencie os vínculos comerciais que sustentam o XML de compra.',
+                    'href' => '/supplier-product-references',
+                    'permission' => 'supplierProductReferences.viewAny',
+                    'action_label' => 'Acessar vínculos',
+                    'icon' => 'link-2',
+                ],
             ],
         ]);
     }
@@ -76,7 +92,10 @@ class ProductController extends Controller
                 $subQuery
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('sku', 'ilike', "%{$search}%")
-                    ->orWhere('description', 'ilike', "%{$search}%");
+                    ->orWhere('barcode', 'ilike', "%{$search}%")
+                    ->orWhere('ncm_code', 'ilike', "%{$search}%")
+                    ->orWhere('description', 'ilike', "%{$search}%")
+                    ->orWhere('purchase_description', 'ilike', "%{$search}%");
             }))
             ->latest()
             ->paginate(10)
@@ -85,6 +104,9 @@ class ProductController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'ncm_code' => $product->ncm_code,
+                'purchase_description' => $product->purchase_description,
                 'category' => $product->category?->name,
                 'brand' => $product->brand?->name,
                 'unit_of_measure' => $product->unitOfMeasure?->symbol,
@@ -117,7 +139,10 @@ class ProductController extends Controller
                 $subQuery
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('sku', 'ilike', "%{$search}%")
-                    ->orWhere('description', 'ilike', "%{$search}%");
+                    ->orWhere('barcode', 'ilike', "%{$search}%")
+                    ->orWhere('ncm_code', 'ilike', "%{$search}%")
+                    ->orWhere('description', 'ilike', "%{$search}%")
+                    ->orWhere('purchase_description', 'ilike', "%{$search}%");
             }))
             ->latest()
             ->get();
@@ -129,6 +154,9 @@ class ProductController extends Controller
                 'ID',
                 'Nome',
                 'SKU',
+                'GTIN/EAN',
+                'NCM',
+                'Descrição de compra',
                 'Categoria',
                 'Marca',
                 'Unidade',
@@ -142,6 +170,9 @@ class ProductController extends Controller
                     $product->id,
                     $product->name,
                     $product->sku,
+                    $product->barcode,
+                    $product->ncm_code,
+                    $product->purchase_description,
                     $product->category?->name,
                     $product->brand?->name,
                     $product->unitOfMeasure?->symbol,
@@ -171,7 +202,10 @@ class ProductController extends Controller
                 $subQuery
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('sku', 'ilike', "%{$search}%")
-                    ->orWhere('description', 'ilike', "%{$search}%");
+                    ->orWhere('barcode', 'ilike', "%{$search}%")
+                    ->orWhere('ncm_code', 'ilike', "%{$search}%")
+                    ->orWhere('description', 'ilike', "%{$search}%")
+                    ->orWhere('purchase_description', 'ilike', "%{$search}%");
             }))
             ->latest()
             ->get()
@@ -179,6 +213,9 @@ class ProductController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'ncm_code' => $product->ncm_code,
+                'purchase_description' => $product->purchase_description,
                 'category' => $product->category?->name,
                 'brand' => $product->brand?->name,
                 'unit_of_measure' => $product->unitOfMeasure?->symbol,
@@ -249,10 +286,13 @@ class ProductController extends Controller
                 'tenant_id' => $tenantId,
                 'name' => $data['name'],
                 'sku' => $data['sku'],
+                'barcode' => $data['barcode'] ?? null,
+                'ncm_code' => $data['ncm_code'] ?? null,
                 'product_category_id' => $data['product_category_id'],
                 'unit_of_measure_id' => $data['unit_of_measure_id'],
                 'brand_id' => $data['brand_id'] ?? null,
                 'description' => $data['description'] ?? null,
+                'purchase_description' => $data['purchase_description'] ?? null,
                 'tracks_stock' => $data['tracks_stock'],
                 'is_active' => $data['is_active'],
             ]);
@@ -260,10 +300,13 @@ class ProductController extends Controller
             Audit::event('products.created', $product, [
                 'name' => $product->name,
                 'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'ncm_code' => $product->ncm_code,
                 'product_category_id' => $product->product_category_id,
                 'unit_of_measure_id' => $product->unit_of_measure_id,
                 'brand_id' => $product->brand_id,
                 'description' => $product->description,
+                'purchase_description' => $product->purchase_description,
                 'tracks_stock' => $product->tracks_stock,
                 'is_active' => $product->is_active,
             ]);
@@ -283,10 +326,13 @@ class ProductController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'ncm_code' => $product->ncm_code,
                 'product_category_id' => $product->product_category_id,
                 'unit_of_measure_id' => $product->unit_of_measure_id,
                 'brand_id' => $product->brand_id,
                 'description' => $product->description,
+                'purchase_description' => $product->purchase_description,
                 'tracks_stock' => $product->tracks_stock,
                 'is_active' => $product->is_active,
             ],
@@ -304,10 +350,13 @@ class ProductController extends Controller
             $before = [
                 'name' => $product->name,
                 'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'ncm_code' => $product->ncm_code,
                 'product_category_id' => $product->product_category_id,
                 'unit_of_measure_id' => $product->unit_of_measure_id,
                 'brand_id' => $product->brand_id,
                 'description' => $product->description,
+                'purchase_description' => $product->purchase_description,
                 'tracks_stock' => $product->tracks_stock,
                 'is_active' => $product->is_active,
             ];
@@ -315,10 +364,13 @@ class ProductController extends Controller
             $product->update([
                 'name' => $data['name'],
                 'sku' => $data['sku'],
+                'barcode' => $data['barcode'] ?? null,
+                'ncm_code' => $data['ncm_code'] ?? null,
                 'product_category_id' => $data['product_category_id'],
                 'unit_of_measure_id' => $data['unit_of_measure_id'],
                 'brand_id' => $data['brand_id'] ?? null,
                 'description' => $data['description'] ?? null,
+                'purchase_description' => $data['purchase_description'] ?? null,
                 'tracks_stock' => $data['tracks_stock'],
                 'is_active' => $data['is_active'],
             ]);
@@ -326,10 +378,13 @@ class ProductController extends Controller
             $after = [
                 'name' => $product->name,
                 'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'ncm_code' => $product->ncm_code,
                 'product_category_id' => $product->product_category_id,
                 'unit_of_measure_id' => $product->unit_of_measure_id,
                 'brand_id' => $product->brand_id,
                 'description' => $product->description,
+                'purchase_description' => $product->purchase_description,
                 'tracks_stock' => $product->tracks_stock,
                 'is_active' => $product->is_active,
             ];
@@ -353,10 +408,13 @@ class ProductController extends Controller
             Audit::event('products.deleted', $product, [
                 'name' => $product->name,
                 'sku' => $product->sku,
+                'barcode' => $product->barcode,
+                'ncm_code' => $product->ncm_code,
                 'product_category_id' => $product->product_category_id,
                 'unit_of_measure_id' => $product->unit_of_measure_id,
                 'brand_id' => $product->brand_id,
                 'description' => $product->description,
+                'purchase_description' => $product->purchase_description,
                 'tracks_stock' => $product->tracks_stock,
                 'is_active' => $product->is_active,
             ]);

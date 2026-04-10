@@ -14,7 +14,7 @@ type Option = {
     label: string
 }
 
-const props = defineProps<{
+defineProps<{
     categories: Option[]
     brands: Option[]
     unitOfMeasures: Option[]
@@ -29,10 +29,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 const form = useForm({
     name: '',
     sku: '',
+    barcode: '',
+    ncm_code: '',
     product_category_id: '',
     unit_of_measure_id: '',
     brand_id: '',
     description: '',
+    purchase_description: '',
     tracks_stock: true,
     is_active: true,
 })
@@ -47,9 +50,7 @@ function submit() {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <div
-                class="relative overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5"
-            >
+            <div class="relative overflow-hidden rounded-2xl border bg-card/40 p-4 shadow-sm backdrop-blur-[1px] sm:p-5">
                 <div
                     class="absolute inset-0"
                     style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
@@ -72,10 +73,7 @@ function submit() {
                 </div>
             </div>
 
-            <form
-                class="space-y-8 rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6"
-                @submit.prevent="submit"
-            >
+            <form class="space-y-8 rounded-2xl border bg-card/50 p-5 shadow-sm sm:p-6" @submit.prevent="submit">
                 <section class="space-y-4">
                     <div>
                         <h2 class="text-sm font-semibold tracking-tight">Dados principais</h2>
@@ -85,19 +83,19 @@ function submit() {
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="grid gap-2 sm:col-span-1">
+                        <div class="grid gap-2">
                             <Label for="name">Nome</Label>
                             <Input id="name" v-model="form.name" />
                             <InputError :message="form.errors.name" />
                         </div>
 
-                        <div class="grid gap-2 sm:col-span-1">
+                        <div class="grid gap-2">
                             <Label for="sku">SKU</Label>
                             <Input id="sku" v-model="form.sku" />
                             <InputError :message="form.errors.sku" />
                         </div>
 
-                        <div class="grid gap-2 sm:col-span-1">
+                        <div class="grid gap-2">
                             <Label for="product_category_id">Categoria</Label>
                             <select
                                 id="product_category_id"
@@ -116,7 +114,7 @@ function submit() {
                             <InputError :message="form.errors.product_category_id" />
                         </div>
 
-                        <div class="grid gap-2 sm:col-span-1">
+                        <div class="grid gap-2">
                             <Label for="unit_of_measure_id">Unidade de medida</Label>
                             <select
                                 id="unit_of_measure_id"
@@ -135,7 +133,7 @@ function submit() {
                             <InputError :message="form.errors.unit_of_measure_id" />
                         </div>
 
-                        <div class="grid gap-2 sm:col-span-1">
+                        <div class="grid gap-2">
                             <Label for="brand_id">Marca</Label>
                             <select
                                 id="brand_id"
@@ -155,7 +153,7 @@ function submit() {
                         </div>
 
                         <div class="grid gap-2 sm:col-span-2">
-                            <Label for="description">Descrição</Label>
+                            <Label for="description">Descrição interna</Label>
                             <textarea
                                 id="description"
                                 v-model="form.description"
@@ -163,6 +161,35 @@ function submit() {
                                 class="flex w-full rounded-md border bg-background px-3 py-2 text-sm"
                             />
                             <InputError :message="form.errors.description" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="space-y-4">
+                    <div>
+                        <h2 class="text-sm font-semibold tracking-tight">Identificação de recebimento</h2>
+                        <p class="text-sm text-muted-foreground">
+                            Esses dados ajudam no vínculo inteligente com XML de NF-e e conferência de recebimento.
+                        </p>
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="barcode">GTIN / EAN</Label>
+                            <Input id="barcode" v-model="form.barcode" maxlength="14" />
+                            <InputError :message="form.errors.barcode" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="ncm_code">NCM</Label>
+                            <Input id="ncm_code" v-model="form.ncm_code" maxlength="8" />
+                            <InputError :message="form.errors.ncm_code" />
+                        </div>
+
+                        <div class="grid gap-2 sm:col-span-2">
+                            <Label for="purchase_description">Descrição de compra / XML</Label>
+                            <Input id="purchase_description" v-model="form.purchase_description" />
+                            <InputError :message="form.errors.purchase_description" />
                         </div>
                     </div>
                 </section>
@@ -177,9 +204,7 @@ function submit() {
 
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div class="rounded-xl border bg-background p-4">
-                            <label
-                                class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition hover:bg-muted/40"
-                            >
+                            <label class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition hover:bg-muted/40">
                                 <div class="space-y-1">
                                     <div class="text-sm font-medium">Controla estoque</div>
                                     <div class="text-xs text-muted-foreground">
@@ -197,14 +222,8 @@ function submit() {
                                         type="checkbox"
                                         class="peer sr-only"
                                     />
-
-                                    <div
-                                        class="h-6 w-11 rounded-full bg-muted transition peer-checked:bg-green-600"
-                                    />
-
-                                    <div
-                                        class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"
-                                    />
+                                    <div class="h-6 w-11 rounded-full bg-muted transition peer-checked:bg-green-600" />
+                                    <div class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
                                 </div>
                             </label>
 
@@ -212,9 +231,7 @@ function submit() {
                         </div>
 
                         <div class="rounded-xl border bg-background p-4">
-                            <label
-                                class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition hover:bg-muted/40"
-                            >
+                            <label class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 transition hover:bg-muted/40">
                                 <div class="space-y-1">
                                     <div class="text-sm font-medium">Produto ativo</div>
                                     <div class="text-xs text-muted-foreground">
@@ -232,14 +249,8 @@ function submit() {
                                         type="checkbox"
                                         class="peer sr-only"
                                     />
-
-                                    <div
-                                        class="h-6 w-11 rounded-full bg-muted transition peer-checked:bg-green-600"
-                                    />
-
-                                    <div
-                                        class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"
-                                    />
+                                    <div class="h-6 w-11 rounded-full bg-muted transition peer-checked:bg-green-600" />
+                                    <div class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
                                 </div>
                             </label>
 
@@ -248,18 +259,8 @@ function submit() {
                     </div>
                 </section>
 
-                <div class="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
-                    <Link href="/products" class="w-full sm:w-auto">
-                        <Button type="button" variant="outline" class="w-full sm:w-auto">
-                            Cancelar
-                        </Button>
-                    </Link>
-
-                    <Button
-                        type="submit"
-                        class="w-full sm:w-auto"
-                        :disabled="form.processing"
-                    >
+                <div class="flex justify-end">
+                    <Button type="submit" :disabled="form.processing">
                         Salvar produto
                     </Button>
                 </div>
