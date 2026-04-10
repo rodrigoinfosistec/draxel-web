@@ -67,14 +67,19 @@ class DatabaseSeeder extends Seeder
             // Seeds
             $this->call([
                 /**
-                 * Marcas
+                 * Marcas simuladas
                  */
                 BrandSeeder::class,
 
                 /**
-                 * Produtos
+                 * Produtos simulados
                  */
                 ProductSeeder::class,
+
+                /**
+                 * Fornecedores simulados
+                 */
+                SupplierPermissionsSeeder::class,
             ]);
         }
     }
