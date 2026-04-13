@@ -14,7 +14,6 @@ class UnitOfMeasureSeeder extends Seeder
             ['name' => 'Unidade', 'symbol' => 'UN'],
             ['name' => 'Caixa', 'symbol' => 'CX'],
             ['name' => 'Pacote', 'symbol' => 'PCT'],
-            ['name' => 'Fardo', 'symbol' => 'FD'],
             ['name' => 'Quilograma', 'symbol' => 'KG'],
             ['name' => 'Grama', 'symbol' => 'G'],
             ['name' => 'Litro', 'symbol' => 'LT'],
