@@ -978,12 +978,12 @@ return [
 
             'updatePurchaseReceipt' => [
                 'name' => 'Atualizar recebimento de compra',
-                'description' => 'Permite editar recebimentos de compra em rascunho',
+                'description' => 'Permite editar recebimentos de compra em digitação',
             ],
 
             'deletePurchaseReceipt' => [
                 'name' => 'Excluir recebimento de compra',
-                'description' => 'Permite excluir recebimentos de compra em rascunho',
+                'description' => 'Permite excluir recebimentos de compra em digitação',
             ],
 
             'postPurchaseReceipt' => [

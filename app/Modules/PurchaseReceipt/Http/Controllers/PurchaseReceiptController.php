@@ -12,10 +12,14 @@ use App\Modules\PurchaseReceipt\Http\Requests\UpdatePurchaseReceiptRequest;
 use App\Modules\PurchaseReceipt\Models\PurchaseReceipt;
 use App\Modules\PurchaseReceipt\Services\PurchaseReceiptService;
 use App\Support\Flash;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PurchaseReceiptController extends Controller
 {
@@ -28,30 +32,9 @@ class PurchaseReceiptController extends Controller
     {
         $this->authorize('viewAny', PurchaseReceipt::class);
 
-        $filters = [
-            'search' => $request->string('search')->toString(),
-            'status' => $request->string('status')->toString(),
-            'supplier_id' => $request->integer('supplier_id') ?: null,
-            'warehouse_id' => $request->integer('warehouse_id') ?: null,
-            'start_date' => $request->string('start_date')->toString(),
-            'end_date' => $request->string('end_date')->toString(),
-        ];
+        $filters = $this->filters($request);
 
-        $purchaseReceipts = PurchaseReceipt::query()
-            ->forCurrentContext()
-            ->with(['supplier:id,name', 'warehouse:id,name'])
-            ->when($filters['search'], function ($query, $search) {
-                $query->where(function ($builder) use ($search) {
-                    $builder
-                        ->where('number', 'like', "%{$search}%")
-                        ->orWhere('invoice_number', 'like', "%{$search}%");
-                });
-            })
-            ->when($filters['status'], fn ($query, $status) => $query->where('status', $status))
-            ->when($filters['supplier_id'], fn ($query, $supplierId) => $query->where('supplier_id', $supplierId))
-            ->when($filters['warehouse_id'], fn ($query, $warehouseId) => $query->where('warehouse_id', $warehouseId))
-            ->when($filters['start_date'], fn ($query, $startDate) => $query->whereDate('receipt_date', '>=', $startDate))
-            ->when($filters['end_date'], fn ($query, $endDate) => $query->whereDate('receipt_date', '<=', $endDate))
+        $purchaseReceipts = $this->queryWithFilters($filters)
             ->latest('id')
             ->paginate(15)
             ->withQueryString();
@@ -64,7 +47,7 @@ class PurchaseReceiptController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return Inertia::render('purchase-receipt/index', [
+        return Inertia::render('purchase-receipt/receipts/Index', [
             'purchaseReceipts' => $purchaseReceipts,
             'filters' => $filters,
             'suppliers' => $suppliers,
@@ -80,7 +63,7 @@ class PurchaseReceiptController extends Controller
     {
         $this->authorize('create', PurchaseReceipt::class);
 
-        return Inertia::render('purchase-receipt/create', [
+        return Inertia::render('purchase-receipt/receipts/Create', [
             'suppliers' => Supplier::query()->orderBy('name')->get(['id', 'name']),
             'warehouses' => Warehouse::query()->orderBy('name')->get(['id', 'name']),
             'products' => Product::query()->orderBy('name')->get(['id', 'name']),
@@ -92,7 +75,7 @@ class PurchaseReceiptController extends Controller
         $receipt = $this->service->store($request->validated());
 
         return redirect()
-            ->route('purchase-receipts.show', $receipt)
+            ->route('purchase-receipts.receipts.show', $receipt)
             ->with('alert', Flash::success('Recebimento cadastrado com sucesso.'));
     }
 
@@ -107,7 +90,7 @@ class PurchaseReceiptController extends Controller
             'items.product:id,name',
         ]);
 
-        return Inertia::render('purchase-receipt/show', [
+        return Inertia::render('purchase-receipt/receipts/Show', [
             'purchaseReceipt' => $purchaseReceipt,
         ]);
     }
@@ -120,7 +103,7 @@ class PurchaseReceiptController extends Controller
             'items.product:id,name',
         ]);
 
-        return Inertia::render('purchase-receipt/edit', [
+        return Inertia::render('purchase-receipt/receipts/Edit', [
             'purchaseReceipt' => $purchaseReceipt,
             'suppliers' => Supplier::query()->orderBy('name')->get(['id', 'name']),
             'warehouses' => Warehouse::query()->orderBy('name')->get(['id', 'name']),
@@ -135,7 +118,7 @@ class PurchaseReceiptController extends Controller
         $this->service->update($purchaseReceipt, $request->validated());
 
         return redirect()
-            ->route('purchase-receipts.show', $purchaseReceipt)
+            ->route('purchase-receipts.receipts.show', $purchaseReceipt)
             ->with('alert', Flash::success('Recebimento atualizado com sucesso.'));
     }
 
@@ -146,18 +129,18 @@ class PurchaseReceiptController extends Controller
         $this->service->delete($purchaseReceipt);
 
         return redirect()
-            ->route('purchase-receipts.index')
+            ->route('purchase-receipts.receipts.index')
             ->with('alert', Flash::success('Recebimento excluído com sucesso.'));
     }
 
-    public function receive(PurchaseReceipt $purchaseReceipt): RedirectResponse
+    public function post(PurchaseReceipt $purchaseReceipt): RedirectResponse
     {
-        $this->authorize('receive', $purchaseReceipt);
+        $this->authorize('post', $purchaseReceipt);
 
-        $this->service->receive($purchaseReceipt);
+        $this->service->post($purchaseReceipt);
 
         return redirect()
-            ->route('purchase-receipts.show', $purchaseReceipt)
+            ->route('purchase-receipts.receipts.show', $purchaseReceipt)
             ->with('alert', Flash::success('Recebimento lançado com sucesso.'));
     }
 
@@ -168,7 +151,168 @@ class PurchaseReceiptController extends Controller
         $this->service->cancel($purchaseReceipt);
 
         return redirect()
-            ->route('purchase-receipts.show', $purchaseReceipt)
+            ->route('purchase-receipts.receipts.show', $purchaseReceipt)
             ->with('alert', Flash::success('Recebimento cancelado com sucesso.'));
+    }
+
+    public function exportCsv(Request $request): StreamedResponse
+    {
+        $this->authorize('export', PurchaseReceipt::class);
+
+        $filters = $this->filters($request);
+
+        $rows = $this->queryWithFilters($filters)
+            ->latest('id')
+            ->get();
+
+        $filename = 'recebimentos-compra-' . now()->format('Y-m-d_H-i-s') . '.csv';
+
+        return response()->streamDownload(function () use ($rows) {
+            $handle = fopen('php://output', 'w');
+
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($handle, [
+                'ID',
+                'Número',
+                'Nota fiscal',
+                'Fornecedor',
+                'Depósito',
+                'Data de recebimento',
+                'Status',
+                'Valor total',
+            ], ';');
+
+            foreach ($rows as $row) {
+                fputcsv($handle, [
+                    $row->id,
+                    $row->number,
+                    $row->invoice_number,
+                    $row->supplier?->name,
+                    $row->warehouse?->name,
+                    optional($row->receipt_date)->format('d/m/Y'),
+                    $row->status_label,
+                    number_format((float) $row->total_amount, 2, ',', '.'),
+                ], ';');
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $this->authorize('export', PurchaseReceipt::class);
+
+        $filters = $this->filters($request);
+
+        $rows = $this->queryWithFilters($filters)
+            ->latest('id')
+            ->get()
+            ->map(function (PurchaseReceipt $receipt) {
+                return [
+                    'id' => $receipt->id,
+                    'number' => $receipt->number ?: '—',
+                    'invoice_number' => $receipt->invoice_number ?: '—',
+                    'supplier_name' => $receipt->supplier?->name ?: '—',
+                    'warehouse_name' => $receipt->warehouse?->name ?: '—',
+                    'receipt_date' => optional($receipt->receipt_date)->format('d/m/Y') ?: '—',
+                    'status_label' => $receipt->status_label,
+                    'total_amount' => 'R$ ' . number_format((float) $receipt->total_amount, 2, ',', '.'),
+                ];
+            })
+            ->values();
+
+        $filterSummary = [
+            'Busca' => $filters['search'] ?: 'Todos',
+            'Status' => $this->statusLabel($filters['status']),
+            'Fornecedor' => $filters['supplier_name'] ?: 'Todos',
+            'Depósito' => $filters['warehouse_name'] ?: 'Todos',
+            'Período' => $this->periodLabel($filters['start_date'], $filters['end_date']),
+        ];
+
+        $pdf = Pdf::loadView('pdf.purchase-receipts', [
+            'receipts' => $rows,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'filterSummary' => $filterSummary,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('recebimentos-compra-' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    protected function filters(Request $request): array
+    {
+        $supplierId = $request->integer('supplier_id') ?: null;
+        $warehouseId = $request->integer('warehouse_id') ?: null;
+
+        $supplierName = null;
+        $warehouseName = null;
+
+        if ($supplierId) {
+            $supplierName = Supplier::query()->whereKey($supplierId)->value('name');
+        }
+
+        if ($warehouseId) {
+            $warehouseName = Warehouse::query()->whereKey($warehouseId)->value('name');
+        }
+
+        return [
+            'search' => $request->string('search')->toString(),
+            'status' => $request->string('status')->toString(),
+            'supplier_id' => $supplierId,
+            'warehouse_id' => $warehouseId,
+            'start_date' => $request->string('start_date')->toString(),
+            'end_date' => $request->string('end_date')->toString(),
+            'supplier_name' => $supplierName,
+            'warehouse_name' => $warehouseName,
+        ];
+    }
+
+    protected function queryWithFilters(array $filters): Builder
+    {
+        return PurchaseReceipt::query()
+            ->forCurrentContext()
+            ->with(['supplier:id,name', 'warehouse:id,name'])
+            ->when($filters['search'], function (Builder $query, string $search) {
+                $query->where(function (Builder $builder) use ($search) {
+                    $builder
+                        ->where('number', 'like', '%' . Str::of($search)->trim() . '%')
+                        ->orWhere('invoice_number', 'like', '%' . Str::of($search)->trim() . '%');
+                });
+            })
+            ->when($filters['status'], fn (Builder $query, string $status) => $query->where('status', $status))
+            ->when($filters['supplier_id'], fn (Builder $query, int $supplierId) => $query->where('supplier_id', $supplierId))
+            ->when($filters['warehouse_id'], fn (Builder $query, int $warehouseId) => $query->where('warehouse_id', $warehouseId))
+            ->when($filters['start_date'], fn (Builder $query, string $startDate) => $query->whereDate('receipt_date', '>=', $startDate))
+            ->when($filters['end_date'], fn (Builder $query, string $endDate) => $query->whereDate('receipt_date', '<=', $endDate));
+    }
+
+    protected function statusLabel(string $status): string
+    {
+        if ($status === '') {
+            return 'Todos';
+        }
+
+        return collect(PurchaseReceiptStatus::cases())
+            ->firstWhere('value', $status)?->label() ?? $status;
+    }
+
+    protected function periodLabel(string $startDate, string $endDate): string
+    {
+        if ($startDate !== '' && $endDate !== '') {
+            return now()->parse($startDate)->format('d/m/Y') . ' até ' . now()->parse($endDate)->format('d/m/Y');
+        }
+
+        if ($startDate !== '') {
+            return 'A partir de ' . now()->parse($startDate)->format('d/m/Y');
+        }
+
+        if ($endDate !== '') {
+            return 'Até ' . now()->parse($endDate)->format('d/m/Y');
+        }
+
+        return 'Todos';
     }
 }

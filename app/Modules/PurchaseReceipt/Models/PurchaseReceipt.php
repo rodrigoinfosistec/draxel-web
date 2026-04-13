@@ -40,6 +40,10 @@ class PurchaseReceipt extends Model
         'canceled_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'status_label',
+    ];
+
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
@@ -88,5 +92,15 @@ class PurchaseReceipt extends Model
     public function isCanceled(): bool
     {
         return $this->status === PurchaseReceiptStatus::Canceled->value;
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            PurchaseReceiptStatus::Draft->value => PurchaseReceiptStatus::Draft->label(),
+            PurchaseReceiptStatus::Received->value => PurchaseReceiptStatus::Received->label(),
+            PurchaseReceiptStatus::Canceled->value => PurchaseReceiptStatus::Canceled->label(),
+            default => $this->status,
+        };
     }
 }

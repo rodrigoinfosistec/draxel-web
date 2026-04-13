@@ -9,46 +9,46 @@ class PurchaseReceiptPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('purchaseReceipt.viewAnyPurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.viewAnyPurchaseReceipt');
     }
 
     public function view(User $user, PurchaseReceipt $purchaseReceipt): bool
     {
-        return $user->can('purchaseReceipt.viewPurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.viewPurchaseReceipt');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('purchaseReceipt.createPurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.createPurchaseReceipt');
     }
 
     public function update(User $user, PurchaseReceipt $purchaseReceipt): bool
     {
-        return $user->can('purchaseReceipt.updatePurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.updatePurchaseReceipt');
     }
 
     public function delete(User $user, PurchaseReceipt $purchaseReceipt): bool
     {
-        return $user->can('purchaseReceipt.deletePurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.deletePurchaseReceipt');
     }
 
     public function post(User $user, PurchaseReceipt $purchaseReceipt): bool
     {
-        return $user->can('purchaseReceipt.postPurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.postPurchaseReceipt');
     }
 
     public function cancel(User $user, PurchaseReceipt $purchaseReceipt): bool
     {
-        return $user->can('purchaseReceipt.cancelPurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.cancelPurchaseReceipt');
     }
 
     public function export(User $user): bool
     {
-        return $user->can('purchaseReceipt.exportPurchaseReceipt');
+        return $user->hasPermission('purchaseReceipt.exportPurchaseReceipt');
     }
 
     public function dashboard(User $user): bool
     {
-        return $user->can('purchaseReceipt.viewDashboard');
+        return $user->hasPermission('purchaseReceipt.viewDashboard');
     }
 }

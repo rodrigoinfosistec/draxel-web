@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
-import { ArrowRight, ClipboardList, Factory, LayoutGrid, PackagePlus } from 'lucide-vue-next'
+import { ArrowRight, Boxes, ClipboardList, LayoutGrid, Truck } from 'lucide-vue-next'
 
 type CardItem = {
     title: string
@@ -17,12 +17,6 @@ type CardItem = {
 }
 
 defineProps<{
-    stats: {
-        entries_count: number
-        posted_count: number
-        draft_count: number
-        total_quantity: number
-    }
     cards: CardItem[]
 }>()
 
@@ -32,22 +26,22 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/dashboard',
     },
     {
-        title: 'Produção',
-        href: '/production',
+        title: 'Recebimento de compras',
+        href: '/purchase-receipts',
     },
 ]
 
 function resolveIcon(icon: string) {
-    if (icon === 'factory') {
-        return Factory
-    }
-
-    if (icon === 'package-plus') {
-        return PackagePlus
-    }
-
     if (icon === 'clipboard-list') {
         return ClipboardList
+    }
+
+    if (icon === 'truck') {
+        return Truck
+    }
+
+    if (icon === 'boxes') {
+        return Boxes
     }
 
     return LayoutGrid
@@ -55,11 +49,13 @@ function resolveIcon(icon: string) {
 </script>
 
 <template>
-    <Head title="Produção" />
+    <Head title="Recebimento de compras" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <div class="relative overflow-hidden rounded-2xl border bg-card/40 p-5 shadow-sm backdrop-blur-[1px] sm:p-6">
+            <div
+                class="relative overflow-hidden rounded-2xl border bg-card/40 p-5 shadow-sm backdrop-blur-[1px] sm:p-6"
+            >
                 <div
                     class="absolute inset-0"
                     style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
@@ -67,9 +63,9 @@ function resolveIcon(icon: string) {
 
                 <div class="relative flex flex-col gap-4">
                     <Heading
-                        title="Produção"
-                        description="Acesse os serviços do módulo de produção."
-                        :icon="Factory"
+                        title="Recebimento de compras"
+                        description="Acesse os serviços do módulo de recebimento de compras e acompanhe seus reflexos operacionais."
+                        :icon="LayoutGrid"
                     />
                 </div>
             </div>
@@ -80,7 +76,9 @@ function resolveIcon(icon: string) {
                     :key="card.href"
                     :permission="card.permission"
                 >
-                    <div class="group relative overflow-hidden rounded-2xl border bg-card/50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div
+                        class="group relative overflow-hidden rounded-2xl border bg-card/50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
                         <div
                             class="absolute inset-0 opacity-0 transition group-hover:opacity-100"
                             style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"

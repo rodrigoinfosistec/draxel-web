@@ -31,7 +31,8 @@ import {
     Settings2,
     ShieldCheck,
     ShoppingCart,
-    Users,
+    Truck,
+    Users
 } from 'lucide-vue-next'
 
 const page = usePage<{
@@ -135,6 +136,16 @@ const mainNavItems: NavItem[] = [
               },
           ]
         : []),
+
+    ...(can('purchaseReceipt.viewDashboard')
+    ? [
+          {
+              title: 'Recebimento de compras',
+              href: '/purchase-receipts',
+              icon: Truck,
+          },
+      ]
+    : []),
 
     ...(can('worktime.viewAny')
         ? [

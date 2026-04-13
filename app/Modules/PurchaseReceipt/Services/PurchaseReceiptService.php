@@ -107,7 +107,7 @@ class PurchaseReceiptService
         });
     }
 
-    public function receive(PurchaseReceipt $receipt): PurchaseReceipt
+    public function post(PurchaseReceipt $receipt): PurchaseReceipt
     {
         return DB::transaction(function () use ($receipt) {
             if (! $receipt->isDraft()) {

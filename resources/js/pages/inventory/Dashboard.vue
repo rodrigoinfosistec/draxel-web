@@ -87,36 +87,6 @@ function resolveIcon(icon: string) {
                 </div>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Depósitos ativos</div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ stats.warehouses_count }}
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Produtos com saldo</div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ stats.products_with_stock }}
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Quantidade total</div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ stats.total_quantity }}
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Movimentações</div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ stats.movements_count }}
-                    </div>
-                </div>
-            </div>
-
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <Can
                     v-for="card in cards"

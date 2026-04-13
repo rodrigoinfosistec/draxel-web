@@ -7,11 +7,8 @@ import type { BreadcrumbItem } from '@/types'
 import { Head, Link } from '@inertiajs/vue3'
 import {
     ArrowRight,
-    CheckCircle2,
-    FileClock,
     LayoutGrid,
-    ShoppingCart,
-    XCircle,
+    ShoppingCart
 } from 'lucide-vue-next'
 
 type CardItem = {
@@ -72,48 +69,6 @@ function resolveIcon(icon: string) {
                         description="Acesse os serviços do módulo de pedidos."
                         :icon="LayoutGrid"
                     />
-                </div>
-            </div>
-
-            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-muted-foreground">Total de pedidos</div>
-                        <ShoppingCart class="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ summary.total_orders }}
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-muted-foreground">Pedidos em rascunho</div>
-                        <FileClock class="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ summary.draft_orders }}
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-muted-foreground">Pedidos confirmados</div>
-                        <CheckCircle2 class="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ summary.confirmed_orders }}
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-muted-foreground">Pedidos cancelados</div>
-                        <XCircle class="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ summary.cancelled_orders }}
-                    </div>
                 </div>
             </div>
 
