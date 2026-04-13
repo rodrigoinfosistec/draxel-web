@@ -949,4 +949,60 @@ return [
         ],
     ],
 
+    'purchaseReceipt' => [
+
+        'name' => 'Recebimento de compras',
+        'description' => 'Gestão de recebimentos de compras e seus reflexos no estoque',
+
+        'permissions' => [
+
+            'viewDashboard' => [
+                'name' => 'Ver dashboard de recebimento de compras',
+                'description' => 'Permite visualizar o dashboard do módulo de recebimento de compras',
+            ],
+
+            'viewAnyPurchaseReceipt' => [
+                'name' => 'Ver lista de recebimentos de compra',
+                'description' => 'Permite visualizar a lista de recebimentos de compra',
+            ],
+
+            'viewPurchaseReceipt' => [
+                'name' => 'Ver recebimento de compra',
+                'description' => 'Permite visualizar os dados de um recebimento de compra',
+            ],
+
+            'createPurchaseReceipt' => [
+                'name' => 'Cadastrar recebimento de compra',
+                'description' => 'Permite cadastrar novos recebimentos de compra',
+            ],
+
+            'updatePurchaseReceipt' => [
+                'name' => 'Atualizar recebimento de compra',
+                'description' => 'Permite editar recebimentos de compra em rascunho',
+            ],
+
+            'deletePurchaseReceipt' => [
+                'name' => 'Excluir recebimento de compra',
+                'description' => 'Permite excluir recebimentos de compra em rascunho',
+            ],
+
+            'postPurchaseReceipt' => [
+                'name' => 'Lançar recebimento de compra',
+                'description' => 'Permite lançar recebimentos de compra no estoque',
+            ],
+
+            'cancelPurchaseReceipt' => [
+                'name' => 'Cancelar recebimento de compra',
+                'description' => 'Permite cancelar recebimentos de compra já lançados',
+            ],
+
+            'exportPurchaseReceipt' => [
+                'name' => 'Exportar recebimentos de compra',
+                'description' => 'Permite exportar relatórios e listagens de recebimentos de compra',
+            ],
+
+        ],
+    ],
+
+
 ];

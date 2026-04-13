@@ -76,10 +76,6 @@ class DatabaseSeeder extends Seeder
                  */
                 ProductSeeder::class,
 
-                /**
-                 * Fornecedores simulados
-                 */
-                SupplierPermissionsSeeder::class,
             ]);
         }
     }

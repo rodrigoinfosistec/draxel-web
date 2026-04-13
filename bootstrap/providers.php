@@ -9,4 +9,5 @@ return [
     App\Modules\Inventory\Providers\InventoryServiceProvider::class,
     App\Modules\Production\Providers\ProductionServiceProvider::class,
     App\Modules\Order\Providers\OrderServiceProvider::class,
+    App\Modules\PurchaseReceipt\Providers\PurchaseReceiptServiceProvider::class,
 ];
