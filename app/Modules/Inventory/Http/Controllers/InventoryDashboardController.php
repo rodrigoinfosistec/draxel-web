@@ -47,12 +47,12 @@ class InventoryDashboardController extends Controller
 
             'cards' => [
                 [
-                    'title' => 'Depósitos',
-                    'description' => 'Cadastre e organize os depósitos da empresa.',
-                    'href' => '/inventory/warehouses',
-                    'permission' => 'inventory.viewAnyWarehouse',
-                    'action_label' => 'Acessar',
-                    'icon' => 'building-2',
+                    'title' => 'Posição consolidada',
+                    'description' => 'Saldo total dos produtos na empresa.',
+                    'href' => '/inventory/positions/consolidated',
+                    'permission' => 'inventory.viewInventoryPosition',
+                    'action_label' => 'Consultar',
+                    'icon' => 'package-search',
                 ],
                 [
                     'title' => 'Movimentações',
@@ -71,12 +71,12 @@ class InventoryDashboardController extends Controller
                     'icon' => 'boxes',
                 ],
                 [
-                    'title' => 'Posição consolidada',
-                    'description' => 'Saldo total dos produtos na empresa.',
-                    'href' => '/inventory/positions/consolidated',
-                    'permission' => 'inventory.viewInventoryPosition',
-                    'action_label' => 'Consultar',
-                    'icon' => 'package-search',
+                    'title' => 'Depósitos',
+                    'description' => 'Cadastre e organize os depósitos da empresa.',
+                    'href' => '/inventory/warehouses',
+                    'permission' => 'inventory.viewAnyWarehouse',
+                    'action_label' => 'Acessar',
+                    'icon' => 'building-2',
                 ],
             ],
         ]);
