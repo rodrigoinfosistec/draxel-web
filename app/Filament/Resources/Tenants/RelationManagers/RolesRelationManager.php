@@ -24,11 +24,17 @@ class RolesRelationManager extends RelationManager
     protected static ?string $label = 'Função';
     protected static ?string $pluralLabel = 'Funções';
 
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 TextInput::make('slug')
+                    ->label('Slug')
                     ->required()
                     ->maxLength(255)
                     ->unique(
@@ -37,10 +43,12 @@ class RolesRelationManager extends RelationManager
                     ),
 
                 TextInput::make('name')
+                    ->label('Nome')
                     ->required()
                     ->maxLength(255),
 
                 TextInput::make('description')
+                    ->label('Descrição')
                     ->maxLength(65535),
 
                 CheckboxList::make('permissions')
@@ -57,11 +65,12 @@ class RolesRelationManager extends RelationManager
                                     ->where('tenant_modules.is_active', true)
                                 )
                             )
+                            ->orderBy('permissions.name')
                     ),
 
                 Toggle::make('is_active')
                     ->label('Função ativa')
-                    ->visible(fn ($operation) => $operation === 'edit'),
+                    ->default(true),
             ]);
     }
 
@@ -71,14 +80,17 @@ class RolesRelationManager extends RelationManager
             ->recordTitleAttribute('name')
             ->columns([
                 TextColumn::make('slug')
+                    ->label('Slug')
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('name')
+                    ->label('Nome')
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('description')
+                    ->label('Descrição')
                     ->limit(40),
 
                 IconColumn::make('is_active')
@@ -87,19 +99,24 @@ class RolesRelationManager extends RelationManager
             ])
             ->headerActions([
                 CreateAction::make()
+                    ->authorize(fn () => true)
                     ->using(function (array $data, $livewire) {
-                        $data['is_active'] = true;
+                        $data['is_active'] = $data['is_active'] ?? true;
 
                         return $livewire->getRelationship()->create($data);
                     }),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->authorize(fn () => true),
+
+                DeleteAction::make()
+                    ->authorize(fn () => true),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->authorize(fn () => true),
                 ]),
             ]);
     }
