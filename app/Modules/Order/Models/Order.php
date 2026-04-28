@@ -2,11 +2,11 @@
 
 namespace App\Modules\Order\Models;
 
+use App\Models\Client;
 use App\Models\User;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Order\Enums\OrderStatus;
 use App\Modules\Order\Enums\OrderType;
-use App\Modules\Order\Models\OrderItem;
 use App\Traits\BelongsToCompany;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,6 +23,7 @@ class Order extends Model
         'tenant_id',
         'company_id',
         'warehouse_id',
+        'client_id',
         'number',
         'type',
         'status',
@@ -54,6 +55,11 @@ class Order extends Model
         return $this->belongsTo(Warehouse::class);
     }
 
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -79,7 +85,12 @@ class Order extends Model
 
                     $sub->where('number', 'ilike', "%{$search}%")
                         ->orWhere('destination_name', 'ilike', "%{$search}%")
-                        ->orWhere('notes', 'ilike', "%{$search}%");
+                        ->orWhere('notes', 'ilike', "%{$search}%")
+                        ->orWhereHas('client', function (Builder $clientQuery) use ($search) {
+                            $clientQuery
+                                ->where('name', 'ilike', "%{$search}%")
+                                ->orWhere('document', 'ilike', "%{$search}%");
+                        });
                 })
             )
             ->when(
@@ -89,6 +100,10 @@ class Order extends Model
             ->when(
                 filled($filters['warehouse_id'] ?? null),
                 fn (Builder $builder) => $builder->where('warehouse_id', (int) $filters['warehouse_id'])
+            )
+            ->when(
+                filled($filters['client_id'] ?? null),
+                fn (Builder $builder) => $builder->where('client_id', (int) $filters['client_id'])
             )
             ->when(
                 filled($filters['type'] ?? null),

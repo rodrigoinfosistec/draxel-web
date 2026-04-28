@@ -16,6 +16,7 @@
     @include('pdf.partials.report-filters', [
         'filters' => [
             'Depósito' => $filters['warehouse_id'] ?: 'Todos',
+            'Cliente' => $filters['client_id'] ?: 'Todos',
             'Status' => $filters['status'] ?: 'Todos',
             'Tipo' => $filters['type'] ?: 'Todos',
             'Data inicial' => $filters['start_date'] ?: '-',
@@ -32,7 +33,8 @@
                 <th>Status</th>
                 <th>Tipo</th>
                 <th>Depósito</th>
-                <th>Destino</th>
+                <th>Cliente</th>
+                <th>Documento</th>
                 <th>Itens</th>
                 <th>Qtd. Total</th>
                 <th>Emitido em</th>
@@ -47,7 +49,8 @@
                     <td>{{ $order['status_label'] }}</td>
                     <td>{{ $order['type_label'] }}</td>
                     <td>{{ $order['warehouse_name'] }}</td>
-                    <td>{{ $order['destination_name'] }}</td>
+                    <td>{{ $order['client_name'] }}</td>
+                    <td>{{ $order['client_document'] ?: '—' }}</td>
                     <td>{{ $order['items_count'] }}</td>
                     <td>{{ $order['products_total'] }}</td>
                     <td>{{ $order['issued_at'] }}</td>
@@ -55,7 +58,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="10">Nenhum pedido encontrado.</td>
+                    <td colspan="11">Nenhum pedido encontrado.</td>
                 </tr>
             @endforelse
         </tbody>

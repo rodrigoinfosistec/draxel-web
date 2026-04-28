@@ -13,6 +13,7 @@ import { computed, ref } from 'vue'
 type Option = {
     id: number
     name: string
+    document?: string | null
 }
 
 type OrderItemForm = {
@@ -24,6 +25,7 @@ type OrderItemForm = {
 
 const props = defineProps<{
     warehouses: Option[]
+    clients: Option[]
     products: Option[]
     types: Array<{ value: string; label: string }>
 }>()
@@ -38,8 +40,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 const form = useForm({
     issued_at: new Date().toISOString().slice(0, 16),
     warehouse_id: '',
+    client_id: '',
     type: 'sale',
-    destination_name: '',
     notes: '',
     items: [] as OrderItemForm[],
 })
@@ -66,9 +68,14 @@ const itemsCount = computed(() => form.items.length)
 const totalQuantity = computed(() => {
     return form.items.reduce((total, item) => {
         const quantity = Number(item.quantity || 0)
+
         return total + (Number.isNaN(quantity) ? 0 : quantity)
     }, 0)
 })
+
+function clientLabel(client: Option): string {
+    return client.document ? `${client.name} — ${client.document}` : client.name
+}
 
 function addSelectedProduct() {
     if (!selectedProductId.value) {
@@ -207,6 +214,21 @@ function submit() {
                             </div>
 
                             <div class="grid gap-2">
+                                <Label for="client_id">Cliente</Label>
+                                <select
+                                    id="client_id"
+                                    v-model="form.client_id"
+                                    class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                                >
+                                    <option value="">Selecione</option>
+                                    <option v-for="client in clients" :key="client.id" :value="client.id">
+                                        {{ clientLabel(client) }}
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors.client_id" />
+                            </div>
+
+                            <div class="grid gap-2">
                                 <Label for="type">Tipo</Label>
                                 <select
                                     id="type"
@@ -222,16 +244,6 @@ function submit() {
                                     </option>
                                 </select>
                                 <InputError :message="form.errors.type" />
-                            </div>
-
-                            <div class="grid gap-2">
-                                <Label for="destination_name">Destino</Label>
-                                <Input
-                                    id="destination_name"
-                                    v-model="form.destination_name"
-                                    placeholder="Cliente, setor ou destino"
-                                />
-                                <InputError :message="form.errors.destination_name" />
                             </div>
                         </div>
 
@@ -269,7 +281,7 @@ function submit() {
                                     <span class="ml-2 font-semibold">{{ totalQuantity.toFixed(3) }}</span>
                                 </div>
 
-                                <Button :disabled="form.processing || form.items.length === 0" class="sm:min-w-[140px]">
+                                <Button :disabled="form.processing || form.items.length === 0" class="sm:min-w-35">
                                     {{ form.processing ? 'Salvando...' : 'Salvar' }}
                                 </Button>
                             </div>
@@ -359,7 +371,7 @@ function submit() {
                             </div>
 
                             <div v-else class="overflow-x-auto">
-                                <table class="min-w-[1040px] w-full text-sm">
+                                <table class="min-w-260 w-full text-sm">
                                     <thead class="bg-muted/50">
                                         <tr>
                                             <th class="px-4 py-3 text-left">#</th>
@@ -455,7 +467,7 @@ function submit() {
                         Cancelar
                     </Link>
 
-                    <Button :disabled="form.processing || form.items.length === 0" class="sm:min-w-[140px]">
+                    <Button :disabled="form.processing || form.items.length === 0" class="sm:min-w-35">
                         {{ form.processing ? 'Salvando...' : 'Salvar' }}
                     </Button>
                 </div>

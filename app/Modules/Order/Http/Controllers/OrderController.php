@@ -3,12 +3,13 @@
 namespace App\Modules\Order\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\Product;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Order\Enums\OrderType;
-use App\Modules\Order\Models\Order;
 use App\Modules\Order\Http\Requests\StoreOrderRequest;
 use App\Modules\Order\Http\Requests\UpdateOrderRequest;
+use App\Modules\Order\Models\Order;
 use App\Modules\Order\Services\OrderService;
 use App\Support\CompanyContext;
 use App\Support\Flash;
@@ -34,6 +35,7 @@ class OrderController extends Controller
         $companyId = session('current_company_id');
 
         $warehouseId = trim((string) $request->string('warehouse_id')->value());
+        $clientId = trim((string) $request->string('client_id')->value());
         $status = trim((string) $request->string('status')->value());
         $type = trim((string) $request->string('type')->value());
         $startDate = trim((string) $request->string('start_date')->value());
@@ -42,6 +44,7 @@ class OrderController extends Controller
 
         $filters = [
             'warehouse_id' => $warehouseId,
+            'client_id' => $clientId,
             'status' => $status,
             'type' => $type,
             'start_date' => $startDate,
@@ -50,7 +53,7 @@ class OrderController extends Controller
         ];
 
         $orders = Order::query()
-            ->with(['warehouse:id,name', 'creator:id,name'])
+            ->with(['warehouse:id,name', 'client:id,name,document', 'creator:id,name'])
             ->withCount('items')
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
@@ -67,6 +70,8 @@ class OrderController extends Controller
                 'status' => $order->status?->value,
                 'status_label' => $order->status?->label(),
                 'warehouse_name' => $order->warehouse?->name,
+                'client_name' => $order->client?->name,
+                'client_document' => $order->client?->document,
                 'destination_name' => $order->destination_name,
                 'items_count' => $order->items_count,
                 'products_total' => (float) $order->items()->sum('quantity'),
@@ -78,6 +83,7 @@ class OrderController extends Controller
             'orders' => $orders,
             'filters' => $filters,
             'warehouses' => $this->warehouseOptions($tenantId, $companyId),
+            'clients' => $this->clientOptions($tenantId),
             'types' => OrderType::formOptions(),
         ]);
     }
@@ -90,6 +96,7 @@ class OrderController extends Controller
         $companyId = session('current_company_id');
 
         $warehouseId = trim((string) $request->string('warehouse_id')->value());
+        $clientId = trim((string) $request->string('client_id')->value());
         $status = trim((string) $request->string('status')->value());
         $type = trim((string) $request->string('type')->value());
         $startDate = trim((string) $request->string('start_date')->value());
@@ -99,12 +106,13 @@ class OrderController extends Controller
         $filename = 'orders-' . now()->format('Y-m-d_H-i-s') . '.csv';
 
         $orders = Order::query()
-            ->with(['warehouse:id,name', 'creator:id,name'])
+            ->with(['warehouse:id,name', 'client:id,name,document', 'creator:id,name'])
             ->withCount('items')
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
             ->filter([
                 'warehouse_id' => $warehouseId,
+                'client_id' => $clientId,
                 'status' => $status,
                 'type' => $type,
                 'start_date' => $startDate,
@@ -124,7 +132,8 @@ class OrderController extends Controller
                 'Status',
                 'Tipo',
                 'Depósito',
-                'Destino',
+                'Cliente',
+                'Documento',
                 'Itens',
                 'Quantidade Total',
                 'Emitido em',
@@ -138,7 +147,8 @@ class OrderController extends Controller
                     $order->status?->label(),
                     $order->type?->label(),
                     $order->warehouse?->name,
-                    $order->destination_name,
+                    $order->client?->name,
+                    $order->client?->document,
                     $order->items()->count(),
                     number_format((float) $order->items()->sum('quantity'), 3, ',', '.'),
                     $order->issued_at?->format('d/m/Y H:i:s'),
@@ -160,6 +170,7 @@ class OrderController extends Controller
         $companyId = session('current_company_id');
 
         $warehouseId = trim((string) $request->string('warehouse_id')->value());
+        $clientId = trim((string) $request->string('client_id')->value());
         $status = trim((string) $request->string('status')->value());
         $type = trim((string) $request->string('type')->value());
         $startDate = trim((string) $request->string('start_date')->value());
@@ -167,12 +178,13 @@ class OrderController extends Controller
         $search = trim((string) $request->string('search')->value());
 
         $orders = Order::query()
-            ->with(['warehouse:id,name', 'creator:id,name'])
+            ->with(['warehouse:id,name', 'client:id,name,document', 'creator:id,name'])
             ->withCount('items')
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
             ->filter([
                 'warehouse_id' => $warehouseId,
+                'client_id' => $clientId,
                 'status' => $status,
                 'type' => $type,
                 'start_date' => $startDate,
@@ -188,7 +200,8 @@ class OrderController extends Controller
                 'status_label' => $order->status?->label(),
                 'type_label' => $order->type?->label(),
                 'warehouse_name' => $order->warehouse?->name,
-                'destination_name' => $order->destination_name,
+                'client_name' => $order->client?->name,
+                'client_document' => $order->client?->document,
                 'items_count' => $order->items()->count(),
                 'products_total' => number_format((float) $order->items()->sum('quantity'), 3, ',', '.'),
                 'issued_at' => $order->issued_at?->format('d/m/Y H:i:s'),
@@ -202,6 +215,7 @@ class OrderController extends Controller
                 'orders' => $orders,
                 'filters' => [
                     'warehouse_id' => $warehouseId,
+                    'client_id' => $clientId,
                     'status' => $status,
                     'type' => $type,
                     'start_date' => $startDate,
@@ -249,6 +263,7 @@ class OrderController extends Controller
 
         return Inertia::render('order/orders/Create', [
             'warehouses' => $this->warehouseOptions($tenantId, $companyId),
+            'clients' => $this->clientOptions($tenantId),
             'products' => $this->productOptions($tenantId),
             'types' => OrderType::formOptions(),
         ]);
@@ -277,6 +292,7 @@ class OrderController extends Controller
 
         $order->load([
             'warehouse:id,name',
+            'client:id,name,document,email,phone',
             'items.product:id,name',
             'creator:id,name',
             'confirmer:id,name',
@@ -295,14 +311,26 @@ class OrderController extends Controller
                     'id' => $order->warehouse->id,
                     'name' => $order->warehouse->name,
                 ] : null,
+                'warehouse_id' => $order->warehouse_id,
+                'warehouse_name' => $order->warehouse?->name,
+                'client' => $order->client ? [
+                    'id' => $order->client->id,
+                    'name' => $order->client->name,
+                    'document' => $order->client->document,
+                    'email' => $order->client->email,
+                    'phone' => $order->client->phone,
+                ] : null,
+                'client_id' => $order->client_id,
+                'client_name' => $order->client?->name,
+                'client_document' => $order->client?->document,
                 'destination_name' => $order->destination_name,
                 'notes' => $order->notes,
                 'issued_at' => $order->issued_at?->format('d/m/Y H:i'),
                 'confirmed_at' => $order->confirmed_at?->format('d/m/Y H:i'),
                 'cancelled_at' => $order->cancelled_at?->format('d/m/Y H:i'),
-                'creator_name' => $order->creator?->name,
-                'confirmer_name' => $order->confirmer?->name,
-                'canceller_name' => $order->canceller?->name,
+                'created_by' => $order->creator?->name,
+                'confirmed_by' => $order->confirmer?->name,
+                'cancelled_by' => $order->canceller?->name,
                 'items_count' => $order->items->count(),
                 'products_total' => (float) $order->items->sum('quantity'),
                 'items' => $order->items->map(fn ($item) => [
@@ -337,9 +365,11 @@ class OrderController extends Controller
                 'id' => $order->id,
                 'number' => $order->number,
                 'warehouse_id' => $order->warehouse_id,
+                'client_id' => $order->client_id,
                 'type' => $order->type?->value,
                 'destination_name' => $order->destination_name,
                 'notes' => $order->notes,
+                'status' => $order->status?->value,
                 'issued_at' => $order->issued_at?->format('Y-m-d\TH:i'),
                 'items' => $order->items->map(fn ($item) => [
                     'product_id' => $item->product_id,
@@ -348,6 +378,7 @@ class OrderController extends Controller
                 ])->values(),
             ],
             'warehouses' => $this->warehouseOptions($tenantId, $companyId),
+            'clients' => $this->clientOptions($tenantId),
             'products' => $this->productOptions($tenantId),
             'types' => OrderType::formOptions(),
         ]);
@@ -437,6 +468,20 @@ class OrderController extends Controller
             ->values();
     }
 
+    protected function clientOptions(int $tenantId)
+    {
+        return Client::query()
+            ->where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get(['id', 'name', 'document'])
+            ->map(fn (Client $client) => [
+                'id' => $client->id,
+                'name' => $client->name,
+                'document' => $client->document,
+            ])
+            ->values();
+    }
+
     protected function productOptions(int $tenantId)
     {
         return Product::query()
@@ -448,5 +493,81 @@ class OrderController extends Controller
                 'name' => $product->name,
             ])
             ->values();
+    }
+
+    public function exportOrderPdf(Request $request, Order $order)
+    {
+        $this->authorize('export', Order::class);
+        $this->ensureContext($request, $order);
+
+        $order->load([
+            'warehouse:id,name',
+            'client:id,name,document,email,phone,address',
+            'items.product:id,name',
+            'creator:id,name',
+            'confirmer:id,name',
+            'canceller:id,name',
+        ]);
+
+        $pdf = Pdf::setOption([
+                'isPhpEnabled' => false,
+            ])
+            ->loadView('pdf.order-show-report', [
+                'order' => [
+                    'id' => $order->id,
+                    'number' => $order->number,
+                    'status_label' => $order->status?->label(),
+                    'type_label' => $order->type?->label(),
+                    'warehouse_name' => $order->warehouse?->name,
+                    'client_name' => $order->client?->name,
+                    'client_document' => $order->client?->document,
+                    'client_email' => $order->client?->email,
+                    'client_phone' => $order->client?->phone,
+                    'client_address' => $order->client?->address,
+                    'notes' => $order->notes,
+                    'issued_at' => $order->issued_at?->format('d/m/Y H:i:s'),
+                    'confirmed_at' => $order->confirmed_at?->format('d/m/Y H:i:s'),
+                    'cancelled_at' => $order->cancelled_at?->format('d/m/Y H:i:s'),
+                    'created_by' => $order->creator?->name,
+                    'confirmed_by' => $order->confirmer?->name,
+                    'cancelled_by' => $order->canceller?->name,
+                    'items_count' => $order->items->count(),
+                    'products_total' => number_format((float) $order->items->sum('quantity'), 3, ',', '.'),
+                    'items' => $order->items->map(fn ($item) => [
+                        'product_name' => $item->product?->name,
+                        'quantity' => number_format((float) $item->quantity, 3, ',', '.'),
+                        'notes' => $item->notes,
+                    ])->values(),
+                ],
+                'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
+                'companyName' => CompanyContext::current()?->name ?? 'Empresa',
+            ])
+            ->setPaper('a4', 'portrait');
+
+        $dompdf = $pdf->getDomPDF();
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $fontMetrics = $dompdf->getFontMetrics();
+        $font = $fontMetrics->getFont('DejaVu Sans Mono', 'normal');
+
+        $canvas->page_text(
+            520,
+            810,
+            '{PAGE_NUM}/{PAGE_COUNT}',
+            $font,
+            9,
+            [0.42, 0.45, 0.5]
+        );
+
+        return response(
+            $dompdf->output(),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="pedido-' . $order->number . '.pdf"',
+            ]
+        );
     }
 }

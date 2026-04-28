@@ -32,7 +32,8 @@ import {
     ShieldCheck,
     ShoppingCart,
     Truck,
-    Users
+    UserRound,
+    Users,
 } from 'lucide-vue-next'
 
 const page = usePage<{
@@ -63,6 +64,16 @@ const mainNavItems: NavItem[] = [
                   title: 'Agenda',
                   href: '/contacts',
                   icon: BookUser,
+              },
+          ]
+        : []),
+
+    ...(can('clients.viewAny')
+        ? [
+              {
+                  title: 'Clientes',
+                  href: '/clients',
+                  icon: UserRound,
               },
           ]
         : []),
@@ -138,14 +149,14 @@ const mainNavItems: NavItem[] = [
         : []),
 
     ...(can('purchaseReceipt.viewDashboard')
-    ? [
-          {
-              title: 'Recebimento de compras',
-              href: '/purchase-receipts',
-              icon: Truck,
-          },
-      ]
-    : []),
+        ? [
+              {
+                  title: 'Recebimento de compras',
+                  href: '/purchase-receipts',
+                  icon: Truck,
+              },
+          ]
+        : []),
 
     ...(can('worktime.viewAny')
         ? [

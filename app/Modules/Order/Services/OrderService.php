@@ -26,6 +26,7 @@ class OrderService
                 'tenant_id' => $user->tenant_id,
                 'company_id' => $companyId,
                 'warehouse_id' => (int) $data['warehouse_id'],
+                'client_id' => (int) $data['client_id'],
                 'number' => $this->generateNumber($user->tenant_id, $companyId),
                 'type' => $data['type'],
                 'status' => OrderStatus::Draft,
@@ -37,7 +38,7 @@ class OrderService
 
             $this->syncItems($order, $data['items']);
 
-            return $order->load(['items.product', 'warehouse', 'creator']);
+            return $order->load(['items.product', 'warehouse', 'client', 'creator']);
         });
     }
 
@@ -52,6 +53,7 @@ class OrderService
         return DB::transaction(function () use ($order, $data) {
             $order->update([
                 'warehouse_id' => (int) $data['warehouse_id'],
+                'client_id' => (int) $data['client_id'],
                 'type' => $data['type'],
                 'destination_name' => $data['destination_name'] ?? null,
                 'notes' => $data['notes'] ?? null,
@@ -62,7 +64,7 @@ class OrderService
 
             $this->syncItems($order, $data['items']);
 
-            return $order->load(['items.product', 'warehouse', 'creator']);
+            return $order->load(['items.product', 'warehouse', 'client', 'creator']);
         });
     }
 
@@ -74,7 +76,7 @@ class OrderService
             ]);
         }
 
-        $order->loadMissing(['items.product', 'warehouse']);
+        $order->loadMissing(['items.product', 'warehouse', 'client']);
 
         if ($order->items->isEmpty()) {
             throw ValidationException::withMessages([
@@ -126,7 +128,7 @@ class OrderService
                 'confirmed_by' => $user->id,
             ]);
 
-            return $order->fresh(['items.product', 'warehouse', 'creator', 'confirmer']);
+            return $order->fresh(['items.product', 'warehouse', 'client', 'creator', 'confirmer']);
         });
     }
 
@@ -144,7 +146,7 @@ class OrderService
             'cancelled_by' => $user->id,
         ]);
 
-        return $order->fresh(['items.product', 'warehouse', 'creator', 'canceller']);
+        return $order->fresh(['items.product', 'warehouse', 'client', 'creator', 'canceller']);
     }
 
     public function delete(Order $order): void

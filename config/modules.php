@@ -1004,5 +1004,41 @@ return [
         ],
     ],
 
+    'clients' => [
+
+        'name' => 'Clientes',
+        'description' => 'Gestão de clientes',
+        'is_core' => true,
+
+        'permissions' => [
+
+            'viewAny' => [
+                'name' => 'Ver lista de clientes',
+                'description' => 'Permite visualizar a lista de clientes do grupo',
+            ],
+
+            'view' => [
+                'name' => 'Ver cliente',
+                'description' => 'Permite visualizar os dados de um cliente',
+            ],
+
+            'create' => [
+                'name' => 'Cadastrar cliente',
+                'description' => 'Permite cadastrar novos clientes',
+            ],
+
+            'update' => [
+                'name' => 'Atualizar cliente',
+                'description' => 'Permite editar clientes',
+            ],
+
+            'delete' => [
+                'name' => 'Excluir cliente',
+                'description' => 'Permite excluir clientes',
+            ],
+
+        ],
+    ],
+
 
 ];

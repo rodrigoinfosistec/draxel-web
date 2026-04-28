@@ -13,6 +13,8 @@ type OrderItem = {
     number: string
     issued_at: string | null
     warehouse_name: string | null
+    client_name: string | null
+    client_document: string | null
     status: string
     status_label: string | null
     type_label: string | null
@@ -30,6 +32,7 @@ type PaginationLink = {
 type Option = {
     id?: number
     name?: string
+    document?: string | null
     value?: string
     label?: string
 }
@@ -41,6 +44,7 @@ const props = defineProps<{
     }
     filters: {
         warehouse_id: string
+        client_id: string
         start_date: string
         end_date: string
         status: string
@@ -48,6 +52,7 @@ const props = defineProps<{
         search: string
     }
     warehouses: Option[]
+    clients: Option[]
     types: Option[]
 }>()
 
@@ -67,6 +72,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ]
 
 const warehouseId = ref(props.filters.warehouse_id ?? '')
+const clientId = ref(props.filters.client_id ?? '')
 const startDate = ref(props.filters.start_date ?? '')
 const endDate = ref(props.filters.end_date ?? '')
 const status = ref(props.filters.status ?? '')
@@ -75,6 +81,7 @@ const search = ref(props.filters.search ?? '')
 
 const queryParams = computed(() => ({
     warehouse_id: warehouseId.value || undefined,
+    client_id: clientId.value || undefined,
     start_date: startDate.value || undefined,
     end_date: endDate.value || undefined,
     status: status.value || undefined,
@@ -124,6 +131,10 @@ function statusClass(statusValue: string) {
 
     return 'bg-amber-100 text-amber-700'
 }
+
+function clientLabel(client: Option): string {
+    return client.document ? `${client.name} — ${client.document}` : String(client.name)
+}
 </script>
 
 <template>
@@ -172,7 +183,7 @@ function statusClass(statusValue: string) {
             </div>
 
             <div class="rounded-xl border bg-card/50 p-4 shadow-sm">
-                <form class="grid gap-3 lg:grid-cols-6" @submit.prevent="submitSearch">
+                <form class="grid gap-3 lg:grid-cols-7" @submit.prevent="submitSearch">
                     <select
                         v-model="warehouseId"
                         class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
@@ -184,6 +195,20 @@ function statusClass(statusValue: string) {
                             :value="warehouse.id"
                         >
                             {{ warehouse.name }}
+                        </option>
+                    </select>
+
+                    <select
+                        v-model="clientId"
+                        class="flex h-10 w-full rounded-md border bg-card px-3 py-2 text-sm"
+                    >
+                        <option value="">Todos os clientes</option>
+                        <option
+                            v-for="client in clients"
+                            :key="client.id"
+                            :value="client.id"
+                        >
+                            {{ clientLabel(client) }}
                         </option>
                     </select>
 
@@ -233,7 +258,7 @@ function statusClass(statusValue: string) {
                         >
                     </div>
 
-                    <div class="lg:col-span-6">
+                    <div class="lg:col-span-7">
                         <Button type="submit" variant="outline" class="w-full sm:w-auto">
                             Filtrar
                         </Button>
@@ -243,15 +268,15 @@ function statusClass(statusValue: string) {
 
             <div class="rounded-xl border bg-card/50 shadow-sm">
                 <div class="overflow-x-auto">
-                    <table class="min-w-[1180px] w-full text-sm">
+                    <table class="min-w-295 w-full text-sm">
                         <thead class="bg-muted/50">
                             <tr>
                                 <th class="px-4 py-3 text-left">Número</th>
                                 <th class="px-4 py-3 text-left">Data</th>
+                                <th class="px-4 py-3 text-left">Cliente</th>
                                 <th class="px-4 py-3 text-left">Depósito</th>
                                 <th class="px-4 py-3 text-left">Status</th>
                                 <th class="px-4 py-3 text-left">Tipo</th>
-                                <th class="px-4 py-3 text-left">Destino</th>
                                 <th class="px-4 py-3 text-left">Itens</th>
                                 <th class="px-4 py-3 text-left">Quantidade total</th>
                                 <th class="px-4 py-3 text-right">Ações</th>
@@ -266,6 +291,12 @@ function statusClass(statusValue: string) {
                             >
                                 <td class="px-4 py-3">{{ order.number }}</td>
                                 <td class="px-4 py-3">{{ order.issued_at || '—' }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="font-medium">{{ order.client_name || '—' }}</div>
+                                    <div class="text-xs text-muted-foreground">
+                                        {{ order.client_document || 'Sem documento' }}
+                                    </div>
+                                </td>
                                 <td class="px-4 py-3">{{ order.warehouse_name || '—' }}</td>
                                 <td class="px-4 py-3">
                                     <span
@@ -276,7 +307,6 @@ function statusClass(statusValue: string) {
                                     </span>
                                 </td>
                                 <td class="px-4 py-3">{{ order.type_label || '—' }}</td>
-                                <td class="px-4 py-3">{{ order.destination_name || '—' }}</td>
                                 <td class="px-4 py-3">{{ order.items_count }}</td>
                                 <td class="px-4 py-3">{{ order.products_total }}</td>
                                 <td class="px-4 py-3">

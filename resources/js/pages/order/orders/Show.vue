@@ -15,6 +15,9 @@ const props = defineProps<{
         issued_at: string | null
         warehouse_id: number | null
         warehouse_name: string | null
+        client_id: number | null
+        client_name: string | null
+        client_document: string | null
         status: string
         status_label: string
         type_label: string | null
@@ -169,9 +172,12 @@ async function cancelOrder() {
                 </div>
 
                 <div class="rounded-2xl border bg-card/50 p-5 shadow-sm">
-                    <div class="text-sm text-muted-foreground">Depósito</div>
-                    <div class="mt-2 text-2xl font-semibold tracking-tight">
-                        {{ order.warehouse_name || '—' }}
+                    <div class="text-sm text-muted-foreground">Cliente</div>
+                    <div class="mt-2 text-xl font-semibold tracking-tight">
+                        {{ order.client_name || '—' }}
+                    </div>
+                    <div class="mt-1 text-sm text-muted-foreground">
+                        {{ order.client_document || 'Sem documento' }}
                     </div>
                 </div>
 
@@ -195,7 +201,7 @@ async function cancelOrder() {
                     </div>
 
                     <div class="overflow-x-auto">
-                        <table class="min-w-[900px] w-full text-sm">
+                        <table class="min-w-225 w-full text-sm">
                             <thead class="bg-muted/50">
                                 <tr>
                                     <th class="px-4 py-3 text-left">Produto</th>
@@ -236,8 +242,18 @@ async function cancelOrder() {
                             </div>
 
                             <div class="flex justify-between gap-4">
-                                <span class="text-muted-foreground">Destino</span>
-                                <span class="font-medium text-right">{{ order.destination_name || '—' }}</span>
+                                <span class="text-muted-foreground">Depósito</span>
+                                <span class="font-medium text-right">{{ order.warehouse_name || '—' }}</span>
+                            </div>
+
+                            <div class="flex justify-between gap-4">
+                                <span class="text-muted-foreground">Cliente</span>
+                                <span class="font-medium text-right">{{ order.client_name || '—' }}</span>
+                            </div>
+
+                            <div class="flex justify-between gap-4">
+                                <span class="text-muted-foreground">Documento</span>
+                                <span class="font-medium text-right">{{ order.client_document || '—' }}</span>
                             </div>
 
                             <div class="flex justify-between gap-4">

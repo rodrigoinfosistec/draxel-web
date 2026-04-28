@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, ShoppingCart, Trash2 } from 'lucide-vue-next'
 type Option = {
     id: number
     name: string
+    document?: string | null
 }
 
 const props = defineProps<{
@@ -22,7 +23,7 @@ const props = defineProps<{
         number: string
         issued_at: string
         warehouse_id: number
-        destination_name: string | null
+        client_id: number | null
         type: string
         notes: string | null
         status: string
@@ -33,6 +34,7 @@ const props = defineProps<{
         }[]
     }
     warehouses: Option[]
+    clients: Option[]
     products: Option[]
     types: Array<{ value: string; label: string }>
 }>()
@@ -47,7 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const form = useForm({
     issued_at: props.order.issued_at,
     warehouse_id: String(props.order.warehouse_id),
-    destination_name: props.order.destination_name ?? '',
+    client_id: props.order.client_id ? String(props.order.client_id) : '',
     type: props.order.type,
     notes: props.order.notes ?? '',
     items: props.order.items.map((item) => ({
@@ -58,6 +60,10 @@ const form = useForm({
 })
 
 const extraErrors = form.errors as Record<string, string | undefined>
+
+function clientLabel(client: Option): string {
+    return client.document ? `${client.name} — ${client.document}` : client.name
+}
 
 function addItem() {
     form.items.push({
@@ -156,6 +162,21 @@ async function destroy() {
                         </div>
 
                         <div class="grid gap-2">
+                            <Label for="client_id">Cliente</Label>
+                            <select
+                                id="client_id"
+                                v-model="form.client_id"
+                                class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            >
+                                <option value="">Selecione</option>
+                                <option v-for="client in clients" :key="client.id" :value="client.id">
+                                    {{ clientLabel(client) }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.client_id" />
+                        </div>
+
+                        <div class="grid gap-2">
                             <Label for="type">Tipo</Label>
                             <select
                                 id="type"
@@ -171,16 +192,6 @@ async function destroy() {
                                 </option>
                             </select>
                             <InputError :message="form.errors.type" />
-                        </div>
-
-                        <div class="grid gap-2">
-                            <Label for="destination_name">Destino</Label>
-                            <Input
-                                id="destination_name"
-                                v-model="form.destination_name"
-                                placeholder="Cliente, setor ou destino"
-                            />
-                            <InputError :message="form.errors.destination_name" />
                         </div>
                     </div>
 
@@ -288,7 +299,7 @@ async function destroy() {
                                 type="button"
                                 variant="destructive"
                                 :disabled="form.processing"
-                                class="sm:min-w-[140px]"
+                                class="sm:min-w-35"
                                 @click="destroy"
                             >
                                 Excluir
@@ -305,7 +316,7 @@ async function destroy() {
                         </Link>
 
                         <Can permission="order.updateOrder">
-                            <Button :disabled="form.processing" class="sm:min-w-[140px]">
+                            <Button :disabled="form.processing" class="sm:min-w-35">
                                 {{ form.processing ? 'Salvando...' : 'Salvar' }}
                             </Button>
                         </Can>
