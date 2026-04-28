@@ -6,7 +6,14 @@ import { useConfirm } from '@/composables/useConfirm'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types'
 import { Head, Link, router } from '@inertiajs/vue3'
-import { ArrowLeft, CheckCircle2, Pencil, ShoppingCart, XCircle } from 'lucide-vue-next'
+import {
+    ArrowLeft,
+    CheckCircle2,
+    FileText,
+    Pencil,
+    ShoppingCart,
+    XCircle,
+} from 'lucide-vue-next'
 
 const props = defineProps<{
     order: {
@@ -116,6 +123,17 @@ async function cancelOrder() {
                             <ArrowLeft class="h-4 w-4" />
                             Voltar
                         </Link>
+
+                        <a
+                            :href="`/order/orders/${order.id}/export/pdf`"
+                            class="w-full sm:w-auto"
+                            target="_blank"
+                        >
+                            <Button type="button" variant="outline" class="w-full sm:w-auto">
+                                <FileText class="mr-2 h-4 w-4" />
+                                PDF
+                            </Button>
+                        </a>
 
                         <Can permission="order.updateOrder">
                             <Link

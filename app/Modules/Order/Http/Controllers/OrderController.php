@@ -497,7 +497,7 @@ class OrderController extends Controller
 
     public function exportOrderPdf(Request $request, Order $order)
     {
-        $this->authorize('export', Order::class);
+        $this->authorize('view', $order);
         $this->ensureContext($request, $order);
 
         $order->load([
@@ -570,4 +570,6 @@ class OrderController extends Controller
             ]
         );
     }
+
+
 }
