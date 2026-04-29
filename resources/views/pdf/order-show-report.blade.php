@@ -5,6 +5,77 @@
     <meta charset="UTF-8">
     <title>Pedido {{ $order['number'] }}</title>
     @include('pdf.partials.report-styles')
+
+    <style>
+        .compact-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .compact-grid td {
+            border: 1px solid #d1d5db;
+            padding: 5px 7px;
+            font-size: 10px;
+            vertical-align: top;
+        }
+
+        .compact-label {
+            width: 18%;
+            font-weight: bold;
+            color: #374151;
+            background: #f9fafb;
+        }
+
+        .compact-value {
+            width: 32%;
+        }
+
+        .section-title {
+            margin: 10px 0 5px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .compact-note {
+            border: 1px solid #d1d5db;
+            padding: 6px 8px;
+            margin-bottom: 10px;
+            font-size: 10px;
+            line-height: 1.35;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid #d1d5db;
+            padding: 5px 7px;
+            font-size: 10px;
+            vertical-align: top;
+        }
+
+        .items-table th {
+            background: #f3f4f6;
+            color: #111827;
+            font-weight: bold;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .summary-line {
+            margin-top: 6px;
+            font-size: 10px;
+            color: #374151;
+        }
+    </style>
 </head>
 
 <body>
@@ -13,126 +84,73 @@
         'subtitle' => 'Relatório individual do pedido',
     ])
 
-    @include('pdf.partials.report-filters', [
-        'filters' => [
-            'Empresa' => $companyName,
-            'Status' => $order['status_label'] ?: '—',
-            'Tipo' => $order['type_label'] ?: '—',
-            'Depósito' => $order['warehouse_name'] ?: '—',
-            'Emitido em' => $order['issued_at'] ?: '—',
-            'Gerado em' => $generatedAt,
-        ],
-    ])
-
-    <table class="report-table">
-        <thead>
-            <tr>
-                <th colspan="2">Dados do cliente</th>
-            </tr>
-        </thead>
+    <table class="compact-grid">
         <tbody>
             <tr>
-                <td style="width: 28%;">Cliente</td>
-                <td>{{ $order['client_name'] ?: '—' }}</td>
+                <td class="compact-label">Empresa</td>
+                <td class="compact-value">{{ $companyName }}</td>
+
+                <td class="compact-label">Pedido</td>
+                <td class="compact-value">{{ $order['number'] }}</td>
             </tr>
+
             <tr>
-                <td>Documento</td>
-                <td>{{ $order['client_document'] ?: '—' }}</td>
+                <td class="compact-label">Data</td>
+                <td class="compact-value">{{ $order['issued_at'] ?: '—' }}</td>
+
+                <td class="compact-label">Status</td>
+                <td class="compact-value">{{ $order['status_label'] ?: '—' }}</td>
             </tr>
+
             <tr>
-                <td>E-mail</td>
-                <td>{{ $order['client_email'] ?: '—' }}</td>
+                <td class="compact-label">Tipo</td>
+                <td class="compact-value">{{ $order['type_label'] ?: '—' }}</td>
+
+                <td class="compact-label">Depósito</td>
+                <td class="compact-value">{{ $order['warehouse_name'] ?: '—' }}</td>
             </tr>
+
             <tr>
-                <td>Telefone</td>
-                <td>{{ $order['client_phone'] ?: '—' }}</td>
+                <td class="compact-label">Cliente</td>
+                <td class="compact-value">{{ $order['client_name'] ?: '—' }}</td>
+
+                <td class="compact-label">Documento</td>
+                <td class="compact-value">{{ $order['client_document'] ?: '—' }}</td>
             </tr>
+
             <tr>
-                <td>Endereço</td>
-                <td>{{ $order['client_address'] ?: '—' }}</td>
+                <td class="compact-label">Telefone</td>
+                <td class="compact-value">{{ $order['client_phone'] ?: '—' }}</td>
+
+                <td class="compact-label">Gerado em</td>
+                <td class="compact-value">{{ $generatedAt }}</td>
             </tr>
         </tbody>
     </table>
 
-    <br>
+    @if ($order['notes'])
+        <div class="section-title">Observação</div>
+        <div class="compact-note">
+            {{ $order['notes'] }}
+        </div>
+    @endif
 
-    <table class="report-table">
+    <div class="section-title">Produtos</div>
+
+    <table class="items-table">
         <thead>
             <tr>
-                <th colspan="2">Dados do pedido</th>
+                <th style="width: 58%;">Produto</th>
+                <th style="width: 14%;" class="text-right">Quantidade</th>
+                <th style="width: 28%;">Observação</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td style="width: 28%;">Número</td>
-                <td>{{ $order['number'] }}</td>
-            </tr>
-            <tr>
-                <td>Status</td>
-                <td>{{ $order['status_label'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Tipo</td>
-                <td>{{ $order['type_label'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Depósito</td>
-                <td>{{ $order['warehouse_name'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Emitido em</td>
-                <td>{{ $order['issued_at'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Criado por</td>
-                <td>{{ $order['created_by'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Confirmado por</td>
-                <td>{{ $order['confirmed_by'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Confirmado em</td>
-                <td>{{ $order['confirmed_at'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Cancelado por</td>
-                <td>{{ $order['cancelled_by'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Cancelado em</td>
-                <td>{{ $order['cancelled_at'] ?: '—' }}</td>
-            </tr>
-            <tr>
-                <td>Total de itens</td>
-                <td>{{ $order['items_count'] }}</td>
-            </tr>
-            <tr>
-                <td>Quantidade total</td>
-                <td>{{ $order['products_total'] }}</td>
-            </tr>
-            <tr>
-                <td>Observações</td>
-                <td>{{ $order['notes'] ?: '—' }}</td>
-            </tr>
-        </tbody>
-    </table>
 
-    <br>
-
-    <table class="report-table">
-        <thead>
-            <tr>
-                <th>Produto</th>
-                <th>Quantidade</th>
-                <th>Observação</th>
-            </tr>
-        </thead>
         <tbody>
             @forelse ($order['items'] as $item)
                 <tr>
                     <td>{{ $item['product_name'] ?: '—' }}</td>
-                    <td>{{ $item['quantity'] }}</td>
+                    <td class="text-right">{{ $item['quantity'] }}</td>
                     <td>{{ $item['notes'] ?: '—' }}</td>
                 </tr>
             @empty
@@ -142,6 +160,11 @@
             @endforelse
         </tbody>
     </table>
+
+    <div class="summary-line">
+        Total de itens: {{ $order['items_count'] }} |
+        Quantidade total: {{ $order['products_total'] }}
+    </div>
 </body>
 
 </html>

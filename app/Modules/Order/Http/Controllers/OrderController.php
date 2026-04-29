@@ -502,11 +502,8 @@ class OrderController extends Controller
 
         $order->load([
             'warehouse:id,name',
-            'client:id,name,document,email,phone,address',
+            'client:id,name,document,phone',
             'items.product:id,name',
-            'creator:id,name',
-            'confirmer:id,name',
-            'canceller:id,name',
         ]);
 
         $pdf = Pdf::setOption([
@@ -514,23 +511,15 @@ class OrderController extends Controller
             ])
             ->loadView('pdf.order-show-report', [
                 'order' => [
-                    'id' => $order->id,
                     'number' => $order->number,
                     'status_label' => $order->status?->label(),
                     'type_label' => $order->type?->label(),
                     'warehouse_name' => $order->warehouse?->name,
                     'client_name' => $order->client?->name,
                     'client_document' => $order->client?->document,
-                    'client_email' => $order->client?->email,
                     'client_phone' => $order->client?->phone,
-                    'client_address' => $order->client?->address,
                     'notes' => $order->notes,
-                    'issued_at' => $order->issued_at?->format('d/m/Y H:i:s'),
-                    'confirmed_at' => $order->confirmed_at?->format('d/m/Y H:i:s'),
-                    'cancelled_at' => $order->cancelled_at?->format('d/m/Y H:i:s'),
-                    'created_by' => $order->creator?->name,
-                    'confirmed_by' => $order->confirmer?->name,
-                    'cancelled_by' => $order->canceller?->name,
+                    'issued_at' => $order->issued_at?->format('d/m/Y H:i'),
                     'items_count' => $order->items->count(),
                     'products_total' => number_format((float) $order->items->sum('quantity'), 3, ',', '.'),
                     'items' => $order->items->map(fn ($item) => [
@@ -539,7 +528,7 @@ class OrderController extends Controller
                         'notes' => $item->notes,
                     ])->values(),
                 ],
-                'generatedAt' => now()->format('d/m/Y H:i:s'),
+                'generatedAt' => now()->format('d/m/Y H:i'),
                 'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
                 'companyName' => CompanyContext::current()?->name ?? 'Empresa',
             ])
@@ -557,7 +546,7 @@ class OrderController extends Controller
             810,
             '{PAGE_NUM}/{PAGE_COUNT}',
             $font,
-            9,
+            8,
             [0.42, 0.45, 0.5]
         );
 
@@ -570,6 +559,5 @@ class OrderController extends Controller
             ]
         );
     }
-
 
 }
