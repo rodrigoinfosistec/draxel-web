@@ -425,6 +425,7 @@ class ProductController extends Controller
         return redirect()
             ->route('products.index')
             ->with('alert', Flash::success('Produto excluído', 'O produto foi excluído com sucesso.'));
+
     }
 
     private function categories(int $tenantId): array
