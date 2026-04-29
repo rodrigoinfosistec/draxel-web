@@ -116,7 +116,7 @@ class ProductController extends Controller
                 'created_at' => $product->created_at?->format('d/m/Y H:i:s'),
             ]);
 
-        return Inertia::render('products/Index', [
+        return Inertia::render('products/products/Index', [
             'products' => $products,
             'filters' => [
                 'search' => $search,
@@ -268,7 +268,7 @@ class ProductController extends Controller
     {
         $this->authorize('create', Product::class);
 
-        return Inertia::render('products/Create', [
+        return Inertia::render('products/products/Create', [
             'categories' => $this->categories($request->user()->tenant_id),
             'brands' => $this->brands($request->user()->tenant_id),
             'unitOfMeasures' => $this->unitOfMeasures($request->user()->tenant_id),
@@ -321,7 +321,7 @@ class ProductController extends Controller
     {
         $this->authorize('update', $product);
 
-        return Inertia::render('products/Edit', [
+        return Inertia::render('products/products/Edit', [
             'product' => [
                 'id' => $product->id,
                 'name' => $product->name,
