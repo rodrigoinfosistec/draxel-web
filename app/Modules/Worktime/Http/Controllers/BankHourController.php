@@ -404,10 +404,12 @@ class BankHourController extends Controller
                     ->orderBy('occurred_on')
                     ->orderBy('id'),
             ])
-            ->where('tenant_id', $tenantId)
-            ->where('company_id', $companyId)
-            ->when($employeeId, fn ($query) => $query->where('employee_id', $employeeId))
-            ->orderBy('employee_id')
+            ->join('employees', 'employees.id', '=', 'bank_hour_accounts.employee_id')
+            ->select('bank_hour_accounts.*')
+            ->where('bank_hour_accounts.tenant_id', $tenantId)
+            ->where('bank_hour_accounts.company_id', $companyId)
+            ->when($employeeId, fn ($query) => $query->where('bank_hour_accounts.employee_id', $employeeId))
+            ->orderBy('employees.name')
             ->get()
             ->map(function ($account) use ($startDate) {
                 $openingBalanceMinutes = (int) BankHourEntry::query()
