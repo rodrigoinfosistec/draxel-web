@@ -94,7 +94,7 @@ class EmployeeController extends Controller
                     ->orWhere('cpf', 'ilike', "%{$search}%")
                     ->orWhere('registration', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get();
 
         return response()->streamDownload(function () use ($employees) {
@@ -151,7 +151,7 @@ class EmployeeController extends Controller
                     ->orWhere('cpf', 'ilike', "%{$search}%")
                     ->orWhere('registration', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get()
             ->map(fn (Employee $employee) => [
                 'id' => $employee->id,
