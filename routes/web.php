@@ -33,7 +33,7 @@ Route::middleware(['auth', 'verified', 'requireTenant'])->group(function () {
 
         session(['current_company_id' => $request->company_id]);
 
-        return back();
+        return redirect()->route('dashboard');
     })->name('company.switch');
 
     Route::prefix('users')->name('users.')->group(function () {
