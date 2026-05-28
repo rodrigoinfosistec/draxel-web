@@ -41,7 +41,7 @@ class EmployeeController extends Controller
                     ->orWhere('cpf', 'ilike', "%{$search}%")
                     ->orWhere('registration', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Employee $employee) => [
