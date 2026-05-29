@@ -31,7 +31,7 @@ class ProductCategoryController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
             ->through(fn (ProductCategory $productCategory) => [
@@ -65,7 +65,7 @@ class ProductCategoryController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get();
 
         return response()->streamDownload(function () use ($productCategories) {
@@ -109,7 +109,7 @@ class ProductCategoryController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get()
             ->map(fn (ProductCategory $productCategory) => [
                 'id' => $productCategory->id,

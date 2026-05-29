@@ -31,7 +31,7 @@ class BrandController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Brand $brand) => [
@@ -65,7 +65,7 @@ class BrandController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get();
 
         return response()->streamDownload(function () use ($brands) {
@@ -109,7 +109,7 @@ class BrandController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get()
             ->map(fn (Brand $brand) => [
                 'id' => $brand->id,
