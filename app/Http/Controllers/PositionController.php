@@ -33,7 +33,7 @@ class PositionController extends Controller
                     ->orWhere('slug', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Position $position) => [
@@ -67,7 +67,7 @@ class PositionController extends Controller
                     ->orWhere('slug', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get();
 
         return response()->streamDownload(function () use ($positions) {
@@ -112,7 +112,7 @@ class PositionController extends Controller
                     ->orWhere('slug', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get()
             ->map(fn (Position $position) => [
                 'id' => $position->id,

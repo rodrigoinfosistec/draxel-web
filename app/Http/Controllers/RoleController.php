@@ -35,7 +35,7 @@ class RoleController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('slug', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Role $role) => [
@@ -74,7 +74,7 @@ class RoleController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('slug', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get();
 
         return response()->streamDownload(function () use ($roles) {
@@ -123,7 +123,7 @@ class RoleController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('slug', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get()
             ->map(fn (Role $role) => [
                 'id' => $role->id,

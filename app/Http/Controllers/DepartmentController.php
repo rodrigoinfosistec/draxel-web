@@ -32,7 +32,7 @@ class DepartmentController extends Controller
                     ->orWhere('slug', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
             ->through(fn (Department $department) => [
@@ -67,7 +67,7 @@ class DepartmentController extends Controller
                     ->orWhere('slug', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get();
 
         return response()->streamDownload(function () use ($departments) {
@@ -112,7 +112,7 @@ class DepartmentController extends Controller
                     ->orWhere('slug', 'ilike', "%{$search}%")
                     ->orWhere('description', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get()
             ->map(fn (Department $department) => [
                 'id' => $department->id,

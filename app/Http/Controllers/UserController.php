@@ -37,7 +37,7 @@ class UserController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('email', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->paginate(10)
             ->withQueryString()
             ->through(fn (User $user) => [
@@ -80,7 +80,7 @@ class UserController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('email', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get();
 
         return response()->streamDownload(function () use ($users) {
@@ -129,7 +129,7 @@ class UserController extends Controller
                     ->where('name', 'ilike', "%{$search}%")
                     ->orWhere('email', 'ilike', "%{$search}%");
             }))
-            ->latest()
+            ->orderBy('name')
             ->get()
             ->map(fn (User $user) => [
                 'id' => $user->id,
