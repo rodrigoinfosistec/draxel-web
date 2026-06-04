@@ -1,562 +1,423 @@
-<script setup lang="ts">
-import Heading from '@/components/Heading.vue'
-import { Button } from '@/components/ui/button'
-import AppLayout from '@/layouts/AppLayout.vue'
-import { dashboard } from '@/routes'
-import type { BreadcrumbItem } from '@/types'
-import { Head, Link, router } from '@inertiajs/vue3'
-import { ArrowLeft, FileSearch } from 'lucide-vue-next'
-import { computed, reactive, ref } from 'vue'
+<template>
+  <div class="p-6 max-w-7xl mx-auto space-y-6">
+    <!-- Cabeçalho da Importação -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900">Tratamento de Importação</h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Arquivo: <span class="font-semibold text-gray-700">{{ importData.original_filename }}</span> |
+          Status: <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{{ importData.status_label }}</span>
+        </p>
+      </div>
+      <div class="mt-4 md:mt-0 flex gap-3">
+        <!-- Botão Lançar se estiver pronto -->
+        <button
+          v-if="importData.can_launch"
+          @click="launchImport"
+          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md text-sm shadow-sm transition"
+        >
+          Lançar Registros
+        </button>
+        <!-- Botão Reverter se já lançado -->
+        <button
+          v-if="importData.can_revert"
+          @click="revertImport"
+          class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-md text-sm shadow-sm transition"
+        >
+          Reverter Lançamento
+        </button>
+      </div>
+    </div>
 
-type EmployeeOption = {
-    id: number
-    name: string
-    registration: string | null
-    label: string
+    <!-- Barra de Filtros Persistentes -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div class="flex flex-wrap gap-4 items-center w-full md:w-auto">
+        <!-- Filtro por Nome/Matrícula do Funcionário -->
+        <div class="w-full md:w-64">
+          <input
+            type="text"
+            v-model="filters.employee"
+            placeholder="Filtrar por funcionário..."
+            class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+          />
+        </div>
+
+        <!-- Switch Apenas Inconsistentes -->
+        <label class="inline-flex items-center cursor-pointer select-none">
+          <input
+            type="checkbox"
+            v-model="filters.onlyInconsistent"
+            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
+          <span class="ml-2 text-sm text-gray-700 font-medium">Apenas grupos inconsistentes</span>
+        </label>
+      </div>
+
+      <!-- Limpar Filtros -->
+      <button
+        v-if="hasActiveFilters"
+        @click="clearFilters"
+        class="text-sm text-red-600 hover:text-red-800 font-medium transition"
+      >
+        Limpar Filtros
+      </button>
+    </div>
+
+    <!-- Indicadores de Totais Rápidos -->
+    <div class="grid grid-cols-3 gap-4">
+      <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+        <span class="block text-sm font-medium text-gray-500">Total de Itens</span>
+        <span class="text-xl font-bold text-gray-900">{{ importData.total_items }}</span>
+      </div>
+      <div class="bg-green-50 p-4 rounded-lg border border-green-100 text-center">
+        <span class="block text-sm font-medium text-green-700">Válidos</span>
+        <span class="text-xl font-bold text-green-900">{{ importData.valid_items }}</span>
+      </div>
+      <div class="bg-red-50 p-4 rounded-lg border border-red-100 text-center">
+        <span class="block text-sm font-medium text-red-700">Inconsistentes</span>
+        <span class="text-xl font-bold text-red-900">{{ importData.invalid_items }}</span>
+      </div>
+    </div>
+
+    <!-- Lista de Accordions por Grupo (Funcionário + Data) -->
+    <div class="space-y-3">
+      <div
+        v-for="(group, index) in filteredGroups"
+        :key="index"
+        class="bg-white rounded-lg border shadow-sm overflow-hidden"
+        :class="group.has_inconsistency ? 'border-red-200' : 'border-gray-200'"
+      >
+        <!-- Cabeçalho do Accordion (Começa fechado por padrão) -->
+        <div
+          @click="toggleGroup(index)"
+          class="p-4 flex items-center justify-between cursor-pointer select-none transition hover:bg-gray-50"
+          :class="group.has_inconsistency ? 'bg-red-50/40' : 'bg-gray-50/10'"
+        >
+          <div class="flex items-center space-x-3 flex-wrap gap-y-2">
+            <!-- Seta Expandir/Recolher -->
+            <span class="text-gray-400 transition-transform duration-200" :class="{ 'transform rotate-90': openedGroups.includes(index) }">
+              ▶
+            </span>
+            <span class="font-semibold text-gray-900">{{ group.employee_name }}</span>
+            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ group.date_label }}</span>
+
+            <!-- Resumo dos Horários no Cabeçalho -->
+            <div class="flex items-center space-x-1 text-xs">
+              <span class="text-gray-400 mr-1">Batidas:</span>
+              <span v-for="time in group.times" :key="time" class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-mono font-medium">
+                {{ time }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Badges de Alerta do Lado Direito -->
+          <div class="flex items-center space-x-3">
+            <span
+              v-if="group.inconsistencies_count > 0"
+              class="px-2.5 py-1 text-xs font-bold rounded-md bg-red-100 text-red-800"
+            >
+              {{ group.inconsistencies_count }} {{ group.inconsistencies_count === 1 ? 'Inconsistência' : 'Inconsistências' }}
+            </span>
+            <span
+              v-else
+              class="px-2.5 py-1 text-xs font-bold rounded-md bg-green-100 text-green-800"
+            >
+              OK
+            </span>
+          </div>
+        </div>
+
+        <!-- Conteúdo Interno Ocultável do Accordion -->
+        <div v-show="openedGroups.includes(index)" class="border-t border-gray-100 bg-white p-4 space-y-4">
+
+          <!-- Formulário de Ajuste em Lote se o funcionário existir -->
+          <div v-if="group.can_adjust_times" class="bg-gray-50 p-3 rounded border border-gray-200">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Ajustar horários em bloco (Quantidade Par)</h4>
+            <div class="flex flex-wrap gap-2 items-center">
+              <div v-for="(t, tIdx) in groupAdjustments[index]" :key="tIdx" class="flex items-center bg-white border rounded p-1 shadow-sm">
+                <input
+                  type="text"
+                  v-model="groupAdjustments[index][tIdx]"
+                  placeholder="00:00"
+                  class="w-14 text-center text-sm border-0 p-0 focus:ring-0 font-mono"
+                />
+                <button type="button" @click="removeTimeField(index, tIdx)" class="text-red-500 hover:text-red-700 text-xs px-1">×</button>
+              </div>
+              <button type="button" @click="addTimeField(index)" class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 font-medium">
+                + Adicionar Horário
+              </button>
+              <button
+                type="button"
+                @click="submitAdjustTimes(group.employee_id, group.date_key, groupAdjustments[index])"
+                class="ml-auto text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 font-medium shadow-sm"
+              >
+                Salvar Horários
+              </button>
+            </div>
+          </div>
+
+          <!-- Tabela de Linhas Originais pertencentes a este Grupo -->
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+              <thead class="bg-gray-50 text-gray-600 font-medium text-left">
+                <tr>
+                  <th class="px-3 py-2">Linha</th>
+                  <th class="px-3 py-2">Horário Lido</th>
+                  <th class="px-3 py-2">Status</th>
+                  <th class="px-3 py-2">Divergência / Motivo</th>
+                  <th class="px-3 py-2 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 text-gray-700">
+                <tr v-for="item in group.items" :key="item.id" :class="{'bg-red-50/20': item.status === 'invalid'}">
+                  <td class="px-3 py-2 font-mono text-xs text-gray-400">
+                    {{ item.line_number_label }}
+                  </td>
+                  <td class="px-3 py-2 font-mono font-medium">
+                    {{ item.time || '—' }}
+                  </td>
+                  <td class="px-3 py-2">
+                    <span
+                      class="px-2 py-0.5 rounded text-xs font-semibold"
+                      :class="{
+                        'bg-red-100 text-red-800': item.status === 'invalid',
+                        'bg-green-100 text-green-800': item.status === 'valid',
+                        'bg-gray-100 text-gray-800': item.status === 'ignored',
+                        'bg-blue-100 text-blue-800': item.status === 'resolved' || item.status === 'launched'
+                      }"
+                    >
+                      {{ item.status_label }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 text-xs text-gray-600">
+                    {{ item.divergence_reason || '—' }}
+                    <div v-if="item.raw_line" class="text-gray-400 font-mono text-[10px] mt-0.5 truncate max-w-md" :title="item.raw_line">
+                      String: {{ item.raw_line }}
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 text-right space-x-2">
+                    <!-- Ação: Vincular Funcionário (Quando não localizado no AFD) -->
+                    <div v-if="item.can_resolve_employee" class="inline-block text-left">
+                      <select
+                        @change="resolveEmployee(item.id, $event.target.value)"
+                        class="text-xs rounded border-gray-300 p-1 focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                        <option value="">Vincular funcionário...</option>
+                        <option v-for="emp in employees" :key="emp.id" :value="emp.id">
+                          {{ emp.label }}
+                        </option>
+                      </select>
+                    </div>
+
+                    <!-- Ação: Ignorar Linha Divergente -->
+                    <button
+                      v-if="item.can_ignore"
+                      @click="ignoreItem(item.id)"
+                      class="text-xs text-gray-500 hover:text-red-600 font-medium border border-gray-200 px-2 py-1 rounded hover:bg-gray-50"
+                    >
+                      Desconsiderar
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Estado Vazio -->
+      <div v-if="filteredGroups.length === 0" class="text-center py-12 bg-white rounded-lg border text-gray-500 text-sm">
+        Nenhum grupo de ponto atende aos filtros definidos.
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
+import { router } from '@inertiajs/vue3'
+
+// Definição das Props enviadas diretamente pelo ClockRecordImportController
+const props = defineProps({
+  import: { type: Object, required: true },
+  groups: { type: Array, required: true },
+  employees: { type: Array, required: true }
+})
+
+// Atalhos reativos para os dados
+const importData = computed(() => props.import)
+const allGroups = computed(() => props.groups)
+
+// Filtros locais com estado inicial reativo
+const filters = ref({
+  employee: '',
+  onlyInconsistent: false
+})
+
+// Controla quais Accordions estão abertos (Lista de índices). Começa vazia = Todos recolhidos.
+const openedGroups = ref([])
+
+// Estrutura para conter as inputs dinâmicas de ajuste de horário por bloco de cada grupo
+const groupAdjustments = ref({})
+
+// Inicializa ou limpa as configurações de inputs locais para ajuste manual de horários
+const syncAdjustmentsStructure = () => {
+  allGroups.value.forEach((group, index) => {
+    // Clona os horários existentes para os inputs reativos
+    groupAdjustments.value[index] = group.times ? [...group.times] : []
+  })
 }
 
-type ImportItemGroupItem = {
-    id: number
-    line_number: number
-    line_number_label: string
-    employee_code: string | null
-    employee_name: string | null
-    recorded_at: string | null
-    time: string | null
-    status: string | null
-    status_label: string | null
-    divergence_reason: string | null
-    raw_line: string
-    original_raw_line: string | null
-    is_manual_adjustment: boolean
-    can_ignore: boolean
-    can_resolve_employee: boolean
+onMounted(() => {
+  // Carrega filtros salvos no LocalStorage para persistência enquanto o usuário limpa ou recarrega a tela
+  const savedFilters = localStorage.getItem(`import_filters_${importData.value.id}`)
+  if (savedFilters) {
+    try { filters.value = JSON.parse(savedFilters) } catch (e) {}
+  }
+  syncAdjustmentsStructure()
+})
+
+// Observa mudanças nos filtros e persiste no LocalStorage local do navegador
+watch(filters, (newVal) => {
+  localStorage.setItem(`import_filters_${importData.value.id}`, JSON.stringify(newVal))
+}, { deep: true })
+
+// Sincroniza campos se os dados vindos do backend mudarem pós-atualização
+watch(allGroups, () => {
+  syncAdjustmentsStructure()
+}, { deep: true })
+
+// Computa se há qualquer filtro ativo na tela
+const hasActiveFilters = computed(() => {
+  return filters.value.employee.trim() !== '' || filters.value.onlyInconsistent
+})
+
+// Limpa filtros reativos e remove do LocalStorage
+const clearFilters = () => {
+  filters.value.employee = ''
+  filters.value.onlyInconsistent = false
 }
 
-type ImportItemGroup = {
-    employee_name: string
-    date_label: string
-    employee_id: number | null
-    date_key: string | null
-    times: string[]
-    can_adjust_times: boolean
-    items: ImportItemGroupItem[]
-}
-
-type ImportData = {
-    id: number
-    original_filename: string
-    status: string | null
-    status_label: string | null
-    device_name: string | null
-    total_items: number
-    valid_items: number
-    invalid_items: number
-    can_launch: boolean
-}
-
-const props = defineProps<{
-    import: ImportData
-    groups: ImportItemGroup[]
-    employees: EmployeeOption[]
-}>()
-
-const selectedEmployees = reactive<Record<number, string>>({})
-
-const adjustModalOpen = ref(false)
-const adjustModalEmployeeId = ref<number | null>(null)
-const adjustModalEmployeeName = ref('')
-const adjustModalDateLabel = ref('')
-const adjustModalDateKey = ref<string | null>(null)
-const adjustModalTimes = ref<string[]>([])
-
-const showOnlyInconsistencies = ref(false)
-
-const breadcrumbs = computed<BreadcrumbItem[]>(() => [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-    },
-    {
-        title: 'Importações de ponto',
-        href: '/worktime/clock-record-imports',
-    },
-    {
-        title: `Importação #${props.import.id}`,
-        href: `/worktime/clock-record-imports/${props.import.id}`,
-    },
-])
-
-const groupHasInconsistency = (group: ImportItemGroup) => {
-    return group.items.some(item => item.status === 'invalid')
-}
-
+// Filtra a lista de grupos dinamicamente em memória (Client Side) sem disparar requisições pesadas ao servidor
 const filteredGroups = computed(() => {
-    if (!showOnlyInconsistencies.value) {
-        return props.groups
-    }
+  return allGroups.value.map(group => {
+    // Avalia se o grupo contém itens inválidos/com inconsistência
+    const hasInconsistency = group.items.some(item => item.status === 'invalid')
+    const inconsistenciesCount = group.items.filter(item => item.status === 'invalid').length
 
-    return props.groups.filter(group => groupHasInconsistency(group))
+    return {
+      ...group,
+      has_inconsistency: hasInconsistency,
+      inconsistencies_count: inconsistenciesCount
+    }
+  }).filter(group => {
+    // Filtro 1: Nome/Matrícula do Funcionário
+    if (filters.value.employee.trim() !== '') {
+      const search = filters.value.employee.toLowerCase()
+      if (!group.employee_name.toLowerCase().includes(search)) {
+        return false
+      }
+    }
+    // Filtro 2: Apenas Inconsistentes
+    if (filters.value.onlyInconsistent && !group.has_inconsistency) {
+      return false
+    }
+    return true
+  })
 })
 
-const inconsistentGroupsCount = computed(() => {
-    return props.groups.filter(group => groupHasInconsistency(group)).length
-})
-
-const launch = () => {
-    if (!props.import.can_launch) return
-
-    router.post(`/worktime/clock-record-imports/${props.import.id}/launch`)
+// Abre/Fecha a exibição do Accordion específico
+const toggleGroup = (index) => {
+  if (openedGroups.value.includes(index)) {
+    openedGroups.value = openedGroups.value.filter(i => i !== index)
+  } else {
+    openedGroups.value.push(index)
+  }
 }
 
-const ignoreItem = (itemId: number) => {
-    router.post(`/worktime/clock-record-imports/${props.import.id}/items/${itemId}/ignore`)
+// Lógica dos campos de horários dinâmicos em bloco
+const addTimeField = (index) => {
+  groupAdjustments.value[index].push('')
+}
+const removeTimeField = (index, tIdx) => {
+  groupAdjustments.value[index].splice(tIdx, 1)
 }
 
-const resolveEmployee = (itemId: number) => {
-    const employeeId = selectedEmployees[itemId]
+/**
+ * PROCESSAMENTO DE SUBMISSÕES - UTILIZA O PRESERVE-SCROLL E STATE DO INERTIA
+ * IMPEDE O COMPORTAMENTO DE VOLTAR À PAGINA INDEX E RETÉM O FOCO DO OPERADOR
+ */
 
-    if (!employeeId) {
-        return
-    }
+// Desconsiderar Item AFD[cite: 3, 6]
+const ignoreItem = (itemId) => {
+  if (!confirm('Deseja desconsiderar este registro de ponto na importação?')) return
 
-    router.post(`/worktime/clock-record-imports/${props.import.id}/items/${itemId}/resolve-employee`, {
-        employee_id: employeeId,
-    })
+  router.post(route('worktime.clock-record-imports.items.ignore', {
+    clockRecordImport: importData.value.id,
+    clockRecordImportItem: itemId
+  }), {}, {
+    preserveScroll: true,
+    preserveState: true
+  })
 }
 
-const openAdjustModal = (group: ImportItemGroup) => {
-    if (!group.employee_id || !group.date_key) {
-        return
-    }
+// Vincular funcionário não identificado[cite: 3, 6]
+const resolveEmployee = (itemId, employeeId) => {
+  if (!employeeId) return
 
-    adjustModalEmployeeId.value = group.employee_id
-    adjustModalEmployeeName.value = group.employee_name
-    adjustModalDateLabel.value = group.date_label
-    adjustModalDateKey.value = group.date_key
-    adjustModalTimes.value = group.times.length > 0 ? [...group.times] : ['']
-    adjustModalOpen.value = true
+  router.post(route('worktime.clock-record-imports.items.resolve-employee', {
+    clockRecordImport: importData.value.id,
+    clockRecordImportItem: itemId
+  }), {
+    employee_id: employeeId
+  }, {
+    preserveScroll: true,
+    preserveState: true
+  })
 }
 
-const closeAdjustModal = () => {
-    adjustModalOpen.value = false
-    adjustModalEmployeeId.value = null
-    adjustModalEmployeeName.value = ''
-    adjustModalDateLabel.value = ''
-    adjustModalDateKey.value = null
-    adjustModalTimes.value = []
+// Ajustar horários em lote de um dia[cite: 3, 6]
+const submitAdjustTimes = (employeeId, dateKey, timesArray) => {
+  // Filtra entradas vazias
+  const cleanedTimes = timesArray.filter(t => t && t.trim() !== '')
+
+  if (cleanedTimes.length % 2 !== 0) {
+    alert('A quantidade de horários informada deve ser PAR para fechar os pares de entrada e saída.')
+    return
+  }
+
+  router.post(route('worktime.clock-record-imports.adjust-times', {
+    clockRecordImport: importData.value.id
+  }), {
+    employee_id: employeeId,
+    date: dateKey,
+    times: cleanedTimes
+  }, {
+    preserveScroll: true,
+    preserveState: true
+  })
 }
 
-const addAdjustTime = () => {
-    adjustModalTimes.value.push('')
+// Lançar os registros definitivamente para o espelho de ponto[cite: 3, 6]
+const launchImport = () => {
+  if (!confirm('Deseja lançar todos os registros válidos desta importação no sistema?')) return
+
+  router.post(route('worktime.clock-record-imports.launch', {
+    clockRecordImport: importData.value.id
+  }), {}, {
+    preserveScroll: true
+  })
 }
 
-const removeAdjustTime = (index: number) => {
-    adjustModalTimes.value.splice(index, 1)
+// Reverter o lançamento do lote[cite: 3, 6]
+const revertImport = () => {
+  if (!confirm('Atenção! Deseja reverter todos os pontos lançados por este arquivo?')) return
 
-    if (adjustModalTimes.value.length === 0) {
-        adjustModalTimes.value.push('')
-    }
-}
-
-const saveAdjustTimes = () => {
-    if (!adjustModalEmployeeId.value || !adjustModalDateKey.value) {
-        return
-    }
-
-    router.post(`/worktime/clock-record-imports/${props.import.id}/adjust-times`, {
-        employee_id: adjustModalEmployeeId.value,
-        date: adjustModalDateKey.value,
-        times: adjustModalTimes.value,
-    }, {
-        onSuccess: () => closeAdjustModal(),
-    })
-}
-
-const statusBadgeClass = (status: string | null) => {
-    if (status === 'launched') {
-        return 'bg-emerald-100 text-emerald-700 ring-1 ring-inset ring-emerald-200'
-    }
-
-    if (status === 'ready_to_launch') {
-        return 'bg-sky-100 text-sky-700 ring-1 ring-inset ring-sky-200'
-    }
-
-    if (status === 'awaiting_review') {
-        return 'bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-200'
-    }
-
-    if (status === 'invalid') {
-        return 'bg-red-100 text-red-700 ring-1 ring-inset ring-red-200'
-    }
-
-    if (status === 'valid') {
-        return 'bg-emerald-100 text-emerald-700 ring-1 ring-inset ring-emerald-200'
-    }
-
-    if (status === 'resolved') {
-        return 'bg-blue-100 text-blue-700 ring-1 ring-inset ring-blue-200'
-    }
-
-    if (status === 'ignored') {
-        return 'bg-zinc-100 text-zinc-700 ring-1 ring-inset ring-zinc-200'
-    }
-
-    return 'bg-zinc-100 text-zinc-700 ring-1 ring-inset ring-zinc-200'
+  router.post(route('worktime.clock-record-imports.reverted', {
+    clockRecordImport: importData.value.id
+  }), {}, {
+    preserveScroll: true
+  })
 }
 </script>
-
-<template>
-    <Head :title="`Importação #${props.import.id}`" />
-
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-col gap-6 p-4 sm:p-6">
-            <div class="relative overflow-hidden rounded-2xl border bg-card/40 p-5 shadow-sm backdrop-blur-[1px] sm:p-6">
-                <div
-                    class="absolute inset-0"
-                    style="background: linear-gradient(to bottom right, var(--company-color-soft), transparent, transparent);"
-                />
-
-                <div class="relative flex items-start justify-between gap-4">
-                    <Heading
-                        :title="`Importação #${props.import.id}`"
-                        description="Analise os registros importados, trate as inconsistências e ajuste os horários quando necessário."
-                        :icon="FileSearch"
-                    />
-
-                    <Link
-                        href="/worktime/clock-record-imports"
-                        class="inline-flex items-center justify-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                    >
-                        <ArrowLeft class="h-4 w-4" />
-                        <span>Voltar</span>
-                    </Link>
-                </div>
-            </div>
-
-            <div class="rounded-xl border bg-card/50 p-5 shadow-sm">
-                <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-3">
-                            <span
-                                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
-                                :class="statusBadgeClass(props.import.status)"
-                            >
-                                {{ props.import.status_label ?? 'Sem status' }}
-                            </span>
-                        </div>
-
-                        <div class="space-y-1 text-sm text-zinc-600 dark:text-zinc-300">
-                            <p><span class="font-medium text-zinc-800 dark:text-zinc-100">Arquivo:</span> {{ props.import.original_filename }}</p>
-                            <p><span class="font-medium text-zinc-800 dark:text-zinc-100">Device:</span> {{ props.import.device_name ?? '—' }}</p>
-                            <p><span class="font-medium text-zinc-800 dark:text-zinc-100">Total de itens:</span> {{ props.import.total_items }}</p>
-                            <p><span class="font-medium text-zinc-800 dark:text-zinc-100">Itens válidos:</span> {{ props.import.valid_items }}</p>
-                            <p><span class="font-medium text-zinc-800 dark:text-zinc-100">Itens divergentes:</span> {{ props.import.invalid_items }}</p>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-3">
-                        <Button
-                            v-if="props.import.can_launch"
-                            type="button"
-                            @click="launch"
-                        >
-                            Lançar importação
-                        </Button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between dark:border-zinc-800 dark:bg-zinc-950">
-                <div class="text-sm text-zinc-600 dark:text-zinc-300">
-                    <span class="font-medium text-zinc-800 dark:text-zinc-100">Grupos com inconsistência:</span>
-                    {{ inconsistentGroupsCount }}
-                </div>
-
-                <label class="inline-flex cursor-pointer items-center gap-3">
-                    <span class="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                        Mostrar apenas inconsistências
-                    </span>
-
-                    <button
-                        type="button"
-                        class="relative inline-flex h-6 w-11 items-center rounded-full transition"
-                        :class="showOnlyInconsistencies ? 'bg-red-600' : 'bg-zinc-300 dark:bg-zinc-700'"
-                        @click="showOnlyInconsistencies = !showOnlyInconsistencies"
-                    >
-                        <span
-                            class="inline-block h-5 w-5 transform rounded-full bg-white transition"
-                            :class="showOnlyInconsistencies ? 'translate-x-5' : 'translate-x-1'"
-                        />
-                    </button>
-                </label>
-            </div>
-
-            <div
-                v-if="filteredGroups.length === 0"
-                class="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400"
-            >
-                {{
-                    showOnlyInconsistencies
-                        ? 'Nenhum bloco com inconsistência encontrado nesta importação.'
-                        : 'Nenhum item encontrado nesta importação.'
-                }}
-            </div>
-
-            <div
-                v-for="group in filteredGroups"
-                :key="`${group.employee_name}-${group.date_label}`"
-                class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-            >
-                <div
-                    class="border-b px-5 py-4"
-                    :class="groupHasInconsistency(group) ? 'border-red-200 bg-red-50/60 dark:border-red-900/50 dark:bg-red-950/30' : 'border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50'"
-                >
-                    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-                                    {{ group.employee_name }}
-                                </h2>
-
-                                <span
-                                    v-if="groupHasInconsistency(group)"
-                                    class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/50 dark:text-red-300 dark:ring-red-900/50"
-                                >
-                                    Com inconsistência
-                                </span>
-                            </div>
-
-                            <p class="text-sm text-zinc-500 dark:text-zinc-400">
-                                {{ group.date_label }}
-                            </p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-3">
-                            <div class="text-sm text-zinc-500 dark:text-zinc-400">
-                                {{ group.items.length }} registro(s)
-                            </div>
-
-                            <button
-                                v-if="group.can_adjust_times"
-                                type="button"
-                                class="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
-                                @click="openAdjustModal(group)"
-                            >
-                                Ajustar horários
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800">
-                        <thead class="bg-white dark:bg-zinc-950">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Linha</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Matrícula</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Funcionário</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Horário</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Status</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Divergência</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Linha bruta</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Ações</th>
-                            </tr>
-                        </thead>
-
-                        <tbody class="divide-y divide-zinc-100 bg-white dark:divide-zinc-900 dark:bg-zinc-950">
-                            <tr
-                                v-for="item in group.items"
-                                :key="item.id"
-                                class="align-top"
-                                :class="item.status === 'invalid' ? 'bg-red-50/40 dark:bg-red-950/20' : ''"
-                            >
-                                <td class="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-200">
-                                    {{ item.line_number_label }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-200">
-                                    {{ item.employee_code ?? '—' }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-200">
-                                    {{ item.employee_name ?? '—' }}
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-200">
-                                    {{ item.time ?? '—' }}
-                                </td>
-
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
-                                        :class="statusBadgeClass(item.status)"
-                                    >
-                                        {{ item.status_label ?? '—' }}
-                                    </span>
-                                </td>
-
-                                <td class="px-4 py-3 text-sm text-red-600 dark:text-red-400">
-                                    {{ item.divergence_reason ?? '—' }}
-                                </td>
-
-                                <td class="max-w-md px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">
-                                    <div class="space-y-1 break-all">
-                                        <div>{{ item.raw_line }}</div>
-
-                                        <div
-                                            v-if="item.is_manual_adjustment && item.original_raw_line"
-                                            class="text-[11px] text-zinc-400 dark:text-zinc-500"
-                                        >
-                                            Original: {{ item.original_raw_line }}
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td class="px-4 py-3">
-                                    <div
-                                        v-if="item.can_resolve_employee"
-                                        class="space-y-2"
-                                    >
-                                        <select
-                                            v-model="selectedEmployees[item.id]"
-                                            class="w-64 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                        >
-                                            <option value="">
-                                                Selecione um funcionário
-                                            </option>
-
-                                            <option
-                                                v-for="employee in props.employees"
-                                                :key="employee.id"
-                                                :value="String(employee.id)"
-                                            >
-                                                {{ employee.label }}
-                                            </option>
-                                        </select>
-
-                                        <div class="flex flex-wrap gap-2">
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                                :disabled="!selectedEmployees[item.id]"
-                                                @click="resolveEmployee(item.id)"
-                                            >
-                                                Vincular funcionário
-                                            </button>
-
-                                            <button
-                                                v-if="item.can_ignore"
-                                                type="button"
-                                                class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
-                                                @click="ignoreItem(item.id)"
-                                            >
-                                                Desconsiderar
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        v-else-if="item.can_ignore"
-                                        class="flex flex-wrap gap-2"
-                                    >
-                                        <button
-                                            type="button"
-                                            class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
-                                            @click="ignoreItem(item.id)"
-                                        >
-                                            Desconsiderar
-                                        </button>
-                                    </div>
-
-                                    <span
-                                        v-else
-                                        class="text-xs text-zinc-400 dark:text-zinc-500"
-                                    >
-                                        —
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div
-            v-if="adjustModalOpen"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-        >
-            <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl dark:bg-zinc-950">
-                <div class="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                Ajustar horários
-                            </h3>
-                            <p class="text-sm text-zinc-500 dark:text-zinc-400">
-                                {{ adjustModalEmployeeName }} — {{ adjustModalDateLabel }}
-                            </p>
-                        </div>
-
-                        <button
-                            type="button"
-                            class="rounded-lg px-3 py-2 text-sm text-zinc-500 transition hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
-                            @click="closeAdjustModal"
-                        >
-                            Fechar
-                        </button>
-                    </div>
-                </div>
-
-                <div class="space-y-4 px-6 py-5">
-                    <div
-                        v-for="(time, index) in adjustModalTimes"
-                        :key="index"
-                        class="flex items-center gap-3"
-                    >
-                        <input
-                            v-model="adjustModalTimes[index]"
-                            type="time"
-                            class="w-48 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                        />
-
-                        <button
-                            type="button"
-                            class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
-                            @click="removeAdjustTime(index)"
-                        >
-                            Remover
-                        </button>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="inline-flex items-center rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-900"
-                        @click="addAdjustTime"
-                    >
-                        Adicionar horário
-                    </button>
-                </div>
-
-                <div class="flex justify-end gap-3 border-t border-zinc-200 px-6 py-4 dark:border-zinc-800">
-                    <button
-                        type="button"
-                        class="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-900"
-                        @click="closeAdjustModal"
-                    >
-                        Cancelar
-                    </button>
-
-                    <button
-                        type="button"
-                        class="inline-flex items-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                        @click="saveAdjustTimes"
-                    >
-                        Salvar ajuste
-                    </button>
-                </div>
-            </div>
-        </div>
-    </AppLayout>
-</template>
