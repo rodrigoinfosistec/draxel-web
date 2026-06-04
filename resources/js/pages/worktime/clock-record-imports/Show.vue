@@ -233,6 +233,7 @@ const statusBadgeClass = (status: string | null) => {
 }
 </script>
 
+
 <template>
     <Head :title="`Importação #${props.import.id}`" />
 
