@@ -555,6 +555,14 @@ class HourBankSnapshotController extends Controller
 
         $hourBankSnapshotEmployee->load('days');
 
+        $employeeModel = Employee::with(['company', 'companyAlias'])
+            ->find($hourBankSnapshotEmployee->employee_id);
+
+        $companyName = $employeeModel?->companyAlias?->name
+            ?? $employeeModel?->company?->name
+            ?? CompanyContext::current()?->name
+            ?? 'Empresa';
+
         $pdf = Pdf::setOption([
             'isPhpEnabled' => false,
         ])
@@ -564,7 +572,7 @@ class HourBankSnapshotController extends Controller
                 'days' => $hourBankSnapshotEmployee->days->sortBy('work_date')->values(),
                 'generatedAt' => now()->format('d/m/Y H:i:s'),
                 'tenantName' => $request->user()->tenant?->name ?? 'Tenant',
-                'companyName' => CompanyContext::current()?->name ?? 'Empresa',
+                'companyName' => $companyName,
             ])
             ->setPaper('a4', 'portrait');
 
