@@ -64,7 +64,20 @@ class UpdateEmployeeRequest extends FormRequest
                 Rule::exists('positions', 'id')->where(fn ($query) => $query
                     ->where('tenant_id', $tenantId)),
             ],
+            'company_alias_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('companies', 'id')->where(fn ($query) => $query
+                    ->where('tenant_id', $tenantId)),
+            ],
             'is_active' => ['required', 'boolean'],
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'company_alias_id' => 'empresa alternativa',
         ];
     }
 }

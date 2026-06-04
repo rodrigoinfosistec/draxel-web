@@ -21,6 +21,7 @@ class Employee extends Model
         'cpf',
         'registration',
         'is_active',
+        'company_alias_id',
     ];
 
     protected function casts(): array
@@ -38,6 +39,11 @@ class Employee extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function companyAlias(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_alias_id');
     }
 
     public function department(): BelongsTo

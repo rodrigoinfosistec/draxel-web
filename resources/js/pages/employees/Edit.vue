@@ -1,4 +1,6 @@
 <script setup lang="ts">
+// resources/js/pages/employees/Edit.vue
+
 import Can from '@/components/Can.vue'
 import Heading from '@/components/Heading.vue'
 import InputError from '@/components/InputError.vue'
@@ -21,6 +23,11 @@ type PositionOption = {
     name: string
 }
 
+type CompanyOption = {
+    id: number
+    name: string
+}
+
 type EmployeeFormData = {
     id: number
     name: string
@@ -28,6 +35,7 @@ type EmployeeFormData = {
     registration: string
     department_id: number | null
     position_id: number | null
+    company_alias_id: number | null
     is_active: boolean
 }
 
@@ -35,6 +43,7 @@ const props = defineProps<{
     employee: EmployeeFormData
     departments: DepartmentOption[]
     positions: PositionOption[]
+    companies: CompanyOption[]
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,6 +71,7 @@ const form = useForm({
     registration: props.employee.registration,
     department_id: props.employee.department_id ?? '',
     position_id: props.employee.position_id ?? '',
+    company_alias_id: props.employee.company_alias_id ?? '',
     is_active: props.employee.is_active,
 })
 
@@ -74,6 +84,7 @@ function submit() {
     form.transform((data) => ({
         ...data,
         cpf: onlyDigits(data.cpf),
+        company_alias_id: data.company_alias_id || null,
     })).put(`/employees/${props.employee.id}`)
 }
 
@@ -204,6 +215,36 @@ async function destroy() {
 
                 <section class="space-y-4">
                     <div>
+                        <h2 class="text-sm font-semibold tracking-tight">Empresa alternativa</h2>
+                        <p class="text-sm text-muted-foreground">
+                            Quando definida, esta empresa será utilizada nos documentos formais do funcionário em substituição à empresa atual.
+                        </p>
+                    </div>
+
+                    <div class="grid gap-4">
+                        <div class="grid gap-2">
+                            <Label for="company_alias_id">Empresa alternativa</Label>
+                            <select
+                                id="company_alias_id"
+                                v-model="form.company_alias_id"
+                                class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            >
+                                <option value="">Nenhuma</option>
+                                <option
+                                    v-for="company in companies"
+                                    :key="company.id"
+                                    :value="company.id"
+                                >
+                                    {{ company.name }}
+                                </option>
+                            </select>
+                            <InputError :message="form.errors.company_alias_id" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="space-y-4">
+                    <div>
                         <h2 class="text-sm font-semibold tracking-tight">Status</h2>
                         <p class="text-sm text-muted-foreground">
                             Controle se o funcionário permanece ativo.
@@ -253,7 +294,7 @@ async function destroy() {
                                 type="button"
                                 variant="destructive"
                                 :disabled="form.processing"
-                                class="sm:min-w-[140px]"
+                                class="sm:min-w-35"
                                 @click="destroy"
                             >
                                 Excluir
@@ -270,7 +311,7 @@ async function destroy() {
                         </Link>
 
                         <Can permission="employees.update">
-                            <Button :disabled="form.processing" class="sm:min-w-[140px]">
+                            <Button :disabled="form.processing" class="sm:min-w-35">
                                 {{ form.processing ? 'Salvando...' : 'Salvar' }}
                             </Button>
                         </Can>

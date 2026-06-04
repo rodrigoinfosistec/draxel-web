@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
+use App\Models\Company;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
@@ -250,7 +251,7 @@ class EmployeeController extends Controller
         $this->authorize('update', $employee);
 
         return Inertia::render('employees/Edit', array_merge(
-            $this->formData($request),
+            $this->editFormData($request),
             [
                 'employee' => [
                     'id' => $employee->id,
@@ -259,6 +260,7 @@ class EmployeeController extends Controller
                     'registration' => $employee->registration,
                     'department_id' => $employee->department_id,
                     'position_id' => $employee->position_id,
+                    'company_alias_id' => $employee->company_alias_id,
                     'is_active' => $employee->is_active,
                 ],
             ]
@@ -276,12 +278,14 @@ class EmployeeController extends Controller
                 'registration' => $employee->registration,
                 'department_id' => $employee->department_id,
                 'position_id' => $employee->position_id,
+                'company_alias_id' => $employee->company_alias_id,
                 'is_active' => $employee->is_active,
             ];
 
             $employee->update([
                 'department_id' => $data['department_id'] ?? null,
                 'position_id' => $data['position_id'] ?? null,
+                'company_alias_id' => $data['company_alias_id'] ?? null,
                 'name' => $data['name'],
                 'cpf' => $data['cpf'],
                 'registration' => $data['registration'],
@@ -296,6 +300,7 @@ class EmployeeController extends Controller
                     'registration' => $employee->registration,
                     'department_id' => $employee->department_id,
                     'position_id' => $employee->position_id,
+                    'company_alias_id' => $employee->company_alias_id,
                     'is_active' => $employee->is_active,
                 ],
             ]);
@@ -317,6 +322,7 @@ class EmployeeController extends Controller
                 'registration' => $employee->registration,
                 'department_id' => $employee->department_id,
                 'position_id' => $employee->position_id,
+                'company_alias_id' => $employee->company_alias_id,
                 'is_active' => $employee->is_active,
             ];
 
@@ -360,6 +366,28 @@ class EmployeeController extends Controller
             'departments' => $departments,
             'positions' => $positions,
         ];
+    }
+
+    // Sobrescrito no edit() para incluir companies — não exposto no create() intencionalmente
+    protected function editFormData(Request $request): array
+    {
+        $tenantId = $request->user()->tenant_id;
+
+        $companies = Company::query()
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'alias'])
+            ->map(fn (Company $company) => [
+                'id' => $company->id,
+                'name' => $company->alias ?? $company->name,
+            ])
+            ->values()
+            ->toArray();
+
+        return array_merge($this->formData($request), [
+            'companies' => $companies,
+        ]);
     }
 
     protected function formatCpf(?string $value): ?string
