@@ -50,6 +50,7 @@ class WorktimeApurationController extends Controller
         $employees = Employee::query()
             ->where('tenant_id', $request->user()->tenant_id)
             ->where('company_id', $company->id)
+            ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (Employee $employee): array => [

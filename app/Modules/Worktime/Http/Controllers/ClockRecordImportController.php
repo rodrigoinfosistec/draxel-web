@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Carbon\Carbon;
 
 class ClockRecordImportController extends Controller
 {
@@ -198,8 +199,30 @@ class ClockRecordImportController extends Controller
                 'name' => $device->clockDevice?->name,
             ]);
 
+        $employees = DB::table('employees')
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('company_id', session('current_company_id'))
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'registration',
+            ])
+            ->map(fn ($employee) => [
+                'id' => $employee->id,
+                'label' => trim($employee->name . ' - ' . $employee->registration),
+            ])
+            ->values();
+
+        $lastMonthStart = Carbon::now()->subMonthNoOverflow()->startOfMonth()->format('Y-m-d');
+        $lastMonthEnd = Carbon::now()->subMonthNoOverflow()->endOfMonth()->format('Y-m-d');
+
         return Inertia::render('worktime/clock-record-imports/Create', [
             'devices' => $devices,
+            'employees' => $employees,
+            'default_start_date' => $lastMonthStart,
+            'default_end_date' => $lastMonthEnd,
         ]);
     }
 

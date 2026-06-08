@@ -31,7 +31,6 @@ class ClockRecordImportService
         return DB::transaction(function () use ($data, $user) {
             /** @var UploadedFile $file */
             $file = $data['file'];
-
             $companyId = session('current_company_id');
             $content = $file->get();
             $fileHash = sha1($content);
@@ -75,49 +74,84 @@ class ClockRecordImportService
 
                 $identifierColumn = config('worktime.employee_identifier_column', 'registration');
 
-                collect($parser->parse($content))->each(function (array $parsedItem) use ($import, $identifierColumn) {
-                    $employeeId = $this->resolveEmployeeId(
-                        employeeCode: $parsedItem['employee_code'] ?? null,
-                        tenantId: $import->tenant_id,
-                        companyId: $import->company_id,
-                        identifierColumn: $identifierColumn,
-                    );
+                $startDate = Carbon::parse($data['start_date'])->startOfDay();
+                $endDate = Carbon::parse($data['end_date'])->endOfDay();
 
-                    $status = ClockRecordImportItemStatus::Valid;
-                    $divergenceReason = null;
+                $selectedEmployees = collect($data['employee_ids'] ?? [])
+                    ->map(fn ($id) => (int) $id)
+                    ->values();
 
-                    if (! ($parsedItem['recorded_at'] ?? null)) {
-                        $status = ClockRecordImportItemStatus::Invalid;
-                        $divergenceReason = 'Data/hora inválida.';
-                    } elseif (! $employeeId) {
-                        $status = ClockRecordImportItemStatus::Invalid;
-                        $divergenceReason = 'Funcionário não encontrado.';
-                    }
+                collect($parser->parse($content))
+                    ->each(function (array $parsedItem) use (
+                        $import,
+                        $identifierColumn,
+                        $startDate,
+                        $endDate,
+                        $selectedEmployees
+                    ) {
+                        $recordedAt = $parsedItem['recorded_at'] ?? null;
 
-                    $recordHash = $this->makeRecordHash(
-                        tenantId: $import->tenant_id,
-                        companyId: $import->company_id,
-                        employeeId: $employeeId,
-                        recordedAt: $parsedItem['recorded_at'] ?? null,
-                    );
+                        if (! $recordedAt) {
+                            return;
+                        }
 
-                    ClockRecordImportItem::query()->create([
-                        'clock_record_import_id' => $import->id,
-                        'line_number' => $parsedItem['line_number'],
-                        'raw_line' => $parsedItem['raw_line'],
-                        'employee_code' => $parsedItem['employee_code'] ?? null,
-                        'employee_id' => $employeeId,
-                        'recorded_at' => $parsedItem['recorded_at'] ?? null,
-                        'status' => $status,
-                        'record_hash' => $recordHash,
-                        'divergence_reason' => $divergenceReason,
-                        'payload' => $parsedItem['payload'] ?? null,
-                    ]);
-                });
+                        if (
+                            $recordedAt->lt($startDate)
+                            || $recordedAt->gt($endDate)
+                        ) {
+                            return;
+                        }
+
+                        $employeeId = $this->resolveEmployeeId(
+                            employeeCode: $parsedItem['employee_code'] ?? null,
+                            tenantId: $import->tenant_id,
+                            companyId: $import->company_id,
+                            identifierColumn: $identifierColumn,
+                        );
+
+                        /**
+                         * Funcionário inexistente ou inativo
+                         * simplesmente não entra na importação.
+                         */
+                        if (! $employeeId) {
+                            return;
+                        }
+
+                        if (
+                            $selectedEmployees->isNotEmpty()
+                            && ! $selectedEmployees->contains($employeeId)
+                        ) {
+                            return;
+                        }
+
+                        $recordHash = $this->makeRecordHash(
+                            tenantId: $import->tenant_id,
+                            companyId: $import->company_id,
+                            employeeId: $employeeId,
+                            recordedAt: $recordedAt,
+                        );
+
+                        ClockRecordImportItem::query()->create([
+                            'clock_record_import_id' => $import->id,
+                            'line_number' => $parsedItem['line_number'],
+                            'raw_line' => $parsedItem['raw_line'],
+                            'employee_code' => $parsedItem['employee_code'] ?? null,
+                            'employee_id' => $employeeId,
+                            'recorded_at' => $recordedAt,
+                            'status' => ClockRecordImportItemStatus::Valid,
+                            'record_hash' => $recordHash,
+                            'divergence_reason' => null,
+                            'payload' => $parsedItem['payload'] ?? null,
+                        ]);
+                    });
 
                 $this->recalculateImport($import);
 
-                return $import->fresh(['items.employee', 'tenantClockDevice.clockDevice']);
+                return $import->fresh([
+                    'items.employee',
+                    'tenantClockDevice.clockDevice',
+                ]);
+
             } catch (\Throwable $e) {
                 if ($storedPath) {
                     Storage::delete($storedPath);
@@ -904,16 +938,18 @@ class ClockRecordImportService
         int $companyId,
         string $identifierColumn,
     ): ?int {
-        if (! $employeeCode || ! Schema::hasColumn('employees', $identifierColumn)) {
+            if (! $employeeCode || ! Schema::hasColumn('employees', $identifierColumn)) {
             return null;
         }
 
         return DB::table('employees')
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
+            ->where('is_active', true)
             ->where($identifierColumn, $employeeCode)
             ->value('id');
-    }
+        }
+
 
     protected function isLaunched(ClockRecordImport $import): bool
     {

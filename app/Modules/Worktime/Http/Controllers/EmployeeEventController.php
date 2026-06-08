@@ -315,6 +315,7 @@ class EmployeeEventController extends Controller
         $employees = Employee::query()
             ->where('tenant_id', $tenantId)
             ->where('company_id', $companyId)
+            ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn ($employee) => [

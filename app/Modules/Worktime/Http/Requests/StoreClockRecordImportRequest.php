@@ -22,7 +22,33 @@ class StoreClockRecordImportRequest extends FormRequest
                     ->where('tenant_id', $this->user()->tenant_id)
                 ),
             ],
-            'file' => ['required', 'file', 'mimes:txt', 'max:5120'],
+
+            'start_date' => [
+                'required',
+                'date',
+            ],
+
+            'end_date' => [
+                'required',
+                'date',
+                'after_or_equal:start_date',
+            ],
+
+            'employee_ids' => [
+                'nullable',
+                'array',
+            ],
+
+            'employee_ids.*' => [
+                'integer',
+            ],
+
+            'file' => [
+                'required',
+                'file',
+                'mimes:txt',
+                'max:5120',
+            ],
         ];
     }
 }

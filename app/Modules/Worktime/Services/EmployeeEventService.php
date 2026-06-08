@@ -18,11 +18,26 @@ class EmployeeEventService
 
     public function create(array $data, User $user): EmployeeEvent
     {
+        $companyId = session('current_company_id');
+
+        $employeeIsActive = DB::table('employees')
+            ->where('tenant_id', $user->tenant_id)
+            ->where('company_id', $companyId)
+            ->where('id', $data['employee_id'])
+            ->where('is_active', true)
+            ->exists();
+
+        if (! $employeeIsActive) {
+            throw ValidationException::withMessages([
+                'employee_id' => 'O funcionário selecionado está inativo.',
+            ]);
+        }
+
         $eventType = EmployeeEventType::from($data['event_type']);
 
         [$startsAt, $endsAt] = $this->resolvePeriod(
             tenantId: $user->tenant_id,
-            companyId: session('current_company_id'),
+            companyId: $companyId,
             employeeId: (int) $data['employee_id'],
             eventType: $eventType,
             inputMode: $data['input_mode'],
@@ -33,7 +48,7 @@ class EmployeeEventService
 
         $this->ensureNoDuplicateEvent(
             tenantId: $user->tenant_id,
-            companyId: session('current_company_id'),
+            companyId: $companyId,
             employeeId: (int) $data['employee_id'],
             eventType: $eventType,
             startsAt: $startsAt,
@@ -42,7 +57,7 @@ class EmployeeEventService
 
         $employeeEvent = EmployeeEvent::create([
             'tenant_id' => $user->tenant_id,
-            'company_id' => session('current_company_id'),
+            'company_id' => $companyId,
             'employee_id' => $data['employee_id'],
             'event_type' => $eventType,
             'starts_at' => $startsAt,

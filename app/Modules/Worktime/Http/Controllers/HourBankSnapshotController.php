@@ -102,6 +102,7 @@ class HourBankSnapshotController extends Controller
         $availableEmployees = Employee::query()
             ->where('tenant_id', $hourBankSnapshot->tenant_id)
             ->where('company_id', $hourBankSnapshot->company_id)
+            ->where('is_active', true)
             ->when(! empty($includedEmployeeIds), function ($query) use ($includedEmployeeIds) {
                 $query->whereNotIn('id', $includedEmployeeIds);
             })

@@ -13,8 +13,16 @@ type DeviceItem = {
     name: string | null
 }
 
-defineProps<{
+type EmployeeItem = {
+    id: number
+    label: string
+}
+
+const props = defineProps<{
     devices: DeviceItem[]
+    employees: EmployeeItem[]
+    default_start_date: string
+    default_end_date: string
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,6 +34,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const form = useForm({
     tenant_clock_device_id: '' as number | '',
+    start_date: props.default_start_date,
+    end_date: props.default_end_date,
+    employee_ids: [] as number[],
     file: null as File | null,
 })
 
@@ -90,6 +101,59 @@ function submit() {
                         >
                         <InputError :message="form.errors.file" />
                     </div>
+
+                    <div class="grid gap-2">
+    <Label for="start_date">Data inicial</Label>
+
+    <input
+        id="start_date"
+        v-model="form.start_date"
+        type="date"
+        class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+    >
+
+    <InputError :message="form.errors.start_date" />
+</div>
+
+<div class="grid gap-2">
+    <Label for="end_date">Data final</Label>
+
+    <input
+        id="end_date"
+        v-model="form.end_date"
+        type="date"
+        class="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm"
+    >
+
+    <InputError :message="form.errors.end_date" />
+</div>
+
+<div class="grid gap-2 md:col-span-2">
+    <Label for="employee_ids">
+        Funcionários
+    </Label>
+
+    <select
+        id="employee_ids"
+        v-model="form.employee_ids"
+        multiple
+        class="min-h-[140px] w-full rounded-md border bg-background px-3 py-2 text-sm"
+    >
+        <option
+            v-for="employee in employees"
+            :key="employee.id"
+            :value="employee.id"
+        >
+            {{ employee.label }}
+        </option>
+    </select>
+
+    <p class="text-xs text-muted-foreground">
+        Nenhum selecionado = todos os funcionários ativos.
+    </p>
+
+    <InputError :message="form.errors.employee_ids" />
+</div>
                 </div>
 
                 <div class="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-end">
